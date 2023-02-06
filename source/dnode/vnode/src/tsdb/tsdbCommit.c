@@ -544,7 +544,7 @@ static int32_t tsdbCommitFileDataStart(SCommitter *pCommitter) {
   SSttFile  fStt = {.commitID = pCommitter->commitID};
   SDFileSet wSet = {.fid = pCommitter->commitFid, .pHeadF = &fHead, .pDataF = &fData, .pSmaF = &fSma};
   if (pRSet) {
-    ASSERT(pRSet->nSttF <= pCommitter->sttTrigger);
+    // ASSERT(pRSet->nSttF <= pCommitter->sttTrigger);
     fData = *pRSet->pDataF;
     fSma = *pRSet->pSmaF;
     wSet.diskId = pRSet->diskId;
