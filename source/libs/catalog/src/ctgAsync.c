@@ -999,6 +999,7 @@ int32_t ctgHandleGetTbMetaRsp(SCtgTaskReq* tReq, int32_t reqType, const SDataBuf
             CTG_ERR_JRET(ctgGetTbMetaFromVnode(pCtg, pConn, pName, &vgInfo, NULL, tReq));
 
             ctgReleaseVgInfoToCache(pCtg, dbCache);
+            dbCache = NULL;
           } else {
             SBuildUseDBInput input = {0};
 
