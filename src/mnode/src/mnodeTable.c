@@ -3130,6 +3130,7 @@ static int32_t mnodeProcessMultiTableMetaMsg(SMnodeMsg *pMsg) {
 
     if (pMsg->pDb == NULL || pMsg->pDb->status != TSDB_DB_STATUS_READY) {
       mnodeDecTableRef(pMsg->pTable);
+      pMsg->pTable = NULL;
       code = TSDB_CODE_APP_NOT_READY;
       goto _end;
     }
@@ -3140,6 +3141,7 @@ static int32_t mnodeProcessMultiTableMetaMsg(SMnodeMsg *pMsg) {
       pMultiMeta = realloc(pMultiMeta, totalMallocLen);
       if (pMultiMeta == NULL) {
         mnodeDecTableRef(pMsg->pTable);
+        pMsg->pTable = NULL;
         code = TSDB_CODE_MND_OUT_OF_MEMORY;
         goto _end;
       }
@@ -3672,12 +3674,20 @@ static int32_t mnodeCompactSuperTables() {
     pIter = mnodeGetNextSuperTable(pIter, &pTable);
     if (pTable == NULL) break;
 
+    if (pTable->uid == 7042626031903724004) {
+      sdbInfo("%s:%d skip suid: %" PRIi64, __func__, __LINE__, pTable->uid);
+      assert(0);
+      continue;
+    } else if(pTable->uid == 8495482621795721011) {
+      assert(0);
+    }
+
     int32_t schemaSize = (pTable->numOfColumns + pTable->numOfTags) * sizeof(SSchema);
     SSdbRow row = {
-      .type    = SDB_OPER_GLOBAL,
-      .pTable  = tsSuperTableSdb,
-      .pObj    = pTable,
-      .rowSize = sizeof(SSTableObj) + schemaSize,
+        .type = SDB_OPER_GLOBAL,
+        .pTable = tsSuperTableSdb,
+        .pObj = pTable,
+        .rowSize = sizeof(SSTableObj) + schemaSize,
     };
 
     //mInfo("compact super %" PRIu64, pTable->uid);

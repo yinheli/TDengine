@@ -642,6 +642,104 @@ static int32_t sdbPerformUpdateAction(SWalHead *pHead, SSdbTable *pTable) {
   return sdbUpdateHash(pTable, &row);
 }
 
+static int32_t sdbProcessDumpWal(SWalHead *hparam) {
+  int32_t    code = 0;
+  SWalHead  *pHead = hparam;
+  int32_t    tableId = pHead->msgType / 10;
+  int32_t    action = pHead->msgType % 10;
+  SSdbTable *pTable = sdbGetTableFromId(tableId);
+  SSdbRow    row = {.rowSize = pHead->len, .rowData = pHead->cont, .pTable = pTable};
+  (*pTable->fpDecode)(&row);
+
+  if (tableId == SDB_TABLE_CTABLE || tableId == SDB_TABLE_STABLE) {
+    STableObj *pTableObj = (STableObj *)row.pObj;
+    sdbTrace("sdbWal, tableId:%d, tableName:%s, tableType:%" PRIi8, tableId, pTableObj->tableId, pTableObj->type);
+  }
+
+  if (tableId == SDB_TABLE_CTABLE) {
+#if 0
+    SCTableObj *pObj = (SCTableObj *)row.pObj;
+    if (pObj->info.type == TSDB_NORMAL_TABLE) {
+      char *pBuf = NULL;
+      if (pObj->schema && pObj->numOfColumns) {
+        int32_t schemaLen = pObj->numOfColumns * 80;  // sizeof(SSchema) + 10
+        pBuf = malloc(schemaLen);
+        if (!pBuf) {
+          terrno = TSDB_CODE_MND_OUT_OF_MEMORY;
+          (*pTable->fpDestroy)(&row);
+          return terrno;
+        }
+
+        int32_t offset = 0;
+        for (int16_t nCol = 0; nCol < pObj->numOfColumns; ++nCol) {
+          SSchema *pSchema = POINTER_SHIFT(pObj->schema, nCol * sizeof(SSchema));
+          char     tBuf[80];
+          snprintf(tBuf, 80, "%" PRIi16 ",%" PRIi8 ",%" PRIu16 ",%s;", pSchema->colId, pSchema->type, pSchema->bytes,
+                   pSchema->name);
+          sprintf(pBuf + offset, "%s", tBuf);
+          offset += strlen(tBuf);
+        }
+        memset(pBuf + offset - 1, 0, 1);
+      }
+
+      char       ts[64] = {0};
+      time_t     sec = pObj->createdTime / 1000;
+      struct tm *ptm = localtime(&sec);
+      strftime(ts, 64, "%Y-%m-%d %H:%M:%S", ptm);
+      char act[10] = {0};
+      if (action == 0) {
+        snprintf(act, 10, "%s", "insert");
+      } else if (action == 1) {
+        snprintf(act, 10, "%s", "delete");
+      } else if (action == 2) {
+        snprintf(act, 10, "%s", "update");
+      } else {
+        snprintf(act, 10, "%d", action);
+      }
+
+      sdbInfo("sdbWal, act:%s, type:%" PRIi8 ", tableId:%s, vgId:%d, suid:%" PRIu64 ", uid:%" PRIu64
+              ", tid:%d, create:%s, sver:%d, schema:%s",
+              act, pObj->info.type, pObj->info.tableId, pObj->vgId, pObj->suid, pObj->uid, pObj->tid, ts,
+              pObj->sversion, pBuf ? pBuf : "");
+
+      tfree(pBuf);
+    }
+#endif
+  } else if (tableId == SDB_TABLE_STABLE) {
+    // type_6289be89bd900a0051687f63_1bhdHZKrZCM
+    SSTableObj *pObj = (SSTableObj *)row.pObj;
+
+    char       ts[64] = {0};
+    time_t     sec = pObj->createdTime / 1000;
+    struct tm *ptm = localtime(&sec);
+    strftime(ts, 64, "%Y-%m-%d %H:%M:%S", ptm);
+    char act[10] = {0};
+    if (action == 0) {
+      snprintf(act, 10, "%s", "insert");
+    } else if (action == 1) {
+      snprintf(act, 10, "%s", "delete");
+    } else if (action == 2) {
+      snprintf(act, 10, "%s", "update");
+    } else {
+      snprintf(act, 10, "%d", action);
+    }
+
+    sdbInfo("sdbWal, act:%s, type:%" PRIi8 ", stableId:%s, uid:%" PRIu64 ", create:%s, sver:%d", act, pObj->info.type,
+            pObj->info.tableId, pObj->uid, ts, pObj->sversion);
+
+    if (pObj->uid == 7042626031903724004) {
+      code = -1;
+    }
+    // if(pObj->uid == 8495482621795721011) {
+    //   code = -1;
+    // }
+  }
+
+  (*pTable->fpDestroy)(&row);
+
+  return code;
+}
+
 static int32_t sdbProcessWrite(void *wparam, void *hparam, int32_t qtype, void *unused) {
   SSdbRow *pRow = wparam;
   SWalHead *pHead = hparam;
@@ -658,7 +756,12 @@ static int32_t sdbProcessWrite(void *wparam, void *hparam, int32_t qtype, void *
   }
 
   pthread_mutex_lock(&tsSdbMgmt.mutex);
-  
+
+  if (sdbProcessDumpWal(hparam) != 0) {
+    pthread_mutex_unlock(&tsSdbMgmt.mutex);
+    return 0;
+  }
+
   if (pHead->version == 0) {
     // assign version
     tsSdbMgmt.version++;
@@ -689,6 +792,7 @@ static int32_t sdbProcessWrite(void *wparam, void *hparam, int32_t qtype, void *
 
   int32_t code = walWrite(tsSdbMgmt.wal, pHead);
   if (code < 0) {
+    assert(0);
     pthread_mutex_unlock(&tsSdbMgmt.mutex);
     return code;
   }
@@ -719,9 +823,9 @@ static int32_t sdbProcessWrite(void *wparam, void *hparam, int32_t qtype, void *
            actStr[action], sdbGetKeyStr(pTable, pHead->cont), pHead->version);
 
   // even it is WAL/FWD, it shall be called to update version in sync
-  if (tsCompactMnodeWal != 1) {
-    syncForwardToPeer(tsSdbMgmt.sync, pHead, pRow, TAOS_QTYPE_RPC, false);
-  }
+  // if (tsCompactMnodeWal != 1) {
+  //   syncForwardToPeer(tsSdbMgmt.sync, pHead, pRow, TAOS_QTYPE_RPC, false);
+  // }
 
   // from wal or forward msg, row not created, should add into hash
   if (action == SDB_ACTION_INSERT) {

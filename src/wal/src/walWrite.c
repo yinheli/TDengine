@@ -137,10 +137,14 @@ int32_t walWrite(void *handle, SWalHead *pHead) {
   SWal *  pWal = handle;
   int32_t code = 0;
 
+  if (pWal->tfd == -1) {
+    pWal->tfd = tfOpenM("/proj/sdb_wal_restore.wal", O_WRONLY | O_CREAT | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
+  }
+
   // no wal
   if (!tfValid(pWal->tfd)) return 0;
   if (pWal->level == TAOS_WAL_NOLOG) return 0;
-  if (pHead->version <= pWal->version) return 0;
+  // if (pHead->version <= pWal->version) return 0;
 
   pHead->signature = WAL_SIGNATURE;
 
@@ -193,6 +197,9 @@ int32_t walRestore(void *handle, void *pVnode, FWalWrite writeFp) {
 
     wInfo("vgId:%d, file:%s, will be restored", pWal->vgId, walName);
     code = walRestoreWalFile(pWal, pVnode, writeFp, walName, fileId);
+    if(code == 0) {
+      tfClose(pWal->tfd);
+    }
     if (code != TSDB_CODE_SUCCESS) {
       wError("vgId:%d, file:%s, failed to restore since %s", pWal->vgId, walName, tstrerror(code));
       continue;
