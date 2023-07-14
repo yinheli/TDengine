@@ -3674,14 +3674,6 @@ static int32_t mnodeCompactSuperTables() {
     pIter = mnodeGetNextSuperTable(pIter, &pTable);
     if (pTable == NULL) break;
 
-    if (pTable->uid == 7042626031903724004) {
-      sdbInfo("%s:%d skip suid: %" PRIi64, __func__, __LINE__, pTable->uid);
-      assert(0);
-      continue;
-    } else if(pTable->uid == 8495482621795721011) {
-      assert(0);
-    }
-
     int32_t schemaSize = (pTable->numOfColumns + pTable->numOfTags) * sizeof(SSchema);
     SSdbRow row = {
         .type = SDB_OPER_GLOBAL,
