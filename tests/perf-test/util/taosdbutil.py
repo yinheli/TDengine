@@ -52,7 +52,7 @@ class TaosUtil(object):
         print(ret)
 
 
-    def update(self, database: str, table: str, condition_info: list, value_info: list):
+    def update(self, database: str, table: str, condition_info: list, value_info: list, tag_info: list = None):
         """
         更新tdengine数据
         :param database: 数据库database名称
@@ -61,7 +61,6 @@ class TaosUtil(object):
         :param value_info : 需要修改的数据范围，例如：value_info = [("comments", "test", DBDataTypeEnum.string), ("js_desc", "test1", DBDataTypeEnum.string)]
         :return:  True/False 符合预期/不符合预期
         """
-        create_time = None
         # 获取primary_key信息
         primary_key_name = None
         primary_key_value = None
@@ -76,7 +75,6 @@ class TaosUtil(object):
         # 查询到需要修改行的ts
         if primary_key_value is None or primary_key_name is None:
             print("primary key is invalid")
-        # primary_key_value = "sdfds"
 
         primary_key_value = primary_key_value if primary_key_type == DBDataTypeEnum.int else "'{}'".format(primary_key_value)
         base_query_sql = "select create_time from {0}.{1} where {2}={3}".format(database, table, primary_key_name, primary_key_value)
@@ -86,8 +84,23 @@ class TaosUtil(object):
         create_time = ret["data"][0][0]
 
         # 根据ts主键，通过insert方式达到update的效果
-        column_content = "(create_time,"
-        values_content = "('{}',".format(create_time)
+        value_info.append(("create_time", create_time, DBDataTypeEnum.timestamp))
+        self.insert(database=database, table=table, value_info=value_info, tag_info=tag_info)
+
+
+    def insert(self, database: str, table: str, value_info: list, tag_info: list = None):
+        """
+        更新tdengine数据
+        :param database: 数据库database名称
+        :param table: 数据库表名称
+        :param value_info : 需要修改的数据范围，例如：value_info = [("comments", "test", DBDataTypeEnum.string), ("js_desc", "test1", DBDataTypeEnum.string)]
+        :param tag_info: 表的tag信息，可选参数
+        # :param table_type: 表的类型，stable或table，默认为table
+        :return:  True/False 符合预期/不符合预期
+        """
+        # 拼接数据插入部分SQL
+        column_content = "("
+        values_content = "("
 
         for value in value_info:
             column_name = value[0]
@@ -100,8 +113,28 @@ class TaosUtil(object):
         column_content += "update_time)"
         values_content += "now)"
 
-        # e.g. insert into job_status (create_time, comments) values('2023-11-16 21:19:32.030','12345') ;
-        insert_sql = "insert into {0}.{1} {2} values{3}".format(database, table, column_content, values_content)
+        # 拼接TAG部分SQL
+        tag_sql = ""
+        if tag_info:
+            column_content = "("
+            values_content = "("
+
+            for value in value_info:
+                column_name = value[0]
+                column_value = value[1]
+                column_type = value[2]
+
+                column_content += column_name + ","
+                values_content += column_value if column_type == DBDataTypeEnum.int else "'{}',".format(column_value)
+
+            column_content = column_content[0: -1]
+            values_content = values_content[0: -1]
+
+            tag_sql = "{0} tags {1}".format(column_content, values_content)
+
+        # e.g. insert into job_status (create_time, comments) (tc_id) tags (10006) values('2023-11-16 21:19:32.030','12345') ;
+        insert_sql = "insert into {0}.{1} {2} {4} values{3}".format(database, table, column_content, values_content, tag_sql)
+
         ret = self.__executeSql(insert_sql)
         if ret['code'] != 0:
             print('执行sql失败')
@@ -112,27 +145,15 @@ class TaosUtil(object):
 
 
 
-
-    # def insert(self, sql=None):
-    #     if sql is None:
-    #         return None
-    #
-    #     ret = requests.post('http://192.168.1.204:6041/rest/sql', headers=self.headers, data=sql)
-    #     data = json.loads(ret)
-    #     print(ret)
-    #
-    #
-    # def update(self, sql=None):
-    #     if sql is None:
-    #         return None
-    #
-    #     ret = requests.post('http://192.168.1.204:6041/rest/sql', headers=self.headers, data=sql)
-    #     print(ret)
-
 if __name__ == "__main__":
     taosUtil = TaosUtil()
     # taosUtil.executeSql('show databases')
     # taosUtil.get_valid_machine()
+
+
     value_info = [("comments", "正在清理机器环境", DBDataTypeEnum.string), ("js_desc", "Cleaning up", DBDataTypeEnum.string)]
     condition = [("js_id", "1", DBDataTypeEnum.int)]
     taosUtil.update(database="perf_test", table="job_status", condition_info=condition, value_info=value_info)
+
+    # value_info = [("create_time", "now", DBDataTypeEnum.timestamp), ("comments", "正在清理机器环境", DBDataTypeEnum.string), ("js_desc", "Cleaning up", DBDataTypeEnum.string)]
+    # taosUtil.insert(database="perf_test", table="job_status", value_info=value_info)
