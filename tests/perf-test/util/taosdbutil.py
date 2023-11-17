@@ -51,6 +51,53 @@ class TaosUtil(object):
         ret = self.__executeSql("select * from perf_test.machine_info where valid = 1")
         print(ret)
 
+    def select(self, database: str, table: str, target_info: list = None, condition_info: list = None, tag_info: list = None):
+        # 获取primary_key信息
+        final_condition_str = "where "
+
+        # 拼接普通查询条件
+        if condition_info:
+            for condition in condition_info:
+                condition_col_name = condition[0]
+                condition_col_value = condition[1]
+                condition_col_type = condition[2]
+
+                final_condition_str += "{0}={1} and ".format(condition_col_name,
+                                                        condition_col_value if condition_col_type == DBDataTypeEnum.int else "'{}'".format(
+                                                            condition_col_value))
+        # 拼接tag查询条件
+        if tag_info:
+            for condition in tag_info:
+                condition_tag_name = condition[0]
+                condition_tag_value = condition[1]
+                condition_tag_type = condition[2]
+
+                final_condition_str += "{0}={1} and ".format(condition_tag_name,
+                                                        condition_tag_value if condition_tag_type == DBDataTypeEnum.int else "'{}'".format(
+                                                            condition_tag_value))
+
+        # 删除最后的多余and字符
+        if condition_info or tag_info:
+            final_condition_str = final_condition_str[0: -4]
+
+        # 拼接查询返回列
+        final_target_str = "*"
+
+        if target_info:
+            final_target_str = ""
+
+        for condition in target_info:
+            final_target_str += condition
+
+
+        base_query_sql = "select {0} from {1}.{2} {3}".format(final_target_str, database, table, final_condition_str)
+
+        ret = self.__executeSql(base_query_sql)
+        if ret['code'] != 0:
+            print('执行sql失败')
+            return None
+
+        return ret["data"]
 
     def update(self, database: str, table: str, condition_info: list, value_info: list, tag_info: list = None):
         """
@@ -76,12 +123,16 @@ class TaosUtil(object):
         if primary_key_value is None or primary_key_name is None:
             print("primary key is invalid")
 
-        primary_key_value = primary_key_value if primary_key_type == DBDataTypeEnum.int else "'{}'".format(primary_key_value)
-        base_query_sql = "select create_time from {0}.{1} where {2}={3}".format(database, table, primary_key_name, primary_key_value)
+        # primary_key_value = primary_key_value if primary_key_type == DBDataTypeEnum.int else "'{}'".format(primary_key_value)
+        # base_query_sql = "select create_time from {0}.{1} where {2}={3}".format(database, table, primary_key_name, primary_key_value)
+        #
+        # ret = self.__executeSql(base_query_sql)
+        # print(ret["data"][0][0])
+        # create_time = ret["data"][0][0]
 
-        ret = self.__executeSql(base_query_sql)
-        print(ret["data"][0][0])
-        create_time = ret["data"][0][0]
+        target_info = ["create_time"]
+        ret = self.select(database=database, table=table, target_info=target_info, condition_info=condition_info, tag_info=tag_info)
+        create_time = ret[0][0]
 
         # 根据ts主键，通过insert方式达到update的效果
         value_info.append(("create_time", create_time, DBDataTypeEnum.timestamp))
