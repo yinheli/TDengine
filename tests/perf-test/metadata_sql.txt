@@ -1,0 +1,30 @@
+# 产品版本信息表
+create table product_version_info(create_time timestamp, pv_id int, product_version varchar(50), package_path varchar(200), valid int, update_time timestamp, comments varchar(500));
+
+# 机器信息表
+create table machine_info(create_time timestamp, cluster_id int, ip varchar(15), `leader` varchar(1), machine_statue varchar(10), cpu varchar(100), mem varchar(50), disk varchar(30), valid int, update_time timestamp, comments VARCHAR(500));
+
+# 测试类型表
+create table test_type(create_time timestamp, type_id int, type_name varchar(50), update_time timestamp,  comments VARCHAR(500));
+
+# 测试模板表
+create table test_templates(create_time timestamp, template_id int, template_name varchar(50), template_file varchar(100), update_time timestamp, comments VARCHAR(500));
+
+# 测试场景表
+create table scenario_type(create_time timestamp, scenario_id int, type_id int, scenario_name varchar(50), template_id int, update_time timestamp, comments VARCHAR(500));
+
+# 测试用例表
+create table test_case(create_time timestamp, tc_id int, tc_name varchar(100), scenario_id int, sql varchar(1000),update_time timestamp, comments VARCHAR(500));
+
+# 测试用例组表
+create table test_case_group(create_time timestamp, tcg_id int, tcg_name varchar(100), tc_id int, scenario_id int, valid int, update_time timestamp, comments VARCHAR(500));
+
+# job状态表
+create table job_status(create_time timestamp, js_id int, js_desc varchar(30),update_time timestamp, comments VARCHAR(500));
+
+# job基础信息表
+create table job_definition(create_time timestamp, jd_id int, js_id int, tc_id int, node_ids varchar(100), build_version varchar(50), build_branch varchar(50), taosd_cfg_diff varchar(200), taosd_cfg_path varchar(200), taosb_cfg_path varchar(200), tdengine_commit varchar(50), taos_tools_commit varchar(50)
+);
+
+# job运行结果表
+create stable job_details(create_time timestamp, jd_id int, start_time timestamp, end_time timestamp, time_cost varchar(30), write_speed varchar(30), min_delay varchar(30), p90_delay varchar(30), p95_delay varchar(30), p99_delay varchar(30), `max_delay` varchar(30), avg_delay varchar(30)) tags(build_branch varchar(50), build_version varchar(50),tc_id int);
