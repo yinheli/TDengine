@@ -4,6 +4,8 @@ from enum import Enum
 class DBDataTypeEnum(Enum):
     string = "string"
     int = "int"
+    varchar = "varchar"
+    timestamp = "timestamp"
 
 
 
