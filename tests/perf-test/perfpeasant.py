@@ -5,6 +5,7 @@ import insert_json
 import query_json
 import buildTD
 import configparser
+from installtaosdb import InstallTaosDB
 
 
 class PerfRunner(object):
@@ -37,19 +38,17 @@ class PerfRunner(object):
     def get_data_scale(self):
         return self.data_scale
 
-    def run(self):
+    def start(self):
         # 1.清理环境
 
         # 2.安装db
-        builder = buildTD.BuildTDengine(host=hostname)
-        builder.build()
-
-        # 查询最新的commit信息
-        cmd = f"cd {new_build.path} && git rev-parse --short @ "
-        self.commit_id = builder.get_cmd_output(cmd)
-
-        # 获取当前branch信息
-        self.branch = self.get_branch()
+        taosdbHandler = InstallTaosDB()
+        # 配置分支
+        taosdbHandler.set_branch(branch=self.branch)
+        # 配置数据量级
+        taosdbHandler.set_data_scale(scale=self.data_scale)
+        # 安装tdengine
+        taosdbHandler.install()
 
         # 3.执行taosBenchmark，运行性能测试用例
 

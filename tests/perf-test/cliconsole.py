@@ -97,7 +97,7 @@ def run_PerfTest_Backend(
             # 配置数据量级
             perftestHandler.set_data_scale(scale=data_scale)
             # 开始跑起来
-            perftestHandler.run()
+            perftestHandler.start()
 
 
 
