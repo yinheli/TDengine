@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from git import Repo
-from github import Github
 import requests
 
 
@@ -16,7 +14,7 @@ class GitLabApiException(Exception):
 class GitHubUtil(object):
     def __init__(self, repo_path: str = None):
 
-        self.branch_name_list = None
+        self.branch_name_list = []
         self.branches = None
 
         url = f"https://api.github.com/repos/{repo_path}/branches"
@@ -24,7 +22,7 @@ class GitHubUtil(object):
         self.branches = response.json()
         branch_name_list = []
         for branch in self.branches:
-            branch_name_list.append(branch['name'])
+            self.branch_name_list.append(branch['name'])
 
 
 
