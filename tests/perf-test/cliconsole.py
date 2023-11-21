@@ -12,7 +12,7 @@ from enums.DataScaleEnum import DataScaleEnum
 
 
 # 初始化日志处理
-def initLogger(loggerName: str, log_file: str):
+def initLogger(loggerName: str):
     # 初始化读取配置文件实例
     confile = os.path.join(os.path.dirname(__file__), "conf", "config.ini")
     cf = configparser.ConfigParser()
@@ -30,7 +30,7 @@ def initLogger(loggerName: str, log_file: str):
     LOG_FORMAT = "%(asctime)s - %(levelname)9s - %(message)s"
     logFormat = logging.Formatter(LOG_FORMAT)
 
-    file_handler = logging.FileHandler(perf_log_path + '/log.txt')
+    file_handler = logging.FileHandler(perf_log_path + '/perf_test.log')
     file_handler.setFormatter(logFormat)
     logger.addHandler(file_handler)
 
@@ -77,11 +77,15 @@ def cli(ctx, version):
 @click.option("--data-scale", "-s", type=str, required=False, default="mid", help="性能测试数据规模，暂支持3个级别：big、mid和tiny.", )
 @click.option("--interlace-rows", "-i", type=int, required=False, default=0, help="数据插入模式.默认为0", )
 @click.option("--stt-trigger", "-t", type=int, required=False, default=1, help="触发文件合并的落盘文件的个数.默认为1", )
+@click.option("--test-group", "-g", type=int, required=False,  help="测试组ID", )
+@click.option("--test-case", "-c", type=int, required=False, help="测试用例ID", )
 def run_PerfTest_Backend(
         branches: str,
         data_scale: str,
         interlace_rows: int,
-        stt_trigger: int
+        stt_trigger: int,
+        test_group: int,
+        test_case: int
 ):
 
     # 初始化配置文件读取实例
@@ -95,18 +99,21 @@ def run_PerfTest_Backend(
     perf_test_path = cf.get("machineconfig", "perf_test_path")
     perf_log_path = cf.get("machineconfig", "log_path")
     benchmark_path = cf.get("machineconfig", "benchmark_path")
-    github_path = cf.get("machineconfig", "github_path")
+    tdengine_path = cf.get("machineconfig", "tdengine_path")
     history_path = cf.get("machineconfig", "history_path")
 
-    if os.path.exists(perf_test_path):
-        os.system(f"rm -rf {perf_test_path}")
-    os.system(f"mkdir -p  {benchmark_path}")
-    os.system(f"mkdir -p  {github_path}")
-    os.system(f"mkdir -p  {history_path}")
-    os.system(f"mkdir -p  {perf_log_path}")
+    # if os.path.exists(perf_test_path):
+    #     os.system(f"rm -rf {perf_test_path}")
+    if os.path.exists(benchmark_path):
+        os.system(f"mkdir -p  {benchmark_path}")
+    # os.system(f"mkdir -p  {github_path}")
+    # os.system(f"mkdir -p  {history_path}")
+    if os.path.exists(perf_log_path):
+        os.system(f"mkdir -p  {perf_log_path}")
 
-    appLogger = initLogger("Performance_testing", perf_log_path + '/log.txt')
+    appLogger = initLogger("Performance_testing")
 
+    appLogger.info("")
     appLogger.info(
         '性能测试命令：cliconsole.py --branches {0} --data-scale {1} -interlace-rows {2} --stt-trigger {3}'.format(branches,
                                                                                                             data_scale,
@@ -127,37 +134,51 @@ def run_PerfTest_Backend(
 
     # 参数校验，若输入参数中有符合的数据规模参数，直接退出
     perf_test_scale = None
-    if data_scale.lower() == DataScaleEnum.tinyenv.name:
-        perf_test_scale = DataScaleEnum.tinyenv
-    elif data_scale.lower() == DataScaleEnum.midweight.name:
+    if data_scale.lower() == DataScaleEnum.tinyweight.value:
+        perf_test_scale = DataScaleEnum.tinyweight
+    elif data_scale.lower() == DataScaleEnum.midweight.value:
         perf_test_scale = DataScaleEnum.midweight
-    elif data_scale.lower() == DataScaleEnum.bigweight.name:
+    elif data_scale.lower() == DataScaleEnum.bigweight.value:
         perf_test_scale = DataScaleEnum.bigweight
     else:
         appLogger.error("输入的数据规模格式不对，正确格式：[big、mid、tiny]，实际输入：{0}".format(data_scale))
         exit(1)
 
     # 循环执行性能测试
-    while True:
-        # 轮询每个配置的分支，运行一次性能测试
-        for branch in branch_list:
-            # 初始化性能执行器
+    # while True:
+    # 轮询每个配置的分支，运行一次性能测试
+    for branch in branch_list:
+        # 初始化性能执行器
+        perfTester = Peasant(logger=appLogger)
 
-            perTester = Peasant(logger=appLogger)
+        # 配置分支
+        perfTester.set_branch(branch=branch)
 
-            # 配置分支
-            perTester.set_branch(branch=branch)
+        # 配置stt_trigger
+        perfTester.set_stt_trigger(stt_trigger=stt_trigger)
 
-            # 配置stt_trigger
-            perTester.set_stt_trigger(stt_trigger=stt_trigger)
+        # 配置interlace_rows
+        perfTester.set_interlace_rows(interlace_rows=interlace_rows)
 
-            # 配置interlace_rows
-            perTester.set_interlace_rows(interlace_rows=interlace_rows)
+        # 配置数据量级
+        perfTester.set_data_scale(scale=perf_test_scale)
 
-            # 配置数据量级
-            perTester.set_data_scale(scale=perf_test_scale)
-            # 开始跑起来
-            perTester.start()
+        # 清理环境
+        perfTester.clean_env()
+
+        # 安装db
+        perfTester.install_db()
+
+        # 插入数据
+        perfTester.insert_data()
+
+        # 若用户没有定义任何的测试用例，则执行完数据测试性能测试，直接结束
+        if not test_group or not test_case:
+            # 执行测试用例
+            perfTester.run_test_case()
+
+        
+        
 
 
 

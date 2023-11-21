@@ -84,13 +84,12 @@ create table job_definition(
     jd_id int,
     js_id int,
     tc_id int,
-    node_ids varchar(100),
-    build_version varchar(50),
-    build_branch varchar(50),
-    taosd_cfg_diff varchar(200),
-    taosd_cfg_path varchar(200),
-    taosb_cfg_path varchar(200),
-    tdengine_commit varchar(50),
+    cluster_id int,
+    commit_id varchar(50),
+    branch varchar(50),
+    pv_id int,
+    table_count int,
+    thread_num int,
     taos_tools_commit varchar(50),
     update_time timestamp);
 
@@ -109,5 +108,6 @@ create stable job_details(
     `max_delay` varchar(30),
     avg_delay varchar(30),
     update_time timestamp) tags(
-    build_branch varchar(50),
-    build_version varchar(50),tc_id int);
+    branch varchar(50),
+    data_scale varchar(50),
+    tc_id int);

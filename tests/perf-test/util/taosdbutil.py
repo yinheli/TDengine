@@ -7,7 +7,8 @@ from enums.DBDataTypeEnum import DBDataTypeEnum
 
 
 class TaosUtil(object):
-    def __init__(self):
+    def __init__(self, logger):
+        self.logger = logger
         self.user = None
         self.password = None
         self.database = None
@@ -38,12 +39,13 @@ class TaosUtil(object):
         if sql is None:
             return None
 
+        # self.logger.info('执行sql：{0}'.format(sql))
         ret = requests.post(self.base_url, headers=self.headers, data=sql.encode("utf-8"))
         data = json.loads(ret.text)
 
         if data['code'] != 0:
-            print(ret.text)
-
+            self.logger.error("执行SQL：{0}".format(sql))
+            self.logger.error("执行SQL失败，报错信息：{0}".format(ret.text))
         return data
 
 
@@ -51,50 +53,62 @@ class TaosUtil(object):
         ret = self.__executeSql("select * from perf_test.machine_info where valid = 1")
         print(ret)
 
-    def select(self, database: str, table: str, target_info: list = None, condition_info: list = None, tag_info: list = None):
-        # 获取primary_key信息
-        final_condition_str = "where "
+    def exec_sql(self, sql):
+        self.__executeSql(sql)
 
-        # 拼接普通查询条件
-        if condition_info:
-            for condition in condition_info:
-                condition_col_name = condition[0]
-                condition_col_value = condition[1]
-                condition_col_type = condition[2]
+    def select(self,
+               database: str,
+               table: str,
+               target_info: list = None,
+               condition_info: list = None,
+               tag_info: list = None):
 
-                final_condition_str += "{0}={1} and ".format(condition_col_name,
-                                                        condition_col_value if condition_col_type == DBDataTypeEnum.int else "'{}'".format(
-                                                            condition_col_value))
-        # 拼接tag查询条件
-        if tag_info:
-            for condition in tag_info:
-                condition_tag_name = condition[0]
-                condition_tag_value = condition[1]
-                condition_tag_type = condition[2]
+        if not target_info and not condition_info and not tag_info:
+            base_query_sql = "select * from {0}.{1}".format(database, table)
+        else:
+            final_condition_str = ""
+            # 拼接普通查询条件
+            if condition_info:
+                for condition in condition_info:
+                    condition_col_name = condition[0]
+                    condition_col_value = condition[1]
+                    condition_col_type = condition[2]
 
-                final_condition_str += "{0}={1} and ".format(condition_tag_name,
-                                                        condition_tag_value if condition_tag_type == DBDataTypeEnum.int else "'{}'".format(
-                                                            condition_tag_value))
+                    final_condition_str += "{0}={1} and ".format(condition_col_name,
+                                                            condition_col_value if condition_col_type == DBDataTypeEnum.int else "'{}'".format(
+                                                                condition_col_value))
+            # 拼接tag查询条件
+            if tag_info:
+                for condition in tag_info:
+                    condition_tag_name = condition[0]
+                    condition_tag_value = condition[1]
+                    condition_tag_type = condition[2]
 
-        # 删除最后的多余and字符
-        if condition_info or tag_info:
-            final_condition_str = final_condition_str[0: -4]
+                    final_condition_str += "{0}={1} and ".format(condition_tag_name,
+                                                            condition_tag_value if condition_tag_type == DBDataTypeEnum.int else "'{}'".format(
+                                                                condition_tag_value))
 
-        # 拼接查询返回列
-        final_target_str = "*"
+            # 删除最后的多余and字符
+            if condition_info or tag_info:
+                final_condition_str = " where {0}".format(final_condition_str)
+                final_condition_str = final_condition_str[0: -4]
 
-        if target_info:
-            final_target_str = ""
+            # 拼接查询返回列
+            final_target_str = "*"
 
-        for condition in target_info:
-            final_target_str += condition
+            if target_info:
+                final_target_str = ""
 
+                for condition in target_info:
+                    final_target_str += condition + ","
 
-        base_query_sql = "select {0} from {1}.{2} {3}".format(final_target_str, database, table, final_condition_str)
+                final_target_str = final_target_str[0: -1]
+
+            base_query_sql = "select {0} from {1}.{2} {3}".format(final_target_str, database, table,
+                                                                  final_condition_str)
 
         ret = self.__executeSql(base_query_sql)
         if ret['code'] != 0:
-            print('执行sql失败')
             return None
 
         return ret["data"]
@@ -159,7 +173,12 @@ class TaosUtil(object):
             column_type = value[2]
 
             column_content += column_name + ","
-            values_content += column_value if column_type == DBDataTypeEnum.int else "'{}',".format(column_value)
+            if column_type == DBDataTypeEnum.int:
+                values_content += "{},".format(column_value)
+            elif column_type == DBDataTypeEnum.timestamp and column_value == "now":
+                values_content += "{},".format(column_value)
+            else:
+                values_content += "'{}',".format(column_value)
 
         column_content += "update_time)"
         values_content += "now)"
@@ -176,7 +195,12 @@ class TaosUtil(object):
                 column_type = value[2]
 
                 column_content += column_name + ","
-                values_content += column_value if column_type == DBDataTypeEnum.int else "'{}',".format(column_value)
+                if column_type == DBDataTypeEnum.int:
+                    values_content += "{},".format(column_value)
+                elif column_type == DBDataTypeEnum.timestamp and column_value == "now":
+                    values_content += "{},".format(column_value)
+                else:
+                    values_content += "'{}',".format(column_value)
 
             column_content = column_content[0: -1]
             values_content = values_content[0: -1]
@@ -188,10 +212,10 @@ class TaosUtil(object):
 
         ret = self.__executeSql(insert_sql)
         if ret['code'] != 0:
-            print('执行sql失败')
-            return 1
+            self.logger.error('执行sql失败')
+            return False
 
-        return 0
+        return True
 
 
 
