@@ -7,7 +7,7 @@ import traceback
 import coloredlogs
 import click
 import configparser
-from util.githubutil import GitHubUtil
+import time
 from perfpeasant import Peasant
 from enums.DataScaleEnum import DataScaleEnum
 
@@ -157,17 +157,21 @@ def run_PerfTest_Backend(
 
             # 安装db
             perfTester.install_db()
-            #
-            # # 判断将要运行测试用例的分支最新commit是否有更新，若是数据库中存储的最新commit_id不等于当前的commit_id，则执行性能测试
-            # if not perfTester.is_last_commit(branch=branch, commit_id=perfTester.get_commit_id()):
-            #     # 插入数据
-            #     perfTester.insert_data()
-            #
-            #     # 执行查询
-            #     perfTester.run_test_case()
-            #
-            #     # 备份数据
-            #     perfTester.backup_test_case()
+
+            # 判断将要运行测试用例的分支最新commit是否有更新，若是数据库中存储的最新commit_id不等于当前的commit_id，则执行性能测试
+            if perfTester.is_last_commit(branch=branch, commit_id=perfTester.get_commit_id()):
+                appLogger.warning("没有更新的commit，sleep 5s")
+                time.sleep(5)
+                continue
+
+            # 插入数据
+            perfTester.insert_data()
+
+            # 执行查询
+            perfTester.run_test_case()
+
+            # 备份数据
+            perfTester.backup_test_case()
 
 
 @cli.command(help="关闭后台运行性能测试的服务，会确保正在运行的测试完成后才会停止服务")

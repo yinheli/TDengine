@@ -4,7 +4,7 @@ import configparser
 from enums.DBDataTypeEnum import DBDataTypeEnum
 from util.shellutil import CommandRunner
 from util.taosdbutil import TaosUtil
-
+import subprocess
 
 class InstallTaosDB(object):
     def __init__(self, logger):
@@ -82,13 +82,19 @@ class InstallTaosDB(object):
             self.__cmdHandler.run_command(path=self.__db_install_path, command="git checkout {0}".format(self.__branch))
             self.__cmdHandler.run_command(path=self.__db_install_path, command="git pull")
             self.__cmdHandler.run_command(path=self.__db_install_path,
-                                   command="sed -i ':a;N;$!ba;s/\(.*\)OFF/\\1ON/' {0}/cmake/cmake.options".format(
+                                   command="sed -i \':a;N;$!ba;s/\(.*\)OFF/\\1ON/\' {0}/cmake/cmake.options".format(
                                        self.__db_install_path))
             self.__cmdHandler.run_command(path=self.__db_install_path,
                                           command="mkdir -p {0}/debug".format(self.__db_install_path))
             self.__cmdHandler.run_command(path=self.__db_install_path,
                                           command="rm -rf {0}/debug/*".format(self.__db_install_path))
+
             self.__cmdHandler.run_command(path=self.__db_install_path + "/debug", command="cmake .. -DBUILD_TOOLS=true")
+
+            # Run the Bash script using subprocess
+            # self.__logger.info("run cmake.sh")
+            # subprocess.run(['bash', "./cmake.sh"] + ["{0}/debug".format(self.__db_install_path)], check=True)
+
             self.__cmdHandler.run_command(path=self.__db_install_path + "/debug", command="make -j 4")
             self.__cmdHandler.run_command(path=self.__db_install_path + "/debug", command="make install")
             self.__cmdHandler.run_command(path=self.__db_install_path + "/debug", command="systemctl start taosd")

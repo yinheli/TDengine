@@ -57,9 +57,6 @@ class Peasant(object):
     def get_test_group(self):
         return self.__test_group
 
-    def set_commit_id(self, commit_id: str):
-        self.__commit_id = commit_id
-
     def get_commit_id(self):
         return self.__commit_id
 
@@ -140,17 +137,16 @@ class Peasant(object):
         self.__logger.info("【完成运行测试用例】")
 
     def is_last_commit(self, branch: str, commit_id: str):
-        result = False
         base_sql = "select last(commit_id) from perf_test.test_results where branch = '{0}'".format(branch)
         ret = self.__taosbmHandler.exec_sql(base_sql)
 
         if ret['rows'] == 0:
-            result = False
+            return False
 
         if self.__commit_id == ret['data'][0][0]:
-            result = True
+            return True
 
-        return result
+        return True
 
 if __name__ == "__main__":
     peasantHandler = Peasant()
