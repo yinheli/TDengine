@@ -2,6 +2,7 @@
 import os
 import sys
 import logging
+from logging.handlers import TimedRotatingFileHandler
 import traceback
 import coloredlogs
 import click
@@ -18,7 +19,7 @@ def initLogger(loggerName: str):
     cf = configparser.ConfigParser()
     cf.read(confile, encoding='UTF-8')
 
-    perf_log_path = cf.get("machineconfig", "log_path")
+    perf_test_path = cf.get("machineconfig", "perf_test_path")
 
     # 开启日志记录
     logger = logging.getLogger(loggerName)
@@ -30,9 +31,18 @@ def initLogger(loggerName: str):
     LOG_FORMAT = "%(asctime)s - %(levelname)9s - %(message)s"
     logFormat = logging.Formatter(LOG_FORMAT)
 
-    file_handler = logging.FileHandler(perf_log_path + '/perf_test.log')
+    file_handler = logging.FileHandler(perf_test_path + '/perf_test.log')
     file_handler.setFormatter(logFormat)
     logger.addHandler(file_handler)
+
+    # 创建一个 handler，用于写入日志文件
+    # midnight: 表示日志文件在每天半夜时分滚动
+    # interval: 间隔时间单位的个数，指等待多少个 when 的时间后 Logger 会自动重建新闻继续进行日志记录
+    # backupCount: 表示日志文件的保留个数，假如为7，则会保留最近的7个日志文件
+    save_handler = TimedRotatingFileHandler("perf_test.log", when="midnight", interval=1, backupCount=7)
+    save_handler.suffix = "%Y-%m-%d"  # 设置日志文件名的时间戳格式
+
+    logger.addHandler(save_handler)
 
     consoleLogHandler = logging.StreamHandler()
     consoleLogHandler.setFormatter(logFormat)
@@ -63,6 +73,7 @@ def cli(ctx, version):
             return
         click.echo(ctx.get_help())
 
+
 # @cli.command(help="基于用户指定版本运行性能测试")
 # @click.option("--version", "-v", type=str, required=True, help="指定的产品版本号，用逗号分隔.", )
 # @click.option("--logfile", "-l", type=str, help="指定文件的日志位置.", )
@@ -73,21 +84,20 @@ def cli(ctx, version):
 #     pass
 
 @cli.command(help="启动一个后台服务，在服务中根据用户输入的分支信息，循环执行性能测试")
-@click.option("--branches", "-b", type=str, required=True, help="指定分支信息，用逗号分隔.", )
-@click.option("--data-scale", "-s", type=str, required=False, default="mid", help="性能测试数据规模，暂支持3个级别：big、mid和tiny.", )
+@click.option("--branches", "-b", type=str, required=True, help="指定分支信息，用逗号分隔", )
+@click.option("--data-scale", "-s", type=str, required=False, default="mid", help="性能测试数据规模，暂支持3个级别：big、mid和tiny", )
 @click.option("--interlace-rows", "-i", type=int, required=False, default=0, help="数据插入模式.默认为0", )
 @click.option("--stt-trigger", "-t", type=int, required=False, default=1, help="触发文件合并的落盘文件的个数.默认为1", )
-@click.option("--test-group", "-g", type=int, required=False,  help="测试组ID", )
-@click.option("--test-case", "-c", type=int, required=False, help="测试用例ID", )
+@click.option("--test-group", "-g", type=str, required=True, help="测试组文件名", )
+@click.option("--test-case", "-c", type=str, required=False, help="测试用例ID", )
 def run_PerfTest_Backend(
         branches: str,
         data_scale: str,
         interlace_rows: int,
         stt_trigger: int,
-        test_group: int,
-        test_case: int
+        test_group: str,
+        test_case: str
 ):
-
     # 初始化配置文件读取实例
     confile = os.path.join(os.path.dirname(__file__), "conf", "config.ini")
     cf = configparser.ConfigParser()
@@ -96,29 +106,14 @@ def run_PerfTest_Backend(
     # 获取github上对应repo的所有分支
     github_repo = "{0}/{1}".format(cf.get("github", "namespace"), cf.get("github", "project"))
 
-    perf_test_path = cf.get("machineconfig", "perf_test_path")
-    perf_log_path = cf.get("machineconfig", "log_path")
-    benchmark_path = cf.get("machineconfig", "benchmark_path")
-    tdengine_path = cf.get("machineconfig", "tdengine_path")
-    history_path = cf.get("machineconfig", "history_path")
-
-    # if os.path.exists(perf_test_path):
-    #     os.system(f"rm -rf {perf_test_path}")
-    if os.path.exists(benchmark_path):
-        os.system(f"mkdir -p  {benchmark_path}")
-    # os.system(f"mkdir -p  {github_path}")
-    # os.system(f"mkdir -p  {history_path}")
-    if os.path.exists(perf_log_path):
-        os.system(f"mkdir -p  {perf_log_path}")
-
     appLogger = initLogger("Performance_testing")
 
     appLogger.info("")
+    appLogger.info("【开始执行性能测试】")
     appLogger.info(
-        '性能测试命令：cliconsole.py --branches {0} --data-scale {1} -interlace-rows {2} --stt-trigger {3}'.format(branches,
-                                                                                                            data_scale,
-                                                                                                            interlace_rows,
-                                                                                                            stt_trigger))
+        '性能测试命令：cliconsole.py --branches {0} --data-scale {1} --test-group {2}'.format(branches,
+                                                                                       data_scale,
+                                                                                       test_group))
     # 解析branch参数
     # 参数校验，若输入参数中有不存在的分支，直接退出
     github = GitHubUtil(github_repo)
@@ -144,44 +139,43 @@ def run_PerfTest_Backend(
         appLogger.error("输入的数据规模格式不对，正确格式：[big、mid、tiny]，实际输入：{0}".format(data_scale))
         exit(1)
 
-    # 循环执行性能测试
-    # while True:
-    # 轮询每个配置的分支，运行一次性能测试
-    for branch in branch_list:
-        # 初始化性能执行器
-        perfTester = Peasant(logger=appLogger)
+    # 无限轮询
+    while True:
+        # 循环执行性能测试
+        # while True:
+        # 轮询每个配置的分支，运行一次性能测试
+        for branch in branch_list:
+            # 初始化性能执行器
+            perfTester = Peasant(logger=appLogger)
 
-        # 配置分支
-        perfTester.set_branch(branch=branch)
+            # 配置分支
+            perfTester.set_branch(branch=branch)
 
-        # 配置stt_trigger
-        perfTester.set_stt_trigger(stt_trigger=stt_trigger)
+            # 配置stt_trigger
+            perfTester.set_stt_trigger(stt_trigger=stt_trigger)
 
-        # 配置interlace_rows
-        perfTester.set_interlace_rows(interlace_rows=interlace_rows)
+            # 配置interlace_rows
+            perfTester.set_interlace_rows(interlace_rows=interlace_rows)
 
-        # 配置数据量级
-        perfTester.set_data_scale(scale=perf_test_scale)
+            # 配置数据量级
+            perfTester.set_data_scale(scale=perf_test_scale)
 
-        # 清理环境
-        perfTester.clean_env()
+            # 配置数据量级
+            perfTester.set_test_group(test_group=test_group)
 
-        # 安装db
-        perfTester.install_db()
+            # 清理环境
+            perfTester.clean_env()
 
-        # 插入数据
-        perfTester.insert_data()
+            # 安装db
+            perfTester.install_db()
 
-        # 若用户没有定义任何的测试用例，则执行完数据测试性能测试，直接结束
-        if not test_group or not test_case:
-            # 执行测试用例
+            # 插入数据
+            perfTester.insert_data()
+
+            # 执行查询
             perfTester.run_test_case()
-
-        
-        
-
-
-
+            # 备份数据
+            perfTester.backup_test_case()
 
 
 @cli.command(help="关闭后台运行性能测试的服务，会确保正在运行的测试完成后才会停止服务")
@@ -191,7 +185,6 @@ def abort_PerfTest_Backend(
 ):
     print(wait_for_finished)
     pass
-
 
 
 if __name__ == "__main__":

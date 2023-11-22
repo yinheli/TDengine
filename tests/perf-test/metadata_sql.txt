@@ -94,20 +94,19 @@ create table job_definition(
     update_time timestamp);
 
 # job运行结果表
-create stable job_details(
-    create_time timestamp,
-    jd_id int,
-    start_time timestamp,
+create stable test_results(
     end_time timestamp,
     time_cost varchar(30),
     write_speed varchar(30),
+    qps varchar(30),
     min_delay varchar(30),
     p90_delay varchar(30),
     p95_delay varchar(30),
     p99_delay varchar(30),
     `max_delay` varchar(30),
     avg_delay varchar(30),
-    update_time timestamp) tags(
+    hostname varchar(15),
+    commit_id varchar(50)) tags(
     branch varchar(50),
     data_scale varchar(50),
-    tc_id int);
+    tc_desc varchar(1000));

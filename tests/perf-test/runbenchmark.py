@@ -1,15 +1,15 @@
 import os
 import configparser
 from enums.DataScaleEnum import DataScaleEnum
-from util.templateUtil import InsertTemplate, QueryTemplate
 from util.shellutil import CommandRunner
-from enums.DBDataTypeEnum import DBDataTypeEnum
 from util.taosdbutil import TaosUtil
+import socket
 
 
 class TaosBenchmarkRunner(object):
     def __init__(self, logger):
         # 日志信息
+        self.__test_group = None
         self.__stt_trigger = None
         self.__data_scale = None
         self.__interlace_rows = None
@@ -26,8 +26,12 @@ class TaosBenchmarkRunner(object):
 
         self.__db_install_path = self.__cf.get("machineconfig", "tdengine_path")
         self.__perf_test_path = self.__cf.get("machineconfig", "perf_test_path")
+        self.__log_path = self.__cf.get("machineconfig", "log_path")
+        self.__test_case_path = self.__cf.get("machineconfig", "test_case_path")
 
         self.__taosbmHandler = TaosUtil(self.__logger)
+
+        self.__cmdHandler = CommandRunner(self.__logger)
 
     def set_interlace_rows(self, interlace_rows: str):
         self.__interlace_rows = interlace_rows
@@ -41,6 +45,24 @@ class TaosBenchmarkRunner(object):
     def get_data_scale(self):
         return self.__data_scale
 
+    def set_branch(self, branch: str):
+        self.__branch = branch
+
+    def get_branch(self):
+        return self.__branch
+
+    def set_test_group(self, test_group: str):
+        self.__test_group = test_group
+
+    def get_test_group(self):
+        return self.__test_group
+
+    def set_commit_id(self, commit_id: str):
+        self.__commit_id = commit_id
+
+    def get_commit_id(self):
+        return self.__commit_id
+
     def set_stt_trigger(self, stt_trigger: str):
         self.__stt_trigger = stt_trigger
 
@@ -48,62 +70,96 @@ class TaosBenchmarkRunner(object):
         return self.__stt_trigger
 
     def insert_data(self):
-        insertTempHandler = InsertTemplate(data_scale=self.__data_scale, interlace_rows=self.__interlace_rows,
-                                           stt_trigger=self.__stt_trigger)
-        # 执行TaosBenchmark
-        # cmdHandler = CommandRunner(self.__logger)
-        # cmdHandler.run_command(path=self.__db_install_path, command=f"taosBenchmark -f {insertTempHandler.create_file()}")
+        # query_json_file = "tests/perf-test/test_cases/query1.json"
+        if not self.__test_group:
+            self.__logger.error("Test Group is not defined!")
+            return
 
-        # 收集性能数据
-        with open("/root/perftest/benchmark/insert_2023-11-21-1450.log", 'r') as f:
-            # with open(insertTempHandler.get_insert_json_file(), 'r') as f:
-            lines = f.readlines()
-            last_2_line = lines[-2].split(' ')
-            time_cost = last_2_line[4] + "s"
-            write_speed = last_2_line[15] + " records/second"
+        test_group_file = os.path.join(self.__test_case_path, self.__test_group)
+        cfHandler = configparser.ConfigParser()
+        cfHandler.read(test_group_file, encoding='UTF-8')
 
-            last_1_line = lines[-1].split(',')
-            min = last_1_line[1].strip().split(':')[1]
-            avg = last_1_line[2].strip().split(':')[1]
-            p90 = last_1_line[3].strip().split(':')[1]
-            p95 = last_1_line[4].strip().split(':')[1]
-            p99 = last_1_line[5].strip().split(':')[1]
-            max = last_1_line[6].strip().split(':')[1]
+        insert_case_list = cfHandler.options(section="insert_case")
 
-            f.close()
+        # 轮询执行TaosBenchmark
+        for insert_case in insert_case_list:
+            insert_json_file = cfHandler.get(section="insert_case", option=str(insert_case))
 
+            # 执行TaosBenchmark
+            cmdHandler = CommandRunner(self.__logger)
+            cmdHandler.run_command(path=self.__perf_test_path, command="taosBenchmark -f {0}/{1}".format(self.__test_case_path, insert_json_file))
 
-        # 写入数据库
-        # 1.获取当前的JOB_ID
-        job_id = ""
-        with open("{0}/current_job_id.txt".format(self.__perf_test_path), 'r') as f:
-            job_id = f.readline().strip()
-            f.close()
-        if job_id == "":
-            self.__logger.error("获取JOB_ID失败，跳过当前任务，进入下一个job")
-            return None
+            # 收集性能数据
+            with open("{0}/insert_result.txt".format(self.__log_path), 'r') as f:
+                # with open(insertTempHandler.get_insert_json_file(), 'r') as f:
+                lines = f.readlines()
+                last_2_line = lines[-2].split(' ')
+                time_cost = last_2_line[4] + "s"
+                write_speed = last_2_line[15] + " records/second"
 
-        # 2.判断当前branch是否有子表，没有子表的话新创建一张子表
-        tag_info = [("build_branch", self.__branch, DBDataTypeEnum.string)]
-        ret = self.__taosbmHandler.select(database="perf_test", table="job_details", tag_info=tag_info)
-        if not ret:
-            sub_table_name = "sub_table_" + self.__branch.replace(".", "_")
-            self.__logger.warn("对应分支 {0} 的子表不存在，新创建子表 {1}".format(self.__branch, sub_table_name))
-            self.__taosbmHandler.exec_sql(
-                "create table perf_test.{0} using perf_test.job_details (build_branch, data_scale) tags ('{1}', '{2}')".format(
-                    sub_table_name, self.__branch, self.__data_scale.value))
-            self.__logger.info("对应分支 {0} 的子表 {1} 创建成功".format(self.__branch, sub_table_name))
-        self.__logger.info("当前JOB_ID : [{0}]".format(job_id))
+                last_1_line = lines[-1].split(',')
+                min = last_1_line[1].strip()
+                avg = last_1_line[2].strip()
+                p90 = last_1_line[3].strip()
+                p95 = last_1_line[4].strip()
+                p99 = last_1_line[5].strip()
+                max = last_1_line[6].strip()
 
-        # 2.往子表中插入性能数据
-        # 定义表名：st_[branch]_[data_scale]
-        sub_table_name = "st_{0}_{1}".format(self.__branch)
-        value_info = [("commit_id", self.__commit_id, DBDataTypeEnum.string)]
-        condition_info = [("jd_id", str(job_id), DBDataTypeEnum.int)]
-        self.__taosbmHandler.update(database="perf_test",
-                                  table="job_definition",
-                                  value_info=value_info,
-                                  condition_info=condition_info)
+                f.close()
 
+            # 写入数据库
+            # 定义表名：st_[branch]_[data_scale]
+            sub_table_name = "st_{0}_{1}".format(self.__branch, self.__data_scale.value)
+
+            base_sql = "insert into perf_test.{0} using perf_test.test_results (branch, data_scale, tc_desc) tags ('{1}', '{2}', '{3}') values " \
+                       "(now, '{4}', '{5}', '{6}', '{7}', '{8}', '{9}', '{10}', '{11}', '{12}', '{13}', '{14}')".format(
+                sub_table_name, self.__branch, self.__data_scale.value, insert_json_file, time_cost, write_speed, "", min, p90,
+                p95, p99, max, avg, socket.gethostname(), self.__commit_id)
+            self.__taosbmHandler.exec_sql(base_sql)
+
+    def run_test_case(self):
+        # query_json_file = "tests/perf-test/test_cases/query1.json"
+        if not self.__test_group:
+            self.__logger.error("Test Group is not defined!")
+            return
+
+        test_group_file = os.path.join(self.__test_case_path, self.__test_group)
+        cfHandler = configparser.ConfigParser()
+        cfHandler.read(test_group_file, encoding='UTF-8')
+
+        query_case_list = cfHandler.options(section="query_case")
+
+        # 轮询执行TaosBenchmark
+        for query_case in query_case_list:
+
+            query_json_file = cfHandler.get(section="query_case", option=str(query_case))
+            self.__cmdHandler.run_command(path=self.__perf_test_path, command="taosBenchmark -f {0}/{1}".format(self.__test_case_path, query_json_file))
+
+            # 收集性能数据
+            with open("{0}/output.txt".format(self.__perf_test_path), 'r') as f:
+                # with open(insertTempHandler.get_insert_json_file(), 'r') as f:
+                lines = f.readlines()
+                last_1_line = lines[-3].split(' ')
+                min = last_1_line[12].strip()
+                avg = last_1_line[10].strip()
+                p90 = last_1_line[16].strip()
+                p95 = last_1_line[18].strip()
+                p99 = last_1_line[20].strip()
+                max = last_1_line[14].strip()
+
+                last_2_line = lines[-2].split(' ')
+                time_cost = last_2_line[4].strip() + "s"
+                QPS = last_2_line[-1].strip()
+                f.close()
+
+            # 写入数据库
+            # 定义表名：st_[branch]_[data_scale]_[json_file_name]
+            sub_table_name = "st_{0}_{1}_{2}".format(self.__branch, self.__data_scale.value, query_json_file.split('.')[0])
+
+            base_sql = "insert into perf_test.{0} using perf_test.test_results (branch, data_scale, tc_desc) tags ('{1}', '{2}', '{3}') values " \
+                       "(now, '{4}', '{5}', '{6}', '{7}', '{8}', '{9}', '{10}', '{11}', '{12}', '{13}', '{14}')".format(
+                sub_table_name, self.__branch, self.__data_scale.value, query_json_file, time_cost, "", QPS, min, p90,
+                p95, p99, max, avg, socket.gethostname(), self.__commit_id)
+            self.__taosbmHandler.exec_sql(base_sql)
 if __name__ == "__main__":
     pass
