@@ -54,7 +54,7 @@ class TaosUtil(object):
         print(ret)
 
     def exec_sql(self, sql):
-        self.__executeSql(sql)
+        return self.__executeSql(sql)
 
     def select(self,
                database: str,

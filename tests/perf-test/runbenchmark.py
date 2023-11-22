@@ -109,7 +109,7 @@ class TaosBenchmarkRunner(object):
 
             # 写入数据库
             # 定义表名：st_[branch]_[data_scale]
-            sub_table_name = "st_{0}_{1}".format(self.__branch, self.__data_scale.value)
+            sub_table_name = "st_{0}_{1}".format(self.__branch, self.__data_scale.value).replace('.', '_')
 
             base_sql = "insert into perf_test.{0} using perf_test.test_results (branch, data_scale, tc_desc) tags ('{1}', '{2}', '{3}') values " \
                        "(now, '{4}', '{5}', '{6}', '{7}', '{8}', '{9}', '{10}', '{11}', '{12}', '{13}', '{14}')".format(
@@ -133,11 +133,12 @@ class TaosBenchmarkRunner(object):
         for query_case in query_case_list:
 
             query_json_file = cfHandler.get(section="query_case", option=str(query_case))
-            self.__cmdHandler.run_command(path=self.__perf_test_path, command="taosBenchmark -f {0}/{1}".format(self.__test_case_path, query_json_file))
+            self.__cmdHandler.run_command(path=self.__perf_test_path,
+                                          command="taosBenchmark -f {0}/{1}".format(self.__test_case_path,
+                                                                                    query_json_file))
 
             # 收集性能数据
             with open("{0}/output.txt".format(self.__perf_test_path), 'r') as f:
-                # with open(insertTempHandler.get_insert_json_file(), 'r') as f:
                 lines = f.readlines()
                 last_1_line = lines[-3].split(' ')
                 min = last_1_line[12].strip()
@@ -154,7 +155,8 @@ class TaosBenchmarkRunner(object):
 
             # 写入数据库
             # 定义表名：st_[branch]_[data_scale]_[json_file_name]
-            sub_table_name = "st_{0}_{1}_{2}".format(self.__branch, self.__data_scale.value, query_json_file.split('.')[0])
+            sub_table_name = "st_{0}_{1}_{2}".format(self.__branch, self.__data_scale.value,
+                                                     query_json_file.split('.')[0]).replace('.', '_')
 
             base_sql = "insert into perf_test.{0} using perf_test.test_results (branch, data_scale, tc_desc) tags ('{1}', '{2}', '{3}') values " \
                        "(now, '{4}', '{5}', '{6}', '{7}', '{8}', '{9}', '{10}', '{11}', '{12}', '{13}', '{14}')".format(

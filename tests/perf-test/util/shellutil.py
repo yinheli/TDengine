@@ -6,13 +6,6 @@ class CommandRunner(object):
         # 日志信息
         self.__logger = logger
 
-        # 初始化读取配置文件实例
-        # confile = os.path.join(os.path.dirname(__file__), "conf", "config.ini")
-        # self.cf = configparser.ConfigParser()
-        # self.cf.read(confile, encoding='UTF-8')
-        #
-        # self.db_install_path = self.cf.get("machineconfig", "tdengine_path")
-
     def run_command(self, path: str, command: str):
         try:
             # Run the Bash script using subprocess

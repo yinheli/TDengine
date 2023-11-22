@@ -86,15 +86,11 @@ def cli(ctx, version):
 @cli.command(help="启动一个后台服务，在服务中根据用户输入的分支信息，循环执行性能测试")
 @click.option("--branches", "-b", type=str, required=True, help="指定分支信息，用逗号分隔", )
 @click.option("--data-scale", "-s", type=str, required=False, default="mid", help="性能测试数据规模，暂支持3个级别：big、mid和tiny", )
-@click.option("--interlace-rows", "-i", type=int, required=False, default=0, help="数据插入模式.默认为0", )
-@click.option("--stt-trigger", "-t", type=int, required=False, default=1, help="触发文件合并的落盘文件的个数.默认为1", )
 @click.option("--test-group", "-g", type=str, required=True, help="测试组文件名", )
 @click.option("--test-case", "-c", type=str, required=False, help="测试用例ID", )
 def run_PerfTest_Backend(
         branches: str,
         data_scale: str,
-        interlace_rows: int,
-        stt_trigger: int,
         test_group: str,
         test_case: str
 ):
@@ -102,9 +98,6 @@ def run_PerfTest_Backend(
     confile = os.path.join(os.path.dirname(__file__), "conf", "config.ini")
     cf = configparser.ConfigParser()
     cf.read(confile, encoding='UTF-8')
-
-    # 获取github上对应repo的所有分支
-    github_repo = "{0}/{1}".format(cf.get("github", "namespace"), cf.get("github", "project"))
 
     appLogger = initLogger("Performance_testing")
 
@@ -116,16 +109,18 @@ def run_PerfTest_Backend(
                                                                                        test_group))
     # 解析branch参数
     # 参数校验，若输入参数中有不存在的分支，直接退出
-    github = GitHubUtil(github_repo)
-    current_branches = github.get_branches()
-
+    # 获取github上对应repo的所有分支
+    # github_repo = "{0}/{1}".format(cf.get("github", "namespace"), cf.get("github", "project"))
+    # github = GitHubUtil(github_repo)
+    # current_branches = github.get_branches()
+    #
     branch_list = branches.split(',')
-    for branch in branch_list:
-        if branch == "main":
-            continue
-        if branch not in current_branches:
-            appLogger.error('输入分支不存在，分支名称：{0}'.format(branch))
-            exit(1)
+    # for branch in branch_list:
+    #     if branch == "main":
+    #         continue
+    #     if branch not in current_branches:
+    #         appLogger.error('输入分支不存在，分支名称：{0}'.format(branch))
+    #         exit(1)
 
     # 参数校验，若输入参数中有符合的数据规模参数，直接退出
     perf_test_scale = None
@@ -151,12 +146,6 @@ def run_PerfTest_Backend(
             # 配置分支
             perfTester.set_branch(branch=branch)
 
-            # 配置stt_trigger
-            perfTester.set_stt_trigger(stt_trigger=stt_trigger)
-
-            # 配置interlace_rows
-            perfTester.set_interlace_rows(interlace_rows=interlace_rows)
-
             # 配置数据量级
             perfTester.set_data_scale(scale=perf_test_scale)
 
@@ -168,14 +157,17 @@ def run_PerfTest_Backend(
 
             # 安装db
             perfTester.install_db()
-
-            # 插入数据
-            perfTester.insert_data()
-
-            # 执行查询
-            perfTester.run_test_case()
-            # 备份数据
-            perfTester.backup_test_case()
+            #
+            # # 判断将要运行测试用例的分支最新commit是否有更新，若是数据库中存储的最新commit_id不等于当前的commit_id，则执行性能测试
+            # if not perfTester.is_last_commit(branch=branch, commit_id=perfTester.get_commit_id()):
+            #     # 插入数据
+            #     perfTester.insert_data()
+            #
+            #     # 执行查询
+            #     perfTester.run_test_case()
+            #
+            #     # 备份数据
+            #     perfTester.backup_test_case()
 
 
 @cli.command(help="关闭后台运行性能测试的服务，会确保正在运行的测试完成后才会停止服务")
