@@ -1,0 +1,16 @@
+[insert_case]
+1=insert.json
+
+[query_case]
+1=query1.json
+2=query2.json
+3=query3.json
+4=query4.json
+5=query5.json
+6=query6.json
+7=query7.json
+8=query8.json
+9=query9.json
+10=query10.json
+11=query11.json
+12=query12.json
