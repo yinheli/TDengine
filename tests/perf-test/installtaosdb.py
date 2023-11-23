@@ -72,7 +72,7 @@ class InstallTaosDB(object):
 
             # 判断DB的源代码本地是否存在，若不存在，git clone到本地
             if not os.path.exists(os.path.join(self.__db_install_path, "build.sh")):
-                self.__logger.info("本地没有测试代码，clone产品代码到本地：[{0}]".format(self.__tdengine_path))
+                self.__logger.info("本地没有测试代码，clone产品代码到本地：[{0}]".format(self.__db_install_path))
                 if os.path.exists(os.path.join(self.__db_install_path)):
                     self.__cmdHandler.run_command(path=self.__perf_test_path,
                                                   command="rm -rf {0}".format(self.__db_install_path))
