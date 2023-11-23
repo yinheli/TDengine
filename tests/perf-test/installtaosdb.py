@@ -25,6 +25,7 @@ class InstallTaosDB(object):
 
         self.__db_install_path = self.__cf.get("machineconfig", "tdengine_path")
         self.__perf_test_path = self.__cf.get("machineconfig", "perf_test_path")
+        self.__db_clone_address = self.__cf.get("github", "db_clone_address")
 
         self.__cmdHandler = CommandRunner(self.__logger)
 
@@ -45,7 +46,7 @@ class InstallTaosDB(object):
         self.__commit_id = stdout
         return self.__commit_id
 
-    def install(self):
+    def download(self):
         # 安装db
         try:
             self.__logger.info("代码Branch  : [{0}]".format(self.__branch))
@@ -71,16 +72,25 @@ class InstallTaosDB(object):
 
             # 判断DB的源代码本地是否存在，若不存在，git clone到本地
             if not os.path.exists(os.path.join(self.__db_install_path, "build.sh")):
+                self.__logger.info("本地没有测试代码，clone产品代码到本地：[{0}]".format(self.__tdengine_path))
                 if os.path.exists(os.path.join(self.__db_install_path)):
                     self.__cmdHandler.run_command(path=self.__perf_test_path,
                                                   command="rm -rf {0}".format(self.__db_install_path))
                 self.__cmdHandler.run_command(path=self.__perf_test_path,
-                                              command="git clone git@github.com:taosdata/TDengine.git")
+                                              command="git clone {0}".format(self.__db_clone_address))
 
             self.__cmdHandler.run_command(path=self.__db_install_path, command="git reset --hard HEAD")
             self.__cmdHandler.run_command(path=self.__db_install_path, command="git checkout -- .")
             self.__cmdHandler.run_command(path=self.__db_install_path, command="git checkout {0}".format(self.__branch))
             self.__cmdHandler.run_command(path=self.__db_install_path, command="git pull")
+
+            self.__logger.info("TDengine download successfully.")
+        except Exception as e:
+            self.__logger.error(f"Error running Bash script: {e}")
+
+    def install(self):
+        # 安装db
+        try:
             self.__cmdHandler.run_command(path=self.__db_install_path,
                                    command="sed -i \':a;N;$!ba;s/\(.*\)OFF/\\1ON/\' {0}/cmake/cmake.options".format(
                                        self.__db_install_path))

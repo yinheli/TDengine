@@ -9,7 +9,7 @@ class CommandRunner(object):
     def run_command(self, path: str, command: str):
         try:
             # Run the Bash script using subprocess
-            self.__logger.info("执行命令：'{0}'".format(command))
+            self.__logger.info("路径 [{1}] 下执行命令：'{0}'".format(command, path))
             # result = subprocess.run(command, check=True,  cwd=path, stdout=subprocess.PIPE)
             result = subprocess.run(command, check=True, shell=True, cwd=path, stdout=subprocess.PIPE)
 

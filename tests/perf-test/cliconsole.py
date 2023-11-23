@@ -152,17 +152,23 @@ def run_PerfTest_Backend(
             # 配置数据量级
             perfTester.set_test_group(test_group=test_group)
 
+            appLogger.warning("")
+            appLogger.warning("*** 开始在分支 [{}] 执行测试用例 ***".format(branch))
+
             # 清理环境
             perfTester.clean_env()
 
-            # 安装db
-            perfTester.install_db()
+            # 下载db源代码
+            perfTester.download_db()
 
             # 判断将要运行测试用例的分支最新commit是否有更新，若是数据库中存储的最新commit_id不等于当前的commit_id，则执行性能测试
-            if perfTester.is_last_commit(branch=branch, commit_id=perfTester.get_commit_id()):
-                appLogger.warning("没有更新的commit，sleep 5s")
+            if perfTester.is_last_commit(branch=branch):
+                appLogger.warning("分支代码没有更新，sleep 5s")
                 time.sleep(5)
                 continue
+
+            # 安装db
+            perfTester.install_db()
 
             # 插入数据
             perfTester.insert_data()

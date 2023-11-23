@@ -32,6 +32,7 @@ class Peasant(object):
         self.__benchmark_path = self.__cf.get("machineconfig", "benchmark_path")
         self.__tdengine_path = self.__cf.get("machineconfig", "tdengine_path")
         self.__log_path = self.__cf.get("machineconfig", "log_path")
+        self.__db_clone_address = self.__cf.get("github", "db_clone_address")
 
         self.__test_case_path = "test_case_{0}".format(time.time())
 
@@ -78,10 +79,12 @@ class Peasant(object):
         self.__logger.info("【完成初始化环境】")
 
     def backup_test_case(self):
+        self.__logger.info("【开始备份数据】")
+        self.__logger.info("数据路目录: [{0}]".format(self.__test_case_path))
         self.__cmdHandler.run_command(path=self.__perf_test_path, command="mkdir -p {0}".format(self.__test_case_path))
         self.__cmdHandler.run_command(path=self.__perf_test_path, command="cp -r log {0}".format(self.__test_case_path))
         self.__cmdHandler.run_command(path=self.__perf_test_path, command="cp output.txt {0}".format(self.__test_case_path))
-
+        self.__logger.info("【完成备份数据】")
     def install_db(self):
         self.__logger.info("【开始安装TDengine】")
         # 安装db
@@ -93,6 +96,18 @@ class Peasant(object):
         
         self.__commit_id = taosdbHandler.get_commit_id()
         self.__logger.info("【完成安装TDengine】")
+
+    def download_db(self):
+        self.__logger.info("【开始下载TDengine源代码】")
+        # 安装db
+        taosdbHandler = InstallTaosDB(logger=self.__logger)
+        # 配置分支
+        taosdbHandler.set_branch(branch=self.__branch)
+        # 安装tdengine
+        taosdbHandler.download()
+
+        self.__commit_id = taosdbHandler.get_commit_id()
+        self.__logger.info("【完成下载TDengine源代码】")
 
     def insert_data(self):
         self.__logger.info("【开始插入数据】")
@@ -136,17 +151,25 @@ class Peasant(object):
 
         self.__logger.info("【完成运行测试用例】")
 
-    def is_last_commit(self, branch: str, commit_id: str):
+    def is_last_commit(self, branch: str):
+        self.__logger.info("判断当前分支的commit ID是否已有性能数据，若有的话，不在重复执行性能测试用例")
         base_sql = "select last(commit_id) from perf_test.test_results where branch = '{0}'".format(branch)
         ret = self.__taosbmHandler.exec_sql(base_sql)
-
         if ret['rows'] == 0:
+            self.__logger.info("当前分支没有性能测试数据，直接运行性能测试")
             return False
 
-        if self.__commit_id == ret['data'][0][0]:
+        last_commit_id = ret['data'][0][0]
+
+        # 获取当前分支最新的commit_id
+        git_commit_id = self.__cmdHandler.run_command(path=self.__tdengine_path, command="git rev-parse --short @")
+
+        self.__logger.info(
+            "当前分支 [{0}]的最新commit_id为 [{1}]，性能数据历史最新的commit_id为 [{2}]".format(branch, git_commit_id, last_commit_id))
+        if git_commit_id == last_commit_id:
             return True
 
-        return True
+        return False
 
 if __name__ == "__main__":
     peasantHandler = Peasant()
