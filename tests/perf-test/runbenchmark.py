@@ -33,6 +33,8 @@ class TaosBenchmarkRunner(object):
 
         self.__cmdHandler = CommandRunner(self.__logger)
 
+        self.__local_test_case_path = os.path.join(os.path.dirname(__file__), "test_cases")
+
     def set_interlace_rows(self, interlace_rows: str):
         self.__interlace_rows = interlace_rows
 
@@ -75,7 +77,7 @@ class TaosBenchmarkRunner(object):
             self.__logger.error("Test Group is not defined!")
             return
 
-        test_group_file = os.path.join(self.__test_case_path, self.__test_group)
+        test_group_file = os.path.join(self.__local_test_case_path, self.__test_group)
         cfHandler = configparser.ConfigParser()
         cfHandler.read(test_group_file, encoding='UTF-8')
 
@@ -87,7 +89,7 @@ class TaosBenchmarkRunner(object):
 
             # 执行TaosBenchmark
             cmdHandler = CommandRunner(self.__logger)
-            cmdHandler.run_command(path=self.__perf_test_path, command="taosBenchmark -f {0}/{1}".format(self.__test_case_path, insert_json_file))
+            cmdHandler.run_command(path=self.__perf_test_path, command="taosBenchmark -f {0}/{1}".format(self.__local_test_case_path, insert_json_file))
 
             # 收集性能数据
             with open("{0}/insert_result.txt".format(self.__log_path), 'r') as f:
@@ -123,7 +125,7 @@ class TaosBenchmarkRunner(object):
             self.__logger.error("Test Group is not defined!")
             return
 
-        test_group_file = os.path.join(self.__test_case_path, self.__test_group)
+        test_group_file = os.path.join(self.__local_test_case_path, self.__test_group)
         cfHandler = configparser.ConfigParser()
         cfHandler.read(test_group_file, encoding='UTF-8')
 
@@ -134,7 +136,7 @@ class TaosBenchmarkRunner(object):
 
             query_json_file = cfHandler.get(section="query_case", option=str(query_case))
             self.__cmdHandler.run_command(path=self.__perf_test_path,
-                                          command="taosBenchmark -f {0}/{1}".format(self.__test_case_path,
+                                          command="taosBenchmark -f {0}/{1}".format(self.__local_test_case_path,
                                                                                     query_json_file))
 
             # 收集性能数据
