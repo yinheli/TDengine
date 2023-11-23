@@ -1,5 +1,5 @@
 import os
-import socket
+import time
 import configparser
 from runbenchmark import TaosBenchmarkRunner
 from enums.DataScaleEnum import DataScaleEnum
@@ -62,10 +62,10 @@ class Peasant(object):
         return self.__commit_id
 
     def clean_env(self):
-        self.__logger.info("【开始初始化环境】")
+        self.__logger.info("【初始化环境】")
 
-        self.__logger.info("初始化工作目录")
         if not os.path.exists(self.__tdengine_path):
+            self.__logger.info("初始化工作目录")
             self.__cmdHandler.run_command(path=self.__perf_test_path, command="mkdir -p {0}".format(self.__tdengine_path))
 
         # 清除benchmark历史日志文件
@@ -94,7 +94,7 @@ class Peasant(object):
         self.__cmdHandler.run_command(path=self.__perf_test_path, command="cp output.txt {0}".format(self.__test_case_path))
         self.__logger.info("【完成备份数据】")
     def install_db(self):
-        self.__logger.info("【开始安装TDengine】")
+        self.__logger.info("【安装TDengine】")
         # 安装db
         taosdbHandler = InstallTaosDB(logger=self.__logger)
         # 配置分支
@@ -103,10 +103,11 @@ class Peasant(object):
         taosdbHandler.install()
         
         self.__commit_id = taosdbHandler.get_commit_id()
+        time.sleep(5)
         self.__logger.info("【完成安装TDengine】")
 
     def download_db(self):
-        self.__logger.info("【开始下载TDengine源代码】")
+        self.__logger.info("【下载TDengine源代码】")
         # 安装db
         taosdbHandler = InstallTaosDB(logger=self.__logger)
         # 配置分支
@@ -118,7 +119,7 @@ class Peasant(object):
         self.__logger.info("【完成下载TDengine源代码】")
 
     def insert_data(self):
-        self.__logger.info("【开始插入数据】")
+        self.__logger.info("【插入数据】")
         # 执行taosBenchmark，运行性能测试用例
         # commit_id = taosdbHandler.get_commit_id()
         taosbmHandller = TaosBenchmarkRunner(logger=self.__logger)
@@ -139,7 +140,7 @@ class Peasant(object):
         self.__logger.info("【完成插入数据】")
 
     def run_test_case(self):
-        self.__logger.info("【开始运行测试用例】")
+        self.__logger.info("【运行测试用例】")
         # 执行taosBenchmark，运行性能测试用例
         # commit_id = taosdbHandler.get_commit_id()
         taosbmHandller = TaosBenchmarkRunner(logger=self.__logger)
