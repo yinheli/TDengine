@@ -64,17 +64,25 @@ class Peasant(object):
     def clean_env(self):
         self.__logger.info("【开始初始化环境】")
 
-
+        self.__logger.info("初始化工作目录")
         if not os.path.exists(self.__tdengine_path):
             self.__cmdHandler.run_command(path=self.__perf_test_path, command="mkdir -p {0}".format(self.__tdengine_path))
 
         # 清除benchmark历史日志文件
+        self.__logger.info("清除benchmark历史日志文件")
         self.__cmdHandler.run_command(path=self.__perf_test_path, command="rm -f {0}".format("output.txt"))
 
         # 清空log_path
+        self.__logger.info("清空log_path")
         if os.path.exists(self.__log_path):
             self.__cmdHandler.run_command(path=self.__perf_test_path, command="rm -rf {0}".format(self.__log_path))
         self.__cmdHandler.run_command(path=self.__perf_test_path, command="mkdir -p {0}".format(self.__log_path))
+
+        # 清除taosd本地残留文件
+        self.__logger.info("清除taosd本地残留文件")
+        self.__cmdHandler.run_command(path=self.__perf_test_path, command="rm -rf /etc/taos")
+        self.__cmdHandler.run_command(path=self.__perf_test_path, command="rm -rf /var/lib/taos")
+        self.__cmdHandler.run_command(path=self.__perf_test_path, command="rm -rf /var/log/taos")
 
         self.__logger.info("【完成初始化环境】")
 

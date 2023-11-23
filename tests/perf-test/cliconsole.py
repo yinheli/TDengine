@@ -152,8 +152,8 @@ def run_PerfTest_Backend(
             # 配置数据量级
             perfTester.set_test_group(test_group=test_group)
 
-            appLogger.warning("")
-            appLogger.warning("*** 开始在分支 [{}] 执行测试用例 ***".format(branch))
+            appLogger.info("")
+            appLogger.info("*** 开始在分支 [{}] 执行测试用例 ***".format(branch))
 
             # 清理环境
             perfTester.clean_env()
