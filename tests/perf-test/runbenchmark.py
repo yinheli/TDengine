@@ -17,7 +17,7 @@ class TaosBenchmarkRunner(object):
 
         # self.templateHandler = TemplateUtil()
         self.__branch = "main"
-        self.__commit_id = None
+        self.__commit_id = ""
 
         # 初始化读取配置文件实例
         confile = os.path.join(os.path.dirname(__file__), "conf", "config.ini")
@@ -96,16 +96,16 @@ class TaosBenchmarkRunner(object):
                 # with open(insertTempHandler.get_insert_json_file(), 'r') as f:
                 lines = f.readlines()
                 last_2_line = lines[-2].split(' ')
-                time_cost = last_2_line[4] + "s"
-                write_speed = last_2_line[15] + " records/second"
+                time_cost = last_2_line[4]
+                write_speed = last_2_line[15]
 
                 last_1_line = lines[-1].split(',')
-                min = last_1_line[1].strip()
-                avg = last_1_line[2].strip()
-                p90 = last_1_line[3].strip()
-                p95 = last_1_line[4].strip()
-                p99 = last_1_line[5].strip()
-                max = last_1_line[6].strip()
+                min = last_1_line[1].strip().split(':')[1].strip()[0: -2]
+                avg = last_1_line[2].strip().split(':')[1].strip()[0: -2]
+                p90 = last_1_line[3].strip().split(':')[1].strip()[0: -2]
+                p95 = last_1_line[4].strip().split(':')[1].strip()[0: -2]
+                p99 = last_1_line[5].strip().split(':')[1].strip()[0: -2]
+                max = last_1_line[6].strip().split(':')[1].strip()[0: -2]
 
                 f.close()
 
@@ -114,8 +114,8 @@ class TaosBenchmarkRunner(object):
             sub_table_name = "st_{0}_{1}".format(self.__branch, self.__data_scale.value).replace('.', '_')
 
             base_sql = "insert into perf_test.{0} using perf_test.test_results (branch, data_scale, tc_desc) tags ('{1}', '{2}', '{3}') values " \
-                       "(now, '{4}', '{5}', '{6}', '{7}', '{8}', '{9}', '{10}', '{11}', '{12}', '{13}', '{14}')".format(
-                sub_table_name, self.__branch, self.__data_scale.value, insert_json_file, time_cost, write_speed, "", min, p90,
+                       "(now, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, '{13}', '{14}')".format(
+                sub_table_name, self.__branch, self.__data_scale.value, insert_json_file, time_cost, write_speed, 0, min, p90,
                 p95, p99, max, avg, socket.gethostname(), self.__commit_id)
             self.__taosbmHandler.exec_sql(base_sql)
 
@@ -143,15 +143,15 @@ class TaosBenchmarkRunner(object):
             with open("{0}/output.txt".format(self.__perf_test_path), 'r') as f:
                 lines = f.readlines()
                 last_1_line = lines[-3].split(' ')
-                min = last_1_line[12].strip()
-                avg = last_1_line[10].strip()
-                p90 = last_1_line[16].strip()
-                p95 = last_1_line[18].strip()
-                p99 = last_1_line[20].strip()
-                max = last_1_line[14].strip()
+                min = last_1_line[12].strip()[0: -1]
+                avg = last_1_line[10].strip()[0: -1]
+                p90 = last_1_line[16].strip()[0: -1]
+                p95 = last_1_line[18].strip()[0: -1]
+                p99 = last_1_line[20].strip()[0: -1]
+                max = last_1_line[14].strip()[0: -1]
 
                 last_2_line = lines[-2].split(' ')
-                time_cost = last_2_line[4].strip() + "s"
+                time_cost = last_2_line[4].strip()
                 QPS = last_2_line[-1].strip()
                 f.close()
 
@@ -161,8 +161,8 @@ class TaosBenchmarkRunner(object):
                                                      query_json_file.split('.')[0]).replace('.', '_')
 
             base_sql = "insert into perf_test.{0} using perf_test.test_results (branch, data_scale, tc_desc) tags ('{1}', '{2}', '{3}') values " \
-                       "(now, '{4}', '{5}', '{6}', '{7}', '{8}', '{9}', '{10}', '{11}', '{12}', '{13}', '{14}')".format(
-                sub_table_name, self.__branch, self.__data_scale.value, query_json_file, time_cost, "", QPS, min, p90,
+                       "(now, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, '{13}', '{14}')".format(
+                sub_table_name, self.__branch, self.__data_scale.value, query_json_file, time_cost, 0, QPS, min, p90,
                 p95, p99, max, avg, socket.gethostname(), self.__commit_id)
             self.__taosbmHandler.exec_sql(base_sql)
 if __name__ == "__main__":
