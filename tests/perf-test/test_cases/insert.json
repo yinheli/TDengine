@@ -17,7 +17,7 @@
         {
             "dbinfo":{
                 "name":"test",
-                "drop":"true",
+                "drop":"yes",
                 "replica":1,
                 "precision":"ms",
                 "cachemodel":"'both'",

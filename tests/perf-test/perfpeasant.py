@@ -18,7 +18,7 @@ class Peasant(object):
         self.__branch = None
         self.__data_scale = None
 
-        self.__commit_id = None
+        self.__commit_id = ""
 
         self.__stt_trigger = None
         self.__interlace_rows = None
@@ -90,9 +90,10 @@ class Peasant(object):
         self.__logger.info("【开始备份数据】")
         self.__logger.info("数据路目录: [{0}]".format(self.__test_case_path))
         self.__cmdHandler.run_command(path=self.__perf_test_path, command="mkdir -p {0}".format(self.__test_case_path))
-        self.__cmdHandler.run_command(path=self.__perf_test_path, command="cp -r log {0}".format(self.__test_case_path))
+        self.__cmdHandler.run_command(path=self.__perf_test_path, command="cp log/insert_result.txt {0}".format(self.__test_case_path))
         self.__cmdHandler.run_command(path=self.__perf_test_path, command="cp output.txt {0}".format(self.__test_case_path))
         self.__logger.info("【完成备份数据】")
+
     def install_db(self):
         self.__logger.info("【安装TDengine】")
         # 安装db

@@ -15,7 +15,7 @@ class InstallTaosDB(object):
         self.__data_scale = "mid"
         self.__hostname = socket.gethostname()
 
-        self.__commit_id = None
+        self.__commit_id = ""
         self.__taosdbHandler = TaosUtil(self.__logger)
 
         # 初始化读取配置文件实例
