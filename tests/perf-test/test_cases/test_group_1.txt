@@ -2,15 +2,30 @@
 1=insert.json
 
 [query_case]
-1=query1.json
-2=query2.json
-3=query3.json
-4=query4.json
-5=query5.json
-6=query6.json
-7=query7.json
-8=query8.json
-9=query9.json
-10=query10.json
-11=query11.json
-12=query12.json
+query1.json=select last_row(*) from meters
+query2.json=select count(*) from d0
+query3.json=select avg(current), max(voltage), min(phase) from meters
+query4.json=select avg(current), max(voltage), min(phase) from meters interval(10s)
+query5.json=select count(*) from meters where location = \'San Francisco\'
+query6.json=select avg(current), max(voltage), min(phase) from meters where groupid = 1
+query7.json=select * from meters limit 10000
+query8.json=select spread(phase) from meters
+query9.json=select * from meters order by ts
+query10.json=select * from meters order by ts desc
+query11.json=select * from meters order by ts limit 1000
+query12.json=select * from meters order by ts desc limit 1000
+query13.json=select count(*) from meters
+query14.json=select avg(current), max(voltage), min(phase) from meters group by tbname limit 10000
+query15.json=select avg(current), max(voltage), min(phase) from meters partition by tbname limit 10000
+query16.json=select last(*) from meters group by tbname slimit 10000
+query17.json=select last_row(*) from meters group by tbname slimit 10000
+query18.json=select last(*) from meters partition by tbname slimit 10000
+query19.json=select last_row(*) from meters partition by tbname slimit 10000
+query20.json=select * from d100 limit 10000
+query21.json=select * from meters order by ts asc
+query22.json=select last(*) from meters
+query23.json=select count(*) from information_schema.ins_tables
+query24.json=select count(*) from information_schema.ins_tables where db_name = \'test\'
+query25.json=select count(*) from information_schema.ins_tables where db_name = \'test\' and stable_name = \'meters\'
+query26.json=select db_name, count(*) from information_schema.ins_tables group by db_name
+query27.json=select db_name, stable_name, count(*) from information_schema.ins_tables group by db_name, stable_name

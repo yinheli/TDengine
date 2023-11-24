@@ -7,15 +7,15 @@
     "password": "taosdata",
     "confirm_parameter_prompt": "no",
     "databases": "test",
-    "query_times": 1,
+    "query_times": 10,
     "query_mode": "taosc",
     "specified_table_query": {
         "query_interval": 1,
         "concurrent": 1,
         "sqls": [
             {
-                "sql": "select * from meters order by ts desc",
-                "result": "./log/query_res10.txt"
+                "sql": "select last_row(*) from meters group by tbname slimit 10000",
+                "result": "./log/query_res12.txt"
             }
         ]
     }
