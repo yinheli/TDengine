@@ -132,12 +132,12 @@ class TaosBenchmarkRunner(object):
         query_case_list = cfHandler.options(section="query_case")
 
         # 轮询执行TaosBenchmark
-        for query_case in query_case_list:
+        for query_file in query_case_list:
 
-            query_json_file = cfHandler.get(section="query_case", option=str(query_case))
+            query_sql = cfHandler.get(section="query_case", option=str(query_file))
             self.__cmdHandler.run_command(path=self.__perf_test_path,
                                           command="taosBenchmark -f {0}/{1}".format(self.__local_test_case_path,
-                                                                                    query_json_file))
+                                                                                    query_file))
 
             # 收集性能数据
             with open("{0}/output.txt".format(self.__perf_test_path), 'r') as f:
@@ -158,11 +158,11 @@ class TaosBenchmarkRunner(object):
             # 写入数据库
             # 定义表名：st_[branch]_[data_scale]_[json_file_name]
             sub_table_name = "st_{0}_{1}_{2}".format(self.__branch, self.__data_scale.value,
-                                                     query_json_file.split('.')[0]).replace('.', '_')
+                                                     query_file.split('.')[0]).replace('.', '_')
 
             base_sql = "insert into perf_test.{0} using perf_test.test_results (branch, data_scale, tc_desc) tags ('{1}', '{2}', '{3}') values " \
                        "(now, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, '{13}', '{14}')".format(
-                sub_table_name, self.__branch, self.__data_scale.value, query_json_file, time_cost, 0, QPS, min, p90,
+                sub_table_name, self.__branch, self.__data_scale.value, query_sql, time_cost, 0, QPS, min, p90,
                 p95, p99, max, avg, socket.gethostname(), self.__commit_id)
             self.__taosbmHandler.exec_sql(base_sql)
 if __name__ == "__main__":
