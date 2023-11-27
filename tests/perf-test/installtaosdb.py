@@ -9,6 +9,7 @@ import subprocess
 class InstallTaosDB(object):
     def __init__(self, logger):
         # 日志信息
+        self.__cluster_id = None
         self.__version = ""
         self.__logger = logger
         self.__branch = ""
@@ -41,6 +42,13 @@ class InstallTaosDB(object):
     def get_version(self):
         return self.__version
 
+    def set_cluster_id(self, cluster_id: str):
+        self.__cluster_id = cluster_id
+
+    def get_cluster_id(self):
+        return self.__cluster_id
+    
+
     def get_commit_id(self):
         stdout = self.__cmdHandler.run_command(path=self.__db_install_path, command="git rev-parse --short @")
         self.__commit_id = stdout
@@ -53,8 +61,8 @@ class InstallTaosDB(object):
             self.__logger.info("本地代码路径 : [{0}]".format(self.__db_install_path))
 
             # 获取测试机器信息
-            cluster_id = "1"
-            condition_info = [("cluster_id", cluster_id, DBDataTypeEnum.int), ("valid", "1", DBDataTypeEnum.int)]
+            # cluster_id = "1"
+            condition_info = [("cluster_id", self.__cluster_id, DBDataTypeEnum.int), ("valid", "1", DBDataTypeEnum.int)]
             machine_info = self.__taosdbHandler.select(database="perf_test", table="machine_info",
                                                        condition_info=condition_info)
 

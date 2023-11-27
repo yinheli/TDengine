@@ -7,9 +7,9 @@ import traceback
 import coloredlogs
 import click
 import configparser
-import time
 from perfpeasant import Peasant
 from enums.DataScaleEnum import DataScaleEnum
+from util.githubutil import GitHubUtil
 
 
 # 初始化日志处理
@@ -87,20 +87,27 @@ def cli(ctx, version):
 @click.option("--branches", "-b", type=str, required=True, help="指定分支信息，用逗号分隔", )
 @click.option("--data-scale", "-s", type=str, required=False, default="mid", help="性能测试数据规模，暂支持3个级别：big、mid和tiny", )
 @click.option("--test-group", "-g", type=str, required=True, help="测试组文件名", )
-@click.option("--test-case", "-c", type=str, required=False, help="测试用例ID", )
+@click.option("--cluster-id", "-c", type=str, required=True, help="测试机器集群id", )
 def run_PerfTest_Backend(
         branches: str,
         data_scale: str,
         test_group: str,
-        test_case: str
+        cluster_id: str
 ):
     # 初始化配置文件读取实例
     confile = os.path.join(os.path.dirname(__file__), "conf", "config.ini")
     cf = configparser.ConfigParser()
     cf.read(confile, encoding='UTF-8')
+    perf_test_path = cf.get("machineconfig", "perf_test_path")
 
+    # 初始化工作目录，若不存在，创建工作目录
+    if not os.path.exists(os.path.join(perf_test_path)):
+        os.makedirs(os.path.join(perf_test_path))
+
+    # 初始化logger
     appLogger = initLogger("Performance_testing")
 
+    # 开始运行性能测试
     appLogger.info("")
     appLogger.info("【开始执行性能测试】")
     appLogger.info(
@@ -113,7 +120,7 @@ def run_PerfTest_Backend(
     # github_repo = "{0}/{1}".format(cf.get("github", "namespace"), cf.get("github", "project"))
     # github = GitHubUtil(github_repo)
     # current_branches = github.get_branches()
-    #
+
     branch_list = branches.split(',')
     # for branch in branch_list:
     #     if branch == "main":
@@ -132,7 +139,7 @@ def run_PerfTest_Backend(
         perf_test_scale = DataScaleEnum.bigweight
     else:
         appLogger.error("输入的数据规模格式不对，正确格式：[big、mid、tiny]，实际输入：{0}".format(data_scale))
-        exit(1)
+        sys.exit(-1)
 
     # 无限轮询
     while True:
@@ -146,38 +153,41 @@ def run_PerfTest_Backend(
             # 配置分支
             perfTester.set_branch(branch=branch)
 
+            # 配置测试环境
+            perfTester.set_cluster_id(cluster_id=cluster_id)
+
             # 配置数据量级
             perfTester.set_data_scale(scale=perf_test_scale)
 
             # 配置数据量级
             perfTester.set_test_group(test_group=test_group)
 
-            appLogger.info("")
-            appLogger.info("*** 开始在分支 [{}] 执行测试用例 ***".format(branch))
-
-            # 清理环境
-            perfTester.clean_env()
-
-            # 下载db源代码
-            perfTester.download_db()
-
-            # 判断将要运行测试用例的分支最新commit是否有更新，若是数据库中存储的最新commit_id不等于当前的commit_id，则执行性能测试
-            if perfTester.is_last_commit(branch=branch):
-                appLogger.warning("分支代码没有更新，sleep 5s")
-                time.sleep(5)
-                continue
-
-            # 安装db
-            perfTester.install_db()
-
-            # 插入数据
-            perfTester.insert_data()
-
-            # 执行查询
-            perfTester.run_test_case()
-
-            # 备份数据
-            perfTester.backup_test_case()
+            perfTester.do_job()
+            # ###################
+            # # 清理环境
+            # perfTester.clean_env()
+            #
+            # # 下载db源代码
+            # perfTester.download_db()
+            #
+            # # 判断将要运行测试用例的分支最新commit是否有更新，若是数据库中存储的最新commit_id不等于当前的commit_id，则执行性能测试
+            # # if perfTester.is_last_commit(branch=branch):
+            # #     appLogger.warning("分支代码没有更新，sleep 5s")
+            # #     time.sleep(5)
+            # #     continue
+            #
+            # # 安装db
+            # perfTester.install_db()
+            #
+            # # 插入数据
+            # perfTester.insert_data()
+            #
+            # # 执行查询
+            # perfTester.run_test_case()
+            #
+            # # 备份数据
+            # perfTester.backup_test_case()
+            # ###################
 
 
 @cli.command(help="关闭后台运行性能测试的服务，会确保正在运行的测试完成后才会停止服务")

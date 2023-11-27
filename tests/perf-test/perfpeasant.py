@@ -13,6 +13,7 @@ from util.taosdbutil import TaosUtil
 class Peasant(object):
     def __init__(self, logger):
         # 日志信息
+        self.__cluster_id = None
         self.__test_group = None
         self.__logger = logger
         self.__branch = None
@@ -45,6 +46,12 @@ class Peasant(object):
 
     def get_branch(self):
         return self.__branch
+    
+    def set_cluster_id(self, cluster_id: str):
+        self.__cluster_id = cluster_id
+
+    def get_cluster_id(self):
+        return self.__cluster_id
 
     def set_data_scale(self, scale: DataScaleEnum = DataScaleEnum.midweight):
         self.__data_scale = scale
@@ -61,6 +68,34 @@ class Peasant(object):
     def get_commit_id(self):
         return self.__commit_id
 
+    def do_job(self):
+        self.__logger.info("")
+        self.__logger.info("*** 开始在分支 [{}] 执行测试用例 ***".format(self.__branch))
+
+        # 清理环境
+        self.clean_env()
+
+        # 下载db源代码
+        self.download_db()
+
+        # 判断将要运行测试用例的分支最新commit是否有更新，若是数据库中存储的最新commit_id不等于当前的commit_id，则执行性能测试
+        # if self.is_last_commit(branch=branch):
+        #     self.__logger.warning("分支代码没有更新，sleep 5s")
+        #     time.sleep(5)
+        #     continue
+
+        # 安装db
+        self.install_db()
+
+        # 插入数据
+        self.insert_data()
+
+        # 执行查询
+        self.run_test_case()
+
+        # 备份数据
+        self.backup_test_case()
+    
     def clean_env(self):
         self.__logger.info("【初始化环境】")
 
@@ -113,6 +148,8 @@ class Peasant(object):
         taosdbHandler = InstallTaosDB(logger=self.__logger)
         # 配置分支
         taosdbHandler.set_branch(branch=self.__branch)
+        # 配置cluster_id
+        taosdbHandler.set_cluster_id(cluster_id=self.__cluster_id)
         # 安装tdengine
         taosdbHandler.download()
 
