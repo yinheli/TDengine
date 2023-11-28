@@ -8,14 +8,14 @@ from enums.DBDataTypeEnum import DBDataTypeEnum
 
 class TaosUtil(object):
     def __init__(self, logger):
-        self.logger = logger
-        self.user = None
-        self.password = None
-        self.database = None
-        self.host = None
-        self.rest_port = None
-        self.port = None
-        self.base_url = None
+        self.__logger = logger
+        self.__user = None
+        self.__password = None
+        self.__database = None
+        self.__host = None
+        self.__rest_port = None
+        self.__port = None
+        self.__base_url = None
 
         # 读取配置文件
         confile = os.path.join(os.path.dirname(os.path.dirname(__file__)), "conf", "config.ini")
@@ -23,15 +23,15 @@ class TaosUtil(object):
         cf.read(confile, encoding='UTF-8')
 
         # 读取元数据库链接信息
-        self.host = cf.get("metadata", "host")
-        self.port = cf.get("metadata", "port")
-        self.user = cf.get("metadata", "user")
-        self.password = cf.get("metadata", "passwd")
-        self.ldapServer = cf.get("metadata", "database")
-        self.rest_port = cf.get("metadata", "rest_port")
-        self.rest_token = cf.get("metadata", "rest_token")
+        self.__host = cf.get("metadata", "host")
+        self.__port = cf.get("metadata", "port")
+        self.__user = cf.get("metadata", "user")
+        self.__password = cf.get("metadata", "passwd")
+        self.__database = cf.get("metadata", "database")
+        self.__rest_port = cf.get("metadata", "rest_port")
+        self.__rest_token = cf.get("metadata", "rest_token")
 
-        self.base_url = "http://{0}:{1}/rest/sql".format(self.host, self.rest_port)
+        self.__base_url = "http://{0}:{1}/rest/sql".format(self.__host, self.__rest_port)
         self.headers = {"Authorization": "Basic cm9vdDp0YW9zZGF0YQ==", "Accept-Charset": "utf-8"}
 
 
@@ -39,13 +39,13 @@ class TaosUtil(object):
         if sql is None:
             return None
 
-        # self.logger.info('执行sql：{0}'.format(sql))
-        ret = requests.post(self.base_url, headers=self.headers, data=sql.encode("utf-8"))
+        # self.__logger.info('执行sql：{0}'.format(sql))
+        ret = requests.post(self.__base_url, headers=self.headers, data=sql.encode("utf-8"))
         data = json.loads(ret.text)
 
         if data['code'] != 0:
-            self.logger.error("执行SQL：{0}".format(sql))
-            self.logger.error("执行SQL失败，报错信息：{0}".format(ret.text))
+            self.__logger.error("执行SQL：{0}".format(sql))
+            self.__logger.error("执行SQL失败，报错信息：{0}".format(ret.text))
         return data
 
 
@@ -212,7 +212,7 @@ class TaosUtil(object):
 
         ret = self.__executeSql(insert_sql)
         if ret['code'] != 0:
-            self.logger.error('执行sql失败')
+            self.__logger.error('执行sql失败')
             return False
 
         return True

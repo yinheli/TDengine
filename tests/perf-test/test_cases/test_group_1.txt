@@ -1,5 +1,5 @@
 [insert_case]
-1=insert.json
+scenario1.json=10000table+10000column
 
 [query_case]
 query1.json=select last_row(*) from meters

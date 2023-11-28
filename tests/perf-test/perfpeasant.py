@@ -7,12 +7,13 @@ from installtaosdb import InstallTaosDB
 from util.shellutil import CommandRunner
 import time
 from util.taosdbutil import TaosUtil
-
+import multiprocessing
 
 
 class Peasant(object):
     def __init__(self, logger):
         # 日志信息
+        self.__machine_info = None
         self.__cluster_id = None
         self.__test_group = None
         self.__logger = logger
@@ -41,6 +42,10 @@ class Peasant(object):
 
         self.__taosbmHandler = TaosUtil(self.__logger)
 
+        self.__taosdbHandler = InstallTaosDB(logger=self.__logger)
+
+        self.__taosbmHandller = TaosBenchmarkRunner(logger=self.__logger)
+
     def set_branch(self, branch: str):
         self.__branch = branch
 
@@ -67,7 +72,7 @@ class Peasant(object):
 
     def get_commit_id(self):
         return self.__commit_id
-
+    
     def do_job(self):
         self.__logger.info("")
         self.__logger.info("*** 开始在分支 [{}] 执行测试用例 ***".format(self.__branch))
@@ -131,70 +136,69 @@ class Peasant(object):
 
     def install_db(self):
         self.__logger.info("【安装TDengine】")
-        # 安装db
-        taosdbHandler = InstallTaosDB(logger=self.__logger)
+
         # 配置分支
-        taosdbHandler.set_branch(branch=self.__branch)
+        self.__taosdbHandler.set_branch(branch=self.__branch)
+        # 配置cluster_id
+        self.__taosdbHandler.set_cluster_id(cluster_id=self.__cluster_id)
         # 安装tdengine
-        taosdbHandler.install()
+        self.__taosdbHandler.install()
         
-        self.__commit_id = taosdbHandler.get_commit_id()
+        self.__commit_id = self.__taosdbHandler.get_commit_id()
         time.sleep(5)
         self.__logger.info("【完成安装TDengine】")
 
     def download_db(self):
         self.__logger.info("【下载TDengine源代码】")
-        # 安装db
-        taosdbHandler = InstallTaosDB(logger=self.__logger)
         # 配置分支
-        taosdbHandler.set_branch(branch=self.__branch)
+        self.__taosdbHandler.set_branch(branch=self.__branch)
         # 配置cluster_id
-        taosdbHandler.set_cluster_id(cluster_id=self.__cluster_id)
+        self.__taosdbHandler.set_cluster_id(cluster_id=self.__cluster_id)
         # 安装tdengine
-        taosdbHandler.download()
+        self.__taosdbHandler.download()
 
-        self.__commit_id = taosdbHandler.get_commit_id()
+        self.__commit_id = self.__taosdbHandler.get_commit_id()
         self.__logger.info("【完成下载TDengine源代码】")
 
     def insert_data(self):
         self.__logger.info("【插入数据】")
         # 执行taosBenchmark，运行性能测试用例
-        # commit_id = taosdbHandler.get_commit_id()
-        taosbmHandller = TaosBenchmarkRunner(logger=self.__logger)
         # 配置数据量级
-        taosbmHandller.set_data_scale(data_scale=self.__data_scale)
+        self.__taosbmHandller.set_data_scale(data_scale=self.__data_scale)
+        # 配置cluster_id
+        self.__taosbmHandller.set_cluster_id(cluster_id=self.__cluster_id)
         # 配置stt_trigger
-        taosbmHandller.set_stt_trigger(stt_trigger=self.__stt_trigger)
+        self.__taosbmHandller.set_stt_trigger(stt_trigger=self.__stt_trigger)
         # 配置分支
-        taosbmHandller.set_branch(branch=self.__branch)
+        self.__taosbmHandller.set_branch(branch=self.__branch)
         # 配置commit_id
-        taosbmHandller.set_commit_id(commit_id=self.__commit_id)
+        self.__taosbmHandller.set_commit_id(commit_id=self.__commit_id)
         # 配置test_group
-        taosbmHandller.set_test_group(test_group=self.__test_group)
+        self.__taosbmHandller.set_test_group(test_group=self.__test_group)
         # 配置interlace_rows
-        taosbmHandller.set_interlace_rows(interlace_rows=self.__interlace_rows)
-        taosbmHandller.insert_data()
+        self.__taosbmHandller.set_interlace_rows(interlace_rows=self.__interlace_rows)
+        self.__taosbmHandller.insert_data()
 
         self.__logger.info("【完成插入数据】")
 
     def run_test_case(self):
         self.__logger.info("【运行测试用例】")
         # 执行taosBenchmark，运行性能测试用例
-        # commit_id = taosdbHandler.get_commit_id()
-        taosbmHandller = TaosBenchmarkRunner(logger=self.__logger)
         # 配置数据量级
-        taosbmHandller.set_data_scale(data_scale=self.__data_scale)
+        self.__taosbmHandller.set_data_scale(data_scale=self.__data_scale)
+        # 配置cluster_id
+        self.__taosbmHandller.set_cluster_id(cluster_id=self.__cluster_id)
         # 配置stt_trigger
-        taosbmHandller.set_stt_trigger(stt_trigger=self.__stt_trigger)
+        self.__taosbmHandller.set_stt_trigger(stt_trigger=self.__stt_trigger)
         # 配置分支
-        taosbmHandller.set_branch(branch=self.__branch)
+        self.__taosbmHandller.set_branch(branch=self.__branch)
         # 配置commit_id
-        taosbmHandller.set_commit_id(commit_id=self.__commit_id)
+        self.__taosbmHandller.set_commit_id(commit_id=self.__commit_id)
         # 配置test_group
-        taosbmHandller.set_test_group(test_group=self.__test_group)
+        self.__taosbmHandller.set_test_group(test_group=self.__test_group)
         # 配置interlace_rows
-        taosbmHandller.set_interlace_rows(interlace_rows=self.__interlace_rows)
-        taosbmHandller.run_test_case()
+        self.__taosbmHandller.set_interlace_rows(interlace_rows=self.__interlace_rows)
+        self.__taosbmHandller.run_test_case()
 
         self.__logger.info("【完成运行测试用例】")
 

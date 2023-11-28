@@ -9,6 +9,7 @@ import socket
 class TaosBenchmarkRunner(object):
     def __init__(self, logger):
         # 日志信息
+        self.__cluster_id = None
         self.__test_group = None
         self.__stt_trigger = None
         self.__data_scale = None
@@ -40,6 +41,12 @@ class TaosBenchmarkRunner(object):
 
     def get_interlace_rows(self):
         return self.__interlace_rows
+    
+    def set_cluster_id(self, cluster_id: int):
+        self.__cluster_id = cluster_id
+
+    def get_cluster_id(self):
+        return self.__cluster_id
 
     def set_data_scale(self, data_scale: DataScaleEnum):
         self.__data_scale = data_scale
@@ -84,12 +91,12 @@ class TaosBenchmarkRunner(object):
         insert_case_list = cfHandler.options(section="insert_case")
 
         # 轮询执行TaosBenchmark
-        for insert_case in insert_case_list:
-            insert_json_file = cfHandler.get(section="insert_case", option=str(insert_case))
+        for insert_file in insert_case_list:
+            insert_desc = cfHandler.get(section="insert_case", option=str(insert_file))
 
             # 执行TaosBenchmark
             cmdHandler = CommandRunner(self.__logger)
-            cmdHandler.run_command(path=self.__perf_test_path, command="taosBenchmark -f {0}/{1}".format(self.__local_test_case_path, insert_json_file))
+            cmdHandler.run_command(path=self.__perf_test_path, command="taosBenchmark -f {0}/{1}".format(self.__local_test_case_path, insert_file))
 
             # 收集性能数据
             with open("{0}/insert_result.txt".format(self.__log_path), 'r') as f:
@@ -110,12 +117,14 @@ class TaosBenchmarkRunner(object):
                 f.close()
 
             # 写入数据库
-            # 定义表名：st_[branch]_[data_scale]
-            sub_table_name = "st_{0}_{1}".format(self.__branch, self.__data_scale.value).replace('.', '_')
+            # 定义表名：st_[cluster_id]_[branch]_[data_scale]
+            sub_table_name = "st_{0}_{1}_{2}_{3}".format(self.__cluster_id, self.__branch, self.__data_scale.value,
+                                                         insert_file.split('.')[0]).replace('.', '_')
 
-            base_sql = "insert into perf_test.{0} using perf_test.test_results (branch, data_scale, tc_desc) tags ('{1}', '{2}', '{3}') values " \
-                       "(now, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, '{13}', '{14}')".format(
-                sub_table_name, self.__branch, self.__data_scale.value, insert_json_file, time_cost, write_speed, 0, min, p90,
+            base_sql = "insert into perf_test.{0} using perf_test.test_results (branch, data_scale, tc_desc,machine_info) tags ('{1}', '{2}', '{3}',{4}) values " \
+                       "(now, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, '{14}', '{15}')".format(
+                sub_table_name, self.__branch, self.__data_scale.value, insert_desc, self.__cluster_id, time_cost,
+                write_speed, 0, min, p90,
                 p95, p99, max, avg, socket.gethostname(), self.__commit_id)
             self.__taosbmHandler.exec_sql(base_sql)
 
@@ -156,13 +165,13 @@ class TaosBenchmarkRunner(object):
                 f.close()
 
             # 写入数据库
-            # 定义表名：st_[branch]_[data_scale]_[json_file_name]
-            sub_table_name = "st_{0}_{1}_{2}".format(self.__branch, self.__data_scale.value,
+            # 定义表名：st_[cluster_id]_[branch]_[data_scale]_[json_file_name]
+            sub_table_name = "st_{0}_{1}_{2}_{3}".format(self.__cluster_id, self.__branch, self.__data_scale.value,
                                                      query_file.split('.')[0]).replace('.', '_')
 
-            base_sql = "insert into perf_test.{0} using perf_test.test_results (branch, data_scale, tc_desc) tags ('{1}', '{2}', '{3}') values " \
-                       "(now, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, '{13}', '{14}')".format(
-                sub_table_name, self.__branch, self.__data_scale.value, query_sql, time_cost, 0, QPS, min, p90,
+            base_sql = "insert into perf_test.{0} using perf_test.test_results (branch, data_scale, tc_desc, machine_info) tags ('{1}', '{2}', '{3}', {4}) values " \
+                       "(now, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, '{14}', '{15}')".format(
+                sub_table_name, self.__branch, self.__data_scale.value, query_sql, self.__cluster_id, time_cost, 0, QPS, min, p90,
                 p95, p99, max, avg, socket.gethostname(), self.__commit_id)
             self.__taosbmHandler.exec_sql(base_sql)
 if __name__ == "__main__":

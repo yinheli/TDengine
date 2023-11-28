@@ -109,4 +109,5 @@ create stable test_results(
     commit_id varchar(50)) tags(
     branch varchar(50),
     data_scale varchar(50),
-    tc_desc varchar(1000));
+    tc_desc varchar(1000),
+    machine_info int);

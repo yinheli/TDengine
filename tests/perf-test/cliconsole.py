@@ -2,6 +2,7 @@
 import os
 import sys
 import logging
+import threading
 from logging.handlers import TimedRotatingFileHandler
 import traceback
 import coloredlogs
@@ -9,7 +10,9 @@ import click
 import configparser
 from perfpeasant import Peasant
 from enums.DataScaleEnum import DataScaleEnum
-from util.githubutil import GitHubUtil
+from util.shellutil import CommandRunner
+import schedule
+import time
 
 
 # 初始化日志处理
@@ -57,6 +60,26 @@ def initLogger(loggerName: str):
     )
     return logger
 
+
+def clean_task(logger):
+    # 初始化读取配置文件实例
+    confile = os.path.join(os.path.dirname(__file__), "conf", "config.ini")
+    cf = configparser.ConfigParser()
+    cf.read(confile, encoding='UTF-8')
+    perf_test_path = cf.get("machineconfig", "perf_test_path")
+
+    schedule.every().day.at("23:59").do(clean_files, logger=logger, perf_test_path=perf_test_path)
+
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
+
+def clean_files(logger, perf_test_path):
+
+
+    cmdHandler = CommandRunner(logger)
+    cmdHandler.run_command(path=perf_test_path,
+                           command="find {0}/test_case_* -type d -mtime +2 -exec rm -rf {} \\".format(perf_test_path))
 
 @click.group(invoke_without_command=True)
 @click.pass_context
@@ -141,6 +164,14 @@ def run_PerfTest_Backend(
         appLogger.error("输入的数据规模格式不对，正确格式：[big、mid、tiny]，实际输入：{0}".format(data_scale))
         sys.exit(-1)
 
+    # 在启动性能测试前，创建守护子进程对即将保存的日志文件进行定期清理
+    clean_backup_file_thread = threading.Thread(name="clean_backup_file_thread", target=clean_task,
+                                                kwargs={"logger": appLogger})
+    clean_backup_file_thread.daemon = True
+
+    clean_backup_file_thread.start()
+    appLogger.warning("启动子进程对备份的日志进行周期性清理")
+
     # 无限轮询
     while True:
         # 循环执行性能测试
@@ -162,31 +193,30 @@ def run_PerfTest_Backend(
             # 配置数据量级
             perfTester.set_test_group(test_group=test_group)
 
-            perfTester.do_job()
             # ###################
-            # # 清理环境
-            # perfTester.clean_env()
-            #
-            # # 下载db源代码
-            # perfTester.download_db()
-            #
-            # # 判断将要运行测试用例的分支最新commit是否有更新，若是数据库中存储的最新commit_id不等于当前的commit_id，则执行性能测试
-            # # if perfTester.is_last_commit(branch=branch):
-            # #     appLogger.warning("分支代码没有更新，sleep 5s")
-            # #     time.sleep(5)
-            # #     continue
-            #
-            # # 安装db
-            # perfTester.install_db()
-            #
-            # # 插入数据
-            # perfTester.insert_data()
-            #
-            # # 执行查询
-            # perfTester.run_test_case()
-            #
-            # # 备份数据
-            # perfTester.backup_test_case()
+            # 清理环境
+            perfTester.clean_env()
+
+            # 下载db源代码
+            perfTester.download_db()
+
+            # 判断将要运行测试用例的分支最新commit是否有更新，若是数据库中存储的最新commit_id不等于当前的commit_id，则执行性能测试
+            # if perfTester.is_last_commit(branch=branch):
+            #     appLogger.warning("分支代码没有更新，sleep 5s")
+            #     time.sleep(5)
+            #     continue
+
+            # 安装db
+            perfTester.install_db()
+
+            # 插入数据
+            perfTester.insert_data()
+
+            # 执行查询
+            perfTester.run_test_case()
+
+            # 备份数据
+            perfTester.backup_test_case()
             # ###################
 
 
