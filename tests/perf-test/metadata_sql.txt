@@ -108,6 +108,6 @@ create stable test_results(
     hostname varchar(15),
     commit_id varchar(50)) tags(
     branch varchar(50),
-    data_scale varchar(50),
-    tc_desc varchar(1000),
+    scenario varchar(50),
+    test_case varchar(1000),
     machine_info int);

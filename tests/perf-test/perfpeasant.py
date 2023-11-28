@@ -7,7 +7,6 @@ from installtaosdb import InstallTaosDB
 from util.shellutil import CommandRunner
 import time
 from util.taosdbutil import TaosUtil
-import multiprocessing
 
 
 class Peasant(object):
@@ -51,18 +50,13 @@ class Peasant(object):
 
     def get_branch(self):
         return self.__branch
-    
-    def set_cluster_id(self, cluster_id: str):
+
+    def set_machine(self, cluster_id: str):
         self.__cluster_id = cluster_id
 
-    def get_cluster_id(self):
+    def get_machine(self):
         return self.__cluster_id
 
-    def set_data_scale(self, scale: DataScaleEnum = DataScaleEnum.midweight):
-        self.__data_scale = scale
-
-    def get_data_scale(self):
-        return self.__data_scale
 
     def set_test_group(self, test_group: str):
         self.__test_group = test_group
@@ -72,41 +66,14 @@ class Peasant(object):
 
     def get_commit_id(self):
         return self.__commit_id
-    
-    def do_job(self):
-        self.__logger.info("")
-        self.__logger.info("*** 开始在分支 [{}] 执行测试用例 ***".format(self.__branch))
 
-        # 清理环境
-        self.clean_env()
-
-        # 下载db源代码
-        self.download_db()
-
-        # 判断将要运行测试用例的分支最新commit是否有更新，若是数据库中存储的最新commit_id不等于当前的commit_id，则执行性能测试
-        # if self.is_last_commit(branch=branch):
-        #     self.__logger.warning("分支代码没有更新，sleep 5s")
-        #     time.sleep(5)
-        #     continue
-
-        # 安装db
-        self.install_db()
-
-        # 插入数据
-        self.insert_data()
-
-        # 执行查询
-        self.run_test_case()
-
-        # 备份数据
-        self.backup_test_case()
-    
     def clean_env(self):
         self.__logger.info("【初始化环境】")
 
         if not os.path.exists(self.__tdengine_path):
             self.__logger.info("初始化工作目录")
-            self.__cmdHandler.run_command(path=self.__perf_test_path, command="mkdir -p {0}".format(self.__tdengine_path))
+            self.__cmdHandler.run_command(path=self.__perf_test_path,
+                                          command="mkdir -p {0}".format(self.__tdengine_path))
 
         # 清除benchmark历史日志文件
         self.__logger.info("清除benchmark历史日志文件")
@@ -130,8 +97,10 @@ class Peasant(object):
         self.__logger.info("【开始备份数据】")
         self.__logger.info("数据路目录: [{0}]".format(self.__test_case_path))
         self.__cmdHandler.run_command(path=self.__perf_test_path, command="mkdir -p {0}".format(self.__test_case_path))
-        self.__cmdHandler.run_command(path=self.__perf_test_path, command="cp log/insert_result.txt {0}".format(self.__test_case_path))
-        self.__cmdHandler.run_command(path=self.__perf_test_path, command="cp output.txt {0}".format(self.__test_case_path))
+        self.__cmdHandler.run_command(path=self.__perf_test_path,
+                                      command="cp log/insert_result.txt {0}".format(self.__test_case_path))
+        self.__cmdHandler.run_command(path=self.__perf_test_path,
+                                      command="cp output.txt {0}".format(self.__test_case_path))
         self.__logger.info("【完成备份数据】")
 
     def install_db(self):
@@ -143,7 +112,7 @@ class Peasant(object):
         self.__taosdbHandler.set_cluster_id(cluster_id=self.__cluster_id)
         # 安装tdengine
         self.__taosdbHandler.install()
-        
+
         self.__commit_id = self.__taosdbHandler.get_commit_id()
         time.sleep(5)
         self.__logger.info("【完成安装TDengine】")
@@ -163,20 +132,15 @@ class Peasant(object):
     def insert_data(self):
         self.__logger.info("【插入数据】")
         # 执行taosBenchmark，运行性能测试用例
-        # 配置数据量级
-        self.__taosbmHandller.set_data_scale(data_scale=self.__data_scale)
         # 配置cluster_id
         self.__taosbmHandller.set_cluster_id(cluster_id=self.__cluster_id)
-        # 配置stt_trigger
-        self.__taosbmHandller.set_stt_trigger(stt_trigger=self.__stt_trigger)
         # 配置分支
         self.__taosbmHandller.set_branch(branch=self.__branch)
         # 配置commit_id
         self.__taosbmHandller.set_commit_id(commit_id=self.__commit_id)
         # 配置test_group
         self.__taosbmHandller.set_test_group(test_group=self.__test_group)
-        # 配置interlace_rows
-        self.__taosbmHandller.set_interlace_rows(interlace_rows=self.__interlace_rows)
+
         self.__taosbmHandller.insert_data()
 
         self.__logger.info("【完成插入数据】")
@@ -184,20 +148,15 @@ class Peasant(object):
     def run_test_case(self):
         self.__logger.info("【运行测试用例】")
         # 执行taosBenchmark，运行性能测试用例
-        # 配置数据量级
-        self.__taosbmHandller.set_data_scale(data_scale=self.__data_scale)
         # 配置cluster_id
         self.__taosbmHandller.set_cluster_id(cluster_id=self.__cluster_id)
-        # 配置stt_trigger
-        self.__taosbmHandller.set_stt_trigger(stt_trigger=self.__stt_trigger)
         # 配置分支
         self.__taosbmHandller.set_branch(branch=self.__branch)
         # 配置commit_id
         self.__taosbmHandller.set_commit_id(commit_id=self.__commit_id)
         # 配置test_group
         self.__taosbmHandller.set_test_group(test_group=self.__test_group)
-        # 配置interlace_rows
-        self.__taosbmHandller.set_interlace_rows(interlace_rows=self.__interlace_rows)
+
         self.__taosbmHandller.run_test_case()
 
         self.__logger.info("【完成运行测试用例】")
@@ -222,11 +181,7 @@ class Peasant(object):
 
         return False
 
+
 if __name__ == "__main__":
     peasantHandler = Peasant()
     # peasantHandler.start()
-        
-
-        
-        
-    

@@ -57,14 +57,13 @@ class TaosUtil(object):
         return self.__executeSql(sql)
 
     def select(self,
-               database: str,
                table: str,
                target_info: list = None,
                condition_info: list = None,
                tag_info: list = None):
 
         if not target_info and not condition_info and not tag_info:
-            base_query_sql = "select * from {0}.{1}".format(database, table)
+            base_query_sql = "select * from {0}.{1}".format(self.__database, table)
         else:
             final_condition_str = ""
             # 拼接普通查询条件
@@ -104,7 +103,7 @@ class TaosUtil(object):
 
                 final_target_str = final_target_str[0: -1]
 
-            base_query_sql = "select {0} from {1}.{2} {3}".format(final_target_str, database, table,
+            base_query_sql = "select {0} from {1}.{2} {3}".format(final_target_str, self.__database, table,
                                                                   final_condition_str)
 
         ret = self.__executeSql(base_query_sql)
@@ -113,10 +112,9 @@ class TaosUtil(object):
 
         return ret["data"]
 
-    def update(self, database: str, table: str, condition_info: list, value_info: list, tag_info: list = None):
+    def update(self, table: str, condition_info: list, value_info: list, tag_info: list = None):
         """
         更新tdengine数据
-        :param database: 数据库database名称
         :param table: 数据库表名称
         :param condition_info : 过滤数据的关键字信息，例如：condition = [("js_id", "1", DBDataTypeEnum.int)]，其中第一个元素为列名，第二个元素为值，第三个元素为列数据类型，目前仅支持int和string
         :param value_info : 需要修改的数据范围，例如：value_info = [("comments", "test", DBDataTypeEnum.string), ("js_desc", "test1", DBDataTypeEnum.string)]
@@ -145,15 +143,15 @@ class TaosUtil(object):
         # create_time = ret["data"][0][0]
 
         target_info = ["create_time"]
-        ret = self.select(database=database, table=table, target_info=target_info, condition_info=condition_info, tag_info=tag_info)
+        ret = self.select(table=table, target_info=target_info, condition_info=condition_info, tag_info=tag_info)
         create_time = ret[0][0]
 
         # 根据ts主键，通过insert方式达到update的效果
         value_info.append(("create_time", create_time, DBDataTypeEnum.timestamp))
-        self.insert(database=database, table=table, value_info=value_info, tag_info=tag_info)
+        self.insert(table=table, value_info=value_info, tag_info=tag_info)
 
 
-    def insert(self, database: str, table: str, value_info: list, tag_info: list = None):
+    def insert(self, table: str, value_info: list, tag_info: list = None):
         """
         更新tdengine数据
         :param database: 数据库database名称
@@ -208,7 +206,7 @@ class TaosUtil(object):
             tag_sql = "{0} tags {1}".format(column_content, values_content)
 
         # e.g. insert into job_status (create_time, comments) (tc_id) tags (10006) values('2023-11-16 21:19:32.030','12345') ;
-        insert_sql = "insert into {0}.{1} {2} {4} values{3}".format(database, table, column_content, values_content, tag_sql)
+        insert_sql = "insert into {0}.{1} {2} {4} values{3}".format(self.__database, table, column_content, values_content, tag_sql)
 
         ret = self.__executeSql(insert_sql)
         if ret['code'] != 0:
@@ -216,9 +214,6 @@ class TaosUtil(object):
             return False
 
         return True
-
-
-
 
 if __name__ == "__main__":
     taosUtil = TaosUtil()
@@ -228,7 +223,7 @@ if __name__ == "__main__":
 
     value_info = [("comments", "正在清理机器环境", DBDataTypeEnum.string), ("js_desc", "Cleaning up", DBDataTypeEnum.string)]
     condition = [("js_id", "1", DBDataTypeEnum.int)]
-    taosUtil.update(database="perf_test", table="job_status", condition_info=condition, value_info=value_info)
+    taosUtil.update(table="job_status", condition_info=condition, value_info=value_info)
 
     # value_info = [("create_time", "now", DBDataTypeEnum.timestamp), ("comments", "正在清理机器环境", DBDataTypeEnum.string), ("js_desc", "Cleaning up", DBDataTypeEnum.string)]
     # taosUtil.insert(database="perf_test", table="job_status", value_info=value_info)

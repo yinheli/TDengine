@@ -1,7 +1,7 @@
-[insert_case]
-scenario1.json=10000table+10000column
+[scenario]
+scenario1.json=10000table_10000column
 
-[query_case]
+[query_cases]
 query1.json=select last_row(*) from meters
 query2.json=select count(*) from d0
 query3.json=select avg(current), max(voltage), min(phase) from meters

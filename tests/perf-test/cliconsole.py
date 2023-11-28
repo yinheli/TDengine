@@ -108,14 +108,14 @@ def cli(ctx, version):
 
 @cli.command(help="启动一个后台服务，在服务中根据用户输入的分支信息，循环执行性能测试")
 @click.option("--branches", "-b", type=str, required=True, help="指定分支信息，用逗号分隔", )
-@click.option("--data-scale", "-s", type=str, required=False, default="mid", help="性能测试数据规模，暂支持3个级别：big、mid和tiny", )
+# @click.option("--data-scale", "-s", type=str, required=False, default="mid", help="性能测试数据规模，暂支持3个级别：big、mid和tiny", )
 @click.option("--test-group", "-g", type=str, required=True, help="测试组文件名", )
-@click.option("--cluster-id", "-c", type=str, required=True, help="测试机器集群id", )
+@click.option("--machine", "-m", type=str, required=True, help="测试机器集群id", )
 def run_PerfTest_Backend(
         branches: str,
-        data_scale: str,
+        # data_scale: str,
         test_group: str,
-        cluster_id: str
+        machine: str
 ):
     # 初始化配置文件读取实例
     confile = os.path.join(os.path.dirname(__file__), "conf", "config.ini")
@@ -134,9 +134,8 @@ def run_PerfTest_Backend(
     appLogger.info("")
     appLogger.info("【开始执行性能测试】")
     appLogger.info(
-        '性能测试命令：cliconsole.py --branches {0} --data-scale {1} --test-group {2}'.format(branches,
-                                                                                       data_scale,
-                                                                                       test_group))
+        f'性能测试命令：cliconsole.py --branches {branches} --test-group {test_group} --machine {machine}')
+
     # 解析branch参数
     # 参数校验，若输入参数中有不存在的分支，直接退出
     # 获取github上对应repo的所有分支
@@ -144,7 +143,7 @@ def run_PerfTest_Backend(
     # github = GitHubUtil(github_repo)
     # current_branches = github.get_branches()
 
-    branch_list = branches.split(',')
+    # branch_list = branches.split(',')
     # for branch in branch_list:
     #     if branch == "main":
     #         continue
@@ -153,16 +152,16 @@ def run_PerfTest_Backend(
     #         exit(1)
 
     # 参数校验，若输入参数中有符合的数据规模参数，直接退出
-    perf_test_scale = None
-    if data_scale.lower() == DataScaleEnum.tinyweight.value:
-        perf_test_scale = DataScaleEnum.tinyweight
-    elif data_scale.lower() == DataScaleEnum.midweight.value:
-        perf_test_scale = DataScaleEnum.midweight
-    elif data_scale.lower() == DataScaleEnum.bigweight.value:
-        perf_test_scale = DataScaleEnum.bigweight
-    else:
-        appLogger.error("输入的数据规模格式不对，正确格式：[big、mid、tiny]，实际输入：{0}".format(data_scale))
-        sys.exit(-1)
+    # perf_test_scale = None
+    # if data_scale.lower() == DataScaleEnum.tinyweight.value:
+    #     perf_test_scale = DataScaleEnum.tinyweight
+    # elif data_scale.lower() == DataScaleEnum.midweight.value:
+    #     perf_test_scale = DataScaleEnum.midweight
+    # elif data_scale.lower() == DataScaleEnum.bigweight.value:
+    #     perf_test_scale = DataScaleEnum.bigweight
+    # else:
+    #     appLogger.error("输入的数据规模格式不对，正确格式：[big、mid、tiny]，实际输入：{0}".format(data_scale))
+    #     sys.exit(-1)
 
     # 在启动性能测试前，创建守护子进程对即将保存的日志文件进行定期清理
     clean_backup_file_thread = threading.Thread(name="clean_backup_file_thread", target=clean_task,
@@ -172,6 +171,7 @@ def run_PerfTest_Backend(
     clean_backup_file_thread.start()
     appLogger.warning("启动子进程对备份的日志进行周期性清理")
 
+    branch_list = branches.split(',')
     # 无限轮询
     while True:
         # 循环执行性能测试
@@ -185,10 +185,7 @@ def run_PerfTest_Backend(
             perfTester.set_branch(branch=branch)
 
             # 配置测试环境
-            perfTester.set_cluster_id(cluster_id=cluster_id)
-
-            # 配置数据量级
-            perfTester.set_data_scale(scale=perf_test_scale)
+            perfTester.set_machine(cluster_id=machine)
 
             # 配置数据量级
             perfTester.set_test_group(test_group=test_group)
