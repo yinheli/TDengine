@@ -142,10 +142,8 @@ def run_PerfTest_Backend(
     ret = cmdHandler.run_command(path=perf_test_path, command="ps -ef | grep console.py | grep -v grep")
 
     if ret:
-        for v in ret.split(' '):
-            if isinstance(v, int):
-                appLogger.warning(f"当前环境是否正在执行性能测试，对应进程ID：{v}")
-                sys.exit(-1)
+        appLogger.warning(f"当前环境是否正在执行性能测试，对应进程ID：{ret.split(' ')[5]}")
+        sys.exit(1)
 
     # 在启动性能测试前，创建守护子进程对即将保存的日志文件进行定期清理
     clean_backup_file_thread = threading.Thread(name="clean_backup_file_thread", target=clean_task,
