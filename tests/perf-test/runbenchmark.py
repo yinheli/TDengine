@@ -156,16 +156,18 @@ class TaosBenchmarkRunner(object):
         send_alarm = False
         # 当当前查询速度比历史平均速度提升达到30%以上，恭喜一下
         if float(current_value) <= float(history_avg) and (float(history_avg) - float(current_value)) / float(history_avg) >= self.__alarm_positive_rate:
-            self.__feishuUtil.set_host("喜大普奔->当前速度比历史平均速度大幅提升")
-            self.__logger.warning("喜大普奔->当前速度比历史平均速度大幅提升")
+            percent = round((float(history_avg) - float(current_value)) / float(history_avg) * 100, 2)
+            self.__feishuUtil.set_host(f"喜大普奔->当前速度比历史平均速度大幅提升{percent}%")
+            self.__logger.warning(f"喜大普奔->当前速度比历史平均速度大幅提升{percent}%")
             self.__logger.warning(f"当前速度   ：{current_value}")
             self.__logger.warning(f"历史平均速度：{history_avg}")
             send_alarm = True
 
         # 当当前查询速度比历史平均速度降低达到10%以上，告警提示
         if float(current_value) >= float(history_avg) and (float(current_value) - float(history_avg)) / float(history_avg) >= self.__alarm_negative_rate:
-            self.__feishuUtil.set_host("略有悲伤->当前速度比历史平均速度大幅降低")
-            self.__logger.warning("略有悲伤->当前速度比历史平均速度大幅降低")
+            percent = round((float(current_value) - float(history_avg)) / float(history_avg) * 100, 2)
+            self.__feishuUtil.set_host(f"略有悲伤->当前速度比历史平均速度约降低{percent}%")
+            self.__logger.warning(f"略有悲伤->当前速度比历史平均速度约降低{percent}%")
             self.__logger.warning(f"当前速度   ：{current_value}")
             self.__logger.warning(f"历史平均速度：{history_avg}")
             send_alarm = True
