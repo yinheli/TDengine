@@ -9,8 +9,9 @@ import coloredlogs
 import click
 import configparser
 from perfpeasant import Peasant
-from enums.DataScaleEnum import DataScaleEnum
+from util.taosdbutil import TaosUtil
 from util.shellutil import CommandRunner
+from util.printutil import PrintUtil
 import schedule
 import time
 
@@ -189,10 +190,10 @@ def run_PerfTest_Backend(
             perfTester.set_machine(cluster_id=machine)
 
             # 清理环境
-            # perfTester.clean_env()
+            perfTester.clean_env()
 
             # 下载db源代码
-            # perfTester.download_db()
+            perfTester.download_db()
 
             # 判断将要运行测试用例的分支最新commit是否有更新，若是数据库中存储的最新commit_id不等于当前的commit_id，则执行性能测试
             # if perfTester.is_last_commit(branch=branch):
@@ -201,7 +202,7 @@ def run_PerfTest_Backend(
             #     continue
 
             # 安装db
-            # perfTester.install_db()
+            perfTester.install_db()
 
             # 轮询每个测试group，在当前分支循环执行每个测试group
             for tgroup in test_group_list:
@@ -215,6 +216,28 @@ def run_PerfTest_Backend(
                 perfTester.backup_test_case()
 
 
+@cli.command(help="查询机器信息")
+# @click.option("--wait-for-finished", type=str, default=True, help="是否等待正在运行的性能测试完成后在停止服务.默认为True", )
+def show_machines():
+    headers = []
+    columnTypes = []
+    rows = []
+    logger = initLogger("show_machines")
+    printer = PrintUtil()
+    taosdbHandler = TaosUtil(logger=logger)
+    machine_info = taosdbHandler.exec_sql("select cluster_id,ip,`leader`,machine_statue,cpu,mem,disk from perf_test.machine_info")
+    for i in range(len(machine_info['column_meta'])):
+        headers.append(machine_info['column_meta'][i][0])
+        columnTypes.append(machine_info['column_meta'][i][1])
+
+    for i in range(len(machine_info['data'])):
+        rows.append(tuple(machine_info['data'][i]))
+
+    context = printer.format_output_tab(headers=headers, columnTypes=columnTypes, cur=rows)
+    for line in context:
+        print(line)
+    pass
+
 @cli.command(help="关闭后台运行性能测试的服务，会确保正在运行的测试完成后才会停止服务")
 @click.option("--wait-for-finished", type=str, default=True, help="是否等待正在运行的性能测试完成后在停止服务.默认为True", )
 def abort_PerfTest_Backend(
@@ -227,8 +250,7 @@ def abort_PerfTest_Backend(
 if __name__ == "__main__":
 
     # run_PerfTest_Backend("main,3.0,3.1")
-    # # 禁用paramiko的一些不必要日志
-    # logging.getLogger("paramiko").setLevel(logging.WARNING)
+
 
     # 运行应用程序
     try:
