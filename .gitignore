@@ -131,3 +131,5 @@ tools/taos-tools
 tools/taosws-rs
 tags
 .clangd
+*CMakeFiles*
+*CMakeCache*

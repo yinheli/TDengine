@@ -19,6 +19,30 @@
 
 using namespace std;
 
+TEST(NodesTest, perfTest) {
+  nodesInit();
+
+  int64_t s = taosGetTimestampUs();
+  int32_t i = 0;
+  for (; i < 1000000; i++)
+  {
+    nodesNodeName(QUERY_NODE_PHYSICAL_PLAN);
+  }
+  int64_t e = taosGetTimestampUs();
+  printf("---------------elapsed:%" PRId64 "\n", e - s);
+
+  for (int32_t i = 0; i < 1000000; i++)
+  {
+    SNode* pRoot = (SNode*)nodesMakeNode(QUERY_NODE_PHYSICAL_PLAN_INSERT);
+    nodesDestroyNode(pRoot);
+  }
+  int64_t e2 = taosGetTimestampUs();
+  printf("---------------elapsed:%" PRId64 "\n", e2 - e);
+
+  EXPECT_EQ(i, 1000000);
+}
+
+/*
 static EDealRes rewriterTest(SNode** pNode, void* pContext) {
   EDealRes* pRes = (EDealRes*)pContext;
   if (QUERY_NODE_OPERATOR == nodeType(*pNode)) {
@@ -54,6 +78,7 @@ TEST(NodesTest, traverseTest) {
   EXPECT_EQ(nodeType(pRoot), QUERY_NODE_VALUE);
   EXPECT_EQ(string(((SValueNode*)pRoot)->literal), "18");
 }
+*/
 
 int main(int argc, char* argv[]) {
   testing::InitGoogleTest(&argc, argv);

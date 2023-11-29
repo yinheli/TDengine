@@ -59,13 +59,17 @@ static void setFunc(const char* name, int32_t type, int32_t nodeSize, FExecNodeT
 
 static void doInitNodeFuncArray();
 
+void nodesInit() {
+  taosThreadOnce(&functionNodeInit, doInitNodeFuncArray);
+}
+
 bool funcArrayCheck(int32_t type) {
   if (type < 0 || QUERY_NODE_END <= type) {
     nodesError("funcArrayCheck out of range type = %d", type);
     return false;
   }
   // only init once, do nothing when run funcArrayCheck again
-  taosThreadOnce(&functionNodeInit, doInitNodeFuncArray);
+  //taosThreadOnce(&functionNodeInit, doInitNodeFuncArray);
   
   if (!funcNodes[type].name) {
     nodesError("funcArrayCheck unsupported type = %d", type);
@@ -82,7 +86,8 @@ int32_t getNodeSize(ENodeType type) {
 }
 
 const char* nodesNodeName(ENodeType type) {
-  if (!funcArrayCheck(type)) {
+  if (type < 0 || type >= QUERY_NODE_END) {
+    nodesError("funcArrayCheck out of range type = %d", type);
     return NULL;
   }
   return funcNodes[type].name;
