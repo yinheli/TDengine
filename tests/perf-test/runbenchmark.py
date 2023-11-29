@@ -32,6 +32,9 @@ class TaosBenchmarkRunner(object):
         self.__log_path = self.__cf.get("machineconfig", "log_path")
         self.__test_case_path = self.__cf.get("machineconfig", "test_case_path")
 
+        self.__alarm_negative_rate = float(self.__cf.get("common", "alarm_negative_rate"))
+        self.__alarm_positive_rate = float(self.__cf.get("common", "alarm_positive_rate"))
+
         self.__taosbmHandler = TaosUtil(self.__logger)
 
         self.__cmdHandler = CommandRunner(self.__logger)
@@ -151,18 +154,18 @@ class TaosBenchmarkRunner(object):
 
     def performance_metrics_check(self, current_value: str, history_avg: str, test_desc: str):
         send_alarm = False
-        # 当当前查询速度比历史平均速度提升达到30%以上，告警提示
-        if float(current_value) <= float(history_avg) and (float(history_avg) - float(current_value)) / float(history_avg) >= 0.3:
-            self.__feishuUtil.set_host("当前速度比历史平均速度提升超过30%")
-            self.__logger.warning("当前速度比历史平均速度提升超过30%")
+        # 当当前查询速度比历史平均速度提升达到30%以上，恭喜一下
+        if float(current_value) <= float(history_avg) and (float(history_avg) - float(current_value)) / float(history_avg) >= self.__alarm_positive_rate:
+            self.__feishuUtil.set_host("喜大普奔->当前速度比历史平均速度大幅提升")
+            self.__logger.warning("喜大普奔->当前速度比历史平均速度大幅提升")
             self.__logger.warning(f"当前速度   ：{current_value}")
             self.__logger.warning(f"历史平均速度：{history_avg}")
             send_alarm = True
 
         # 当当前查询速度比历史平均速度降低达到10%以上，告警提示
-        if float(current_value) >= float(history_avg) and (float(current_value) - float(history_avg)) / float(history_avg) >= 0.1:
-            self.__feishuUtil.set_host("当前速度比历史平均速度降低超过10%")
-            self.__logger.warning("当前速度比历史平均速度降低超过10%")
+        if float(current_value) >= float(history_avg) and (float(current_value) - float(history_avg)) / float(history_avg) >= self.__alarm_negative_rate:
+            self.__feishuUtil.set_host("略有悲伤->当前速度比历史平均速度大幅降低")
+            self.__logger.warning("略有悲伤->当前速度比历史平均速度大幅降低")
             self.__logger.warning(f"当前速度   ：{current_value}")
             self.__logger.warning(f"历史平均速度：{history_avg}")
             send_alarm = True
