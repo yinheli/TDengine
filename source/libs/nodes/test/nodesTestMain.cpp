@@ -20,8 +20,6 @@
 using namespace std;
 
 TEST(NodesTest, perfTest) {
-  nodesInit();
-
   int64_t s = taosGetTimestampUs();
   int32_t i = 0;
   for (; i < 1000000; i++)
@@ -82,5 +80,6 @@ TEST(NodesTest, traverseTest) {
 
 int main(int argc, char* argv[]) {
   testing::InitGoogleTest(&argc, argv);
+  nodesInit();
   return RUN_ALL_TESTS();
 }

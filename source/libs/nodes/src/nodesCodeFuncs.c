@@ -61,6 +61,7 @@ static void doInitNodeFuncArray();
 
 void nodesInit() {
   taosThreadOnce(&functionNodeInit, doInitNodeFuncArray);
+  printf("nodesInit fin.\n");
 }
 
 bool funcArrayCheck(int32_t type) {
