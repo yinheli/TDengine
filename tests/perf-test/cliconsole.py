@@ -139,11 +139,25 @@ def run_PerfTest_Backend(
 
     # 检测当前环境是否正在执行性能测试
     cmdHandler = CommandRunner(logger=appLogger)
-    ret = cmdHandler.run_command(path=perf_test_path, command="ps -ef | grep console.py | grep -v grep")
 
-    if ret:
-        appLogger.warning(f"当前环境是否正在执行性能测试，对应进程ID：{ret.split(' ')[5]}")
-        sys.exit(1)
+    # 1.检查进程id信息是否存在
+    if os.path.exists(f"{perf_test_path}/process_id.txt"):
+        with open(f"{perf_test_path}/process_id.txt", 'r') as f:
+            p_id = f.readline()
+            f.close()
+
+        ret = cmdHandler.run_command(path=perf_test_path, command=f"ps -p {p_id} | grep -v PID")
+        if ret:
+            appLogger.warning(f"当前环境是否正在执行性能测试，对应进程ID：{p_id}")
+            sys.exit(-1)
+    # 2.若没有已存在的性能测试进程，则继续测试执行，并将进程id保存至性能工作目录
+    ret = cmdHandler.run_command(path=perf_test_path, command="ps -ef | grep console.py | grep -v grep")
+    process_id = ret.split(' ')[5]
+    appLogger.info(f"当前执行性能测试对应进程ID：{process_id}")
+    with open(f"{perf_test_path}/process_id.txt", 'w') as f:
+        f.write(process_id)
+        f.close()
+
 
     # 在启动性能测试前，创建守护子进程对即将保存的日志文件进行定期清理
     clean_backup_file_thread = threading.Thread(name="clean_backup_file_thread", target=clean_task,
