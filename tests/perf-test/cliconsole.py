@@ -137,32 +137,15 @@ def run_PerfTest_Backend(
     appLogger.info(
         f'性能测试命令：cliconsole.py --branches {branches} --test-group {test_group} --machine {machine}')
 
-    # 解析branch参数
-    # 参数校验，若输入参数中有不存在的分支，直接退出
-    # 获取github上对应repo的所有分支
-    # github_repo = "{0}/{1}".format(cf.get("github", "namespace"), cf.get("github", "project"))
-    # github = GitHubUtil(github_repo)
-    # current_branches = github.get_branches()
+    # 检测当前环境是否正在执行性能测试
+    cmdHandler = CommandRunner(logger=appLogger)
+    ret = cmdHandler.run_command(path=perf_test_path, command="ps -ef | grep console.py | grep -v grep")
 
-    # branch_list = branches.split(',')
-    # for branch in branch_list:
-    #     if branch == "main":
-    #         continue
-    #     if branch not in current_branches:
-    #         appLogger.error('输入分支不存在，分支名称：{0}'.format(branch))
-    #         exit(1)
-
-    # 参数校验，若输入参数中有符合的数据规模参数，直接退出
-    # perf_test_scale = None
-    # if data_scale.lower() == DataScaleEnum.tinyweight.value:
-    #     perf_test_scale = DataScaleEnum.tinyweight
-    # elif data_scale.lower() == DataScaleEnum.midweight.value:
-    #     perf_test_scale = DataScaleEnum.midweight
-    # elif data_scale.lower() == DataScaleEnum.bigweight.value:
-    #     perf_test_scale = DataScaleEnum.bigweight
-    # else:
-    #     appLogger.error("输入的数据规模格式不对，正确格式：[big、mid、tiny]，实际输入：{0}".format(data_scale))
-    #     sys.exit(-1)
+    if ret:
+        for v in ret.split(' '):
+            if isinstance(v, int):
+                appLogger.warning(f"当前环境是否正在执行性能测试，对应进程ID：{v}")
+                sys.exit(-1)
 
     # 在启动性能测试前，创建守护子进程对即将保存的日志文件进行定期清理
     clean_backup_file_thread = threading.Thread(name="clean_backup_file_thread", target=clean_task,
@@ -172,6 +155,7 @@ def run_PerfTest_Backend(
     clean_backup_file_thread.start()
     appLogger.warning("启动子进程对备份的日志进行周期性清理")
 
+    # 开始执行性能测试
     branch_list = branches.split(',')
     test_group_list = test_group.split(',')
     # 无限轮询
@@ -217,7 +201,6 @@ def run_PerfTest_Backend(
 
 
 @cli.command(help="查询机器信息")
-# @click.option("--wait-for-finished", type=str, default=True, help="是否等待正在运行的性能测试完成后在停止服务.默认为True", )
 def show_machines():
     headers = []
     columnTypes = []
@@ -225,7 +208,7 @@ def show_machines():
     logger = initLogger("show_machines")
     printer = PrintUtil()
     taosdbHandler = TaosUtil(logger=logger)
-    machine_info = taosdbHandler.exec_sql("select cluster_id,ip,`leader`,machine_statue,cpu,mem,disk from perf_test.machine_info")
+    machine_info = taosdbHandler.exec_sql("select cluster_id as machine_id,ip,`leader`,machine_statue,cpu,mem,disk from perf_test.machine_info order by cluster_id")
     for i in range(len(machine_info['column_meta'])):
         headers.append(machine_info['column_meta'][i][0])
         columnTypes.append(machine_info['column_meta'][i][1])
