@@ -9,6 +9,7 @@ import socket
 class TaosBenchmarkRunner(object):
     def __init__(self, logger):
         # 日志信息
+        self.__scenario_file = None
         self.__scenario_desc = None
         self.__cluster_id = None
         self.__test_group = None
@@ -62,118 +63,91 @@ class TaosBenchmarkRunner(object):
     def get_commit_id(self):
         return self.__commit_id
 
-    def insert_data(self):
-        # query_json_file = "tests/perf-test/test_cases/query1.json"
-        if not self.__test_group:
-            self.__logger.error("Test Group is not defined!")
-            return
+    def insert_data(self, scenario_info: dict):
+        # 获取测试场景的描述信息
+        self.__scenario_desc = scenario_info['scenario_desc']
+        self.__scenario_file = scenario_info['scenario_file']
+        # 执行TaosBenchmark
+        self.__cmdHandler.run_command(path=self.__perf_test_path,
+                                      command=f"taosBenchmark -f {self.__local_test_case_path}/{scenario_info['scenario_file']}")
 
-        test_group_file = os.path.join(self.__local_test_case_path, self.__test_group)
-        cfHandler = configparser.ConfigParser()
-        cfHandler.read(test_group_file, encoding='UTF-8')
+        # 收集性能数据
+        with open("{0}/insert_result.txt".format(self.__log_path), 'r') as f:
+            lines = f.readlines()
+            last_2_line = lines[-2].split(' ')
+            time_cost = last_2_line[4]
+            write_speed = last_2_line[15]
 
-        scenario_list = cfHandler.options(section="scenarios")
+            last_1_line = lines[-1].split(',')
+            min = last_1_line[1].strip().split(':')[1].strip()[0: -2]
+            avg = last_1_line[2].strip().split(':')[1].strip()[0: -2]
+            p90 = last_1_line[3].strip().split(':')[1].strip()[0: -2]
+            p95 = last_1_line[4].strip().split(':')[1].strip()[0: -2]
+            p99 = last_1_line[5].strip().split(':')[1].strip()[0: -2]
+            max = last_1_line[6].strip().split(':')[1].strip()[0: -2]
 
-        # 轮询执行TaosBenchmark
-        for scenario_file in scenario_list:
-            scenario_desc = cfHandler.get(section="scenarios", option=str(scenario_file))
-            self.__scenario_desc = scenario_desc
-
-            # 执行TaosBenchmark
-            cmdHandler = CommandRunner(self.__logger)
-            cmdHandler.run_command(path=self.__perf_test_path, command="taosBenchmark -f {0}/{1}".format(self.__local_test_case_path, scenario_file))
-
-            # 收集性能数据
-            with open("{0}/insert_result.txt".format(self.__log_path), 'r') as f:
-                # with open(insertTempHandler.get_insert_json_file(), 'r') as f:
-                lines = f.readlines()
-                last_2_line = lines[-2].split(' ')
-                time_cost = last_2_line[4]
-                write_speed = last_2_line[15]
-
-                last_1_line = lines[-1].split(',')
-                min = last_1_line[1].strip().split(':')[1].strip()[0: -2]
-                avg = last_1_line[2].strip().split(':')[1].strip()[0: -2]
-                p90 = last_1_line[3].strip().split(':')[1].strip()[0: -2]
-                p95 = last_1_line[4].strip().split(':')[1].strip()[0: -2]
-                p99 = last_1_line[5].strip().split(':')[1].strip()[0: -2]
-                max = last_1_line[6].strip().split(':')[1].strip()[0: -2]
-
-                f.close()
-
-                # 运行告警机制，若是达到告警条件，发送告警信息到feishu pot
-                ret = self.__taosbmHandler.exec_sql(
-                    f'select avg(write_speed) from perf_test.test_results where branch="{self.__branch}" and scenario="{self.__scenario_desc}" and test_case="{self.__scenario_desc}" and machine_info={self.__cluster_id}')
-                if ret['rows'] == 1:
-                    self.performance_metrics_check(current_value=write_speed, history_avg=str(ret['data'][0][0]),
-                                                   test_desc=self.__scenario_desc)
-
-            # 写入数据库
-            # 定义表名：st_[cluster_id]_[branch]_[secnario_desc]_[secnario_file]
-            sub_table_name = "t_{0}_{1}_{2}_{3}".format(self.__cluster_id, self.__branch, self.__scenario_desc,
-                                                        scenario_file.split('.')[0]).replace('.', '_').replace('/', '_')
-
-            base_sql = "insert into perf_test.{0} using perf_test.test_results (branch, scenario, test_case, machine_info) tags ('{1}', '{2}', '{3}',{4}) values " \
-                       "(now, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, '{14}', '{15}')".format(
-                sub_table_name, self.__branch, self.__scenario_desc, self.__scenario_desc, self.__cluster_id, time_cost,
-                write_speed, 0, min, p90,
-                p95, p99, max, avg, socket.gethostname(), self.__commit_id)
-            self.__taosbmHandler.exec_sql(base_sql)
-
-    def run_test_case(self):
-        # query_json_file = "tests/perf-test/test_cases/query1.json"
-        if not self.__test_group:
-            self.__logger.error("Test Group is not defined!")
-            return
-
-        test_group_file = os.path.join(self.__local_test_case_path, self.__test_group)
-        cfHandler = configparser.ConfigParser()
-        cfHandler.read(test_group_file, encoding='UTF-8')
-
-        query_case_list = cfHandler.options(section="query_cases")
-
-        # 轮询执行TaosBenchmark
-        for query_file in query_case_list:
-
-            query_sql = cfHandler.get(section="query_cases", option=str(query_file))
-            self.__cmdHandler.run_command(path=self.__perf_test_path,
-                                          command="taosBenchmark -f {0}/{1}".format(self.__local_test_case_path,
-                                                                                    query_file))
-
-            # 收集性能数据
-            with open("{0}/output.txt".format(self.__perf_test_path), 'r') as f:
-                lines = f.readlines()
-                last_1_line = lines[-3].split(' ')
-                min = last_1_line[12].strip()[0: -1]
-                avg = last_1_line[10].strip()[0: -1]
-                p90 = last_1_line[16].strip()[0: -1]
-                p95 = last_1_line[18].strip()[0: -1]
-                p99 = last_1_line[20].strip()[0: -1]
-                max = last_1_line[14].strip()[0: -1]
-
-                last_2_line = lines[-2].split(' ')
-                time_cost = last_2_line[4].strip()
-                QPS = last_2_line[-1].strip()
-                f.close()
+            f.close()
 
             # 运行告警机制，若是达到告警条件，发送告警信息到feishu pot
             ret = self.__taosbmHandler.exec_sql(
-                f'select avg(avg_delay) from perf_test.test_results where branch="{self.__branch}" and scenario="{self.__scenario_desc}" and test_case="{query_sql}" and machine_info={self.__cluster_id}')
+                f'select avg(write_speed) from perf_test.test_results where branch="{self.__branch}" and scenario="{self.__scenario_desc}" and test_case="{self.__scenario_desc}" and machine_info={self.__cluster_id}')
             if ret['rows'] == 1:
-                self.performance_metrics_check(current_value=avg, history_avg=str(ret['data'][0][0]), test_desc=query_sql)
+                self.performance_metrics_check(current_value=write_speed, history_avg=str(ret['data'][0][0]),
+                                               test_desc=self.__scenario_desc)
+
+        # 写入数据库
+        # 定义表名：st_[cluster_id]_[branch]_[secnario_desc]_[secnario_file]
+        sub_table_name = "t_{0}_{1}_{2}_{3}".format(self.__cluster_id, self.__branch, self.__scenario_desc,
+                                                    self.__scenario_file.split('.')[0]).replace('.', '_').replace('/', '_')
+
+        base_sql = "insert into perf_test.{0} using perf_test.test_results (branch, scenario, test_case, machine_info) tags ('{1}', '{2}', '{3}',{4}) values " \
+                   "(now, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, '{14}', '{15}')".format(
+            sub_table_name, self.__branch, self.__scenario_desc, self.__scenario_desc, self.__cluster_id, time_cost,
+            write_speed, 0, min, p90,
+            p95, p99, max, avg, socket.gethostname(), self.__commit_id)
+        self.__taosbmHandler.exec_sql(base_sql)
+
+    def run_test_case(self, tc_info: dict):
+        # 获取测试场景的描述信息
+        query_sql = tc_info['query_sql']
+        query_file = tc_info['query_file']
+        self.__cmdHandler.run_command(path=self.__perf_test_path,
+                                      command=f"taosBenchmark -f {self.__local_test_case_path}/{query_file}")
+
+        # 收集性能数据
+        with open("{0}/output.txt".format(self.__perf_test_path), 'r') as f:
+            lines = f.readlines()
+            last_1_line = lines[-3].split(' ')
+            min = last_1_line[12].strip()[0: -1]
+            avg = last_1_line[10].strip()[0: -1]
+            p90 = last_1_line[16].strip()[0: -1]
+            p95 = last_1_line[18].strip()[0: -1]
+            p99 = last_1_line[20].strip()[0: -1]
+            max = last_1_line[14].strip()[0: -1]
+
+            last_2_line = lines[-2].split(' ')
+            time_cost = last_2_line[4].strip()
+            QPS = last_2_line[-1].strip()
+            f.close()
+
+        # 运行告警机制，若是达到告警条件，发送告警信息到feishu pot
+        ret = self.__taosbmHandler.exec_sql(
+            f'select avg(avg_delay) from perf_test.test_results where branch="{self.__branch}" and scenario="{self.__scenario_desc}" and test_case="{query_sql}" and machine_info={self.__cluster_id}')
+        if ret['rows'] == 1:
+            self.performance_metrics_check(current_value=avg, history_avg=str(ret['data'][0][0]), test_desc=query_sql)
 
 
 
-            # 写入数据库
-            # 定义表名：st_[cluster_id]_[branch]_[scenario_desc]_[json_file_name]
-            sub_table_name = "t_{0}_{1}_{2}_{3}".format(self.__cluster_id, self.__branch, self.__scenario_desc,
-                                                     query_file.split('.')[0]).replace('.', '_').replace('/', '_')
+        # 写入数据库
+        # 定义表名：st_[cluster_id]_[branch]_[scenario_desc]_[json_file_name]
+        sub_table_name = "t_{0}_{1}_{2}_{3}".format(self.__cluster_id, self.__branch, self.__scenario_desc,
+                                                 query_file.split('.')[0]).replace('.', '_').replace('/', '_')
 
-            base_sql = "insert into perf_test.{0} using perf_test.test_results (branch, scenario, test_case, machine_info) tags ('{1}', '{2}', '{3}', {4}) values " \
-                       "(now, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, '{14}', '{15}')".format(
-                sub_table_name, self.__branch, self.__scenario_desc, query_sql, self.__cluster_id, time_cost, 0, QPS, min, p90,
-                p95, p99, max, avg, socket.gethostname(), self.__commit_id)
-            self.__taosbmHandler.exec_sql(base_sql)
+        base_sql = "insert into perf_test.{0} using perf_test.test_results (branch, scenario, test_case, machine_info) tags ('{1}', '{2}', '{3}', {4}) values " \
+                   "(now, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, '{14}', '{15}')".format(
+            sub_table_name, self.__branch, self.__scenario_desc, query_sql, self.__cluster_id, time_cost, 0, QPS, min, p90,
+            p95, p99, max, avg, socket.gethostname(), self.__commit_id)
+        self.__taosbmHandler.exec_sql(base_sql)
 
     def performance_metrics_check(self, current_value: str, history_avg: str, test_desc: str):
         send_alarm = False

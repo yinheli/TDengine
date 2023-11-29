@@ -1,5 +1,6 @@
 [scenarios]
 scenario1.json=10000table_10000column
+scenario2.json=1000table_1000column
 
 [query_cases]
 query_projection/query1.json=select ts, current, voltage from test.meters where ts > \'2022-10-01 00:00:00.000\' and ts < \'2022-10-01 00:30:00.000\'

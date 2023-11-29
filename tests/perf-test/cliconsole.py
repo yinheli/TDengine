@@ -190,12 +190,11 @@ def run_PerfTest_Backend(
             # 配置数据量级
             perfTester.set_test_group(test_group=test_group)
 
-            # ###################
             # 清理环境
-            # perfTester.clean_env()
+            perfTester.clean_env()
 
             # 下载db源代码
-            # perfTester.download_db()
+            perfTester.download_db()
 
             # 判断将要运行测试用例的分支最新commit是否有更新，若是数据库中存储的最新commit_id不等于当前的commit_id，则执行性能测试
             # if perfTester.is_last_commit(branch=branch):
@@ -204,17 +203,13 @@ def run_PerfTest_Backend(
             #     continue
 
             # 安装db
-            # perfTester.install_db()
+            perfTester.install_db()
 
-            # 插入数据
-            perfTester.insert_data()
-
-            # 执行查询
-            perfTester.run_test_case()
+            # 执行测试
+            perfTester.exec_test()
 
             # 备份数据
             perfTester.backup_test_case()
-            # ###################
 
 
 @cli.command(help="关闭后台运行性能测试的服务，会确保正在运行的测试完成后才会停止服务")

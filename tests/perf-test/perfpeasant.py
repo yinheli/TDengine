@@ -34,6 +34,7 @@ class Peasant(object):
         self.__tdengine_path = self.__cf.get("machineconfig", "tdengine_path")
         self.__log_path = self.__cf.get("machineconfig", "log_path")
         self.__db_clone_address = self.__cf.get("github", "db_clone_address")
+        self.__local_test_case_path = os.path.join(os.path.dirname(__file__), "test_cases")
 
         self.__test_case_path = "test_case_{0}".format(time.time())
 
@@ -145,7 +146,7 @@ class Peasant(object):
 
         self.__logger.info("【完成插入数据】")
 
-    def run_test_case(self):
+    def exec_test(self):
         self.__logger.info("【运行测试用例】")
         # 执行taosBenchmark，运行性能测试用例
         # 配置cluster_id
@@ -155,9 +156,28 @@ class Peasant(object):
         # 配置commit_id
         self.__taosbmHandller.set_commit_id(commit_id=self.__commit_id)
         # 配置test_group
-        self.__taosbmHandller.set_test_group(test_group=self.__test_group)
+        # self.__taosbmHandller.set_test_group(test_group=self.__test_group)
 
-        self.__taosbmHandller.run_test_case()
+        test_group_file = os.path.join(self.__local_test_case_path, self.__test_group)
+        cfHandler = configparser.ConfigParser()
+        cfHandler.read(test_group_file, encoding='UTF-8')
+
+        scenario_list = cfHandler.options(section="scenarios")
+
+        # 轮询执行TaosBenchmark
+        # 轮询执行scenario
+        for scenario_file in scenario_list:
+            scenario_desc = cfHandler.get(section="scenarios", option=str(scenario_file))
+            scenario_info = {'scenario_file': scenario_file, 'scenario_desc': scenario_desc}
+            self.__taosbmHandller.insert_data(scenario_info=scenario_info)
+
+            # 每个scenario下轮询执行test case
+            query_case_list = cfHandler.options(section="query_cases")
+
+            for query_file in query_case_list:
+                query_sql = cfHandler.get(section="query_cases", option=str(query_file))
+                tc_info = {'query_file': query_file, 'query_sql': query_sql}
+                self.__taosbmHandller.run_test_case(tc_info=tc_info)
 
         self.__logger.info("【完成运行测试用例】")
 
