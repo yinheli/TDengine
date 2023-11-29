@@ -1,0 +1,21 @@
+{
+    "filetype": "query",
+    "cfgdir": "/etc/taos",
+    "host": "127.0.0.1",
+    "port": 6030,
+    "user": "root",
+    "password": "taosdata",
+    "confirm_parameter_prompt": "no",
+    "databases": "test",
+    "query_times": 1,
+    "query_mode": "taosc",
+    "specified_table_query": {
+        "query_interval": 1,
+        "concurrent": 10,
+        "sqls": [
+            {
+                "sql": "select ts, current, voltage from meters where ts > '2022-10-01 00:00:00.000' and ts < '2022-10-01 00:30:00.000' limit 10000"
+            }
+        ]
+    }
+}

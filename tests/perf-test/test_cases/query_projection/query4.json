@@ -1,0 +1,21 @@
+{
+    "filetype": "query",
+    "cfgdir": "/etc/taos",
+    "host": "127.0.0.1",
+    "port": 6030,
+    "user": "root",
+    "password": "taosdata",
+    "confirm_parameter_prompt": "no",
+    "databases": "test",
+    "query_times": 1,
+    "query_mode": "taosc",
+    "specified_table_query": {
+        "query_interval": 1,
+        "concurrent": 10,
+        "sqls": [
+            {
+                "sql": "select ts, current, voltage from test.meters order by ts, voltage, current limit 10000"
+            }
+        ]
+    }
+}

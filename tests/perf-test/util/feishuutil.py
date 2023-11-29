@@ -9,7 +9,7 @@ class FeishuUtil(object):
         self.__host = None
         self.__commit_id = None
         self.__avg_history = None
-        self.__avg_delay = None
+        self.__current_value = None
         self.__tc_desc = None
         self.__scenario = None
         self.__branch = None
@@ -22,12 +22,11 @@ class FeishuUtil(object):
     def set_scenario(self, scenario: str):
         self.__scenario = scenario
 
-
     def set_tc_desc(self, tc_desc: str):
         self.__tc_desc = tc_desc
 
-    def set_avg_delay(self, avg_delay: str):
-        self.__avg_delay = avg_delay
+    def set_current_value(self, current_value: str):
+        self.__current_value = current_value
 
     def set_avg_history(self, avg_history: str):
         self.__avg_history = avg_history
@@ -37,8 +36,8 @@ class FeishuUtil(object):
 
     def set_commit_id(self, commit_id: str):
         self.__commit_id = commit_id
-        
-    def get_msg(self, text: str):
+
+    def __get_msg(self, text: str):
         return {
             "msg_type": "post",
             "content": {
@@ -57,15 +56,15 @@ class FeishuUtil(object):
         }
 
     def send_msg(self):
-        text = f'''        host       : {self.__host}
+        text = f'''        desc       : {self.__host}
         scenario   : {self.__scenario}
-        tc_desc    : {self.__tc_desc}
-        avg_delay  : {self.__avg_delay}
-        avg_history: {self.__avg_history}
+        test_case    : {self.__tc_desc}
+        current_value  : {self.__current_value}
+        history_value: {self.__avg_history}
         branch     : {self.__branch}
         commit_id  : {self.__commit_id}\n'''
 
-        json = self.get_msg(text)
+        json = self.__get_msg(text)
         headers = {
             'Content-Type': 'application/json'
         }

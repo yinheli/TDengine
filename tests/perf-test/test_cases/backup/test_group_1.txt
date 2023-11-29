@@ -1,4 +1,4 @@
-[scenario]
+[scenarios]
 scenario1.json=10000table_10000column
 
 [query_cases]

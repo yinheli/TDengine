@@ -192,10 +192,10 @@ def run_PerfTest_Backend(
 
             # ###################
             # 清理环境
-            perfTester.clean_env()
+            # perfTester.clean_env()
 
             # 下载db源代码
-            perfTester.download_db()
+            # perfTester.download_db()
 
             # 判断将要运行测试用例的分支最新commit是否有更新，若是数据库中存储的最新commit_id不等于当前的commit_id，则执行性能测试
             # if perfTester.is_last_commit(branch=branch):
@@ -204,7 +204,7 @@ def run_PerfTest_Backend(
             #     continue
 
             # 安装db
-            perfTester.install_db()
+            # perfTester.install_db()
 
             # 插入数据
             perfTester.insert_data()

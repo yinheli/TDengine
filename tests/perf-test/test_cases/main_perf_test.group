@@ -1,0 +1,9 @@
+[scenarios]
+scenario1.json=10000table_10000column
+
+[query_cases]
+query_projection/query1.json=select ts, current, voltage from test.meters where ts > \'2022-10-01 00:00:00.000\' and ts < \'2022-10-01 00:30:00.000\'
+query_projection/query2.json=select count(*) from meters where location = \'San Francisco\'
+query_projection/query3.json=select ts, current, voltage from test.meters where voltage=218
+query_projection/query4.json=select ts, current, voltage from test.meters order by ts, voltage, current
+query_projection/query5.json=select ts, current, voltage from test.meters limit 100 offset 10000

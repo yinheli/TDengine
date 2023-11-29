@@ -1,0 +1,22 @@
+{
+    "filetype": "query",
+    "cfgdir": "/etc/taos",
+    "host": "127.0.0.1",
+    "port": 6030,
+    "user": "root",
+    "password": "taosdata",
+    "confirm_parameter_prompt": "no",
+    "databases": "test",
+    "query_times": 10,
+    "query_mode": "taosc",
+    "specified_table_query": {
+        "query_interval": 1,
+        "concurrent": 1,
+        "sqls": [
+            {
+                "sql": "select avg(current), max(voltage), min(phase) from meters partition by tbname limit 10000",
+                "result": "./log/query_res12.txt"
+            }
+        ]
+    }
+}

@@ -1,6 +1,6 @@
 import os
 import configparser
-from enums.DataScaleEnum import DataScaleEnum
+from util.feishuutil import FeishuUtil
 from util.shellutil import CommandRunner
 from util.taosdbutil import TaosUtil
 import socket
@@ -36,6 +36,7 @@ class TaosBenchmarkRunner(object):
         self.__cmdHandler = CommandRunner(self.__logger)
 
         self.__local_test_case_path = os.path.join(os.path.dirname(__file__), "test_cases")
+        self.__feishuUtil = FeishuUtil()
     
     def set_cluster_id(self, cluster_id: int):
         self.__cluster_id = cluster_id
@@ -71,11 +72,11 @@ class TaosBenchmarkRunner(object):
         cfHandler = configparser.ConfigParser()
         cfHandler.read(test_group_file, encoding='UTF-8')
 
-        scenario_list = cfHandler.options(section="scenario")
+        scenario_list = cfHandler.options(section="scenarios")
 
         # 轮询执行TaosBenchmark
         for scenario_file in scenario_list:
-            scenario_desc = cfHandler.get(section="scenario", option=str(scenario_file))
+            scenario_desc = cfHandler.get(section="scenarios", option=str(scenario_file))
             self.__scenario_desc = scenario_desc
 
             # 执行TaosBenchmark
@@ -99,6 +100,13 @@ class TaosBenchmarkRunner(object):
                 max = last_1_line[6].strip().split(':')[1].strip()[0: -2]
 
                 f.close()
+
+                # 运行告警机制，若是达到告警条件，发送告警信息到feishu pot
+                ret = self.__taosbmHandler.exec_sql(
+                    f'select avg(write_speed) from perf_test.test_results where branch="{self.__branch}" and scenario="{self.__scenario_desc}" and test_case="{self.__scenario_desc}" and machine_info={self.__cluster_id}')
+                if ret['rows'] == 1:
+                    self.performance_metrics_check(current_value=write_speed, history_avg=str(ret['data'][0][0]),
+                                                   test_desc=self.__scenario_desc)
 
             # 写入数据库
             # 定义表名：st_[cluster_id]_[branch]_[secnario_desc]_[secnario_file]
@@ -149,6 +157,11 @@ class TaosBenchmarkRunner(object):
                 f.close()
 
             # 运行告警机制，若是达到告警条件，发送告警信息到feishu pot
+            ret = self.__taosbmHandler.exec_sql(
+                f'select avg(avg_delay) from perf_test.test_results where branch="{self.__branch}" and scenario="{self.__scenario_desc}" and test_case="{query_sql}" and machine_info={self.__cluster_id}')
+            if ret['rows'] == 1:
+                self.performance_metrics_check(current_value=avg, history_avg=str(ret['data'][0][0]), test_desc=query_sql)
+
 
 
             # 写入数据库
@@ -162,9 +175,37 @@ class TaosBenchmarkRunner(object):
                 p95, p99, max, avg, socket.gethostname(), self.__commit_id)
             self.__taosbmHandler.exec_sql(base_sql)
 
-    def calc_avg_history_data(self, branch: str, data_scale: str, tc_desc: str, machine_info: int):
+    def performance_metrics_check(self, current_value: str, history_avg: str, test_desc: str):
+        send_alarm = False
+        # 当当前查询速度比历史平均速度提升达到30%以上，告警提示
+        if float(current_value) <= float(history_avg) and (float(history_avg) - float(current_value)) / float(history_avg) >= 0.3:
+            self.__feishuUtil.set_host("当前速度比历史平均速度提升超过30%")
+            self.__logger.warning("当前速度比历史平均速度提升超过30%")
+            self.__logger.warning(f"当前速度   ：{current_value}")
+            self.__logger.warning(f"历史平均速度：{history_avg}")
+            send_alarm = True
 
-        pass
+        # 当当前查询速度比历史平均速度降低达到10%以上，告警提示
+        if float(current_value) >= float(history_avg) and (float(current_value) - float(history_avg)) / float(history_avg) >= 0.1:
+            self.__feishuUtil.set_host("当前速度比历史平均速度降低超过10%")
+            self.__logger.warning("当前速度比历史平均速度降低超过10%")
+            self.__logger.warning(f"当前速度   ：{current_value}")
+            self.__logger.warning(f"历史平均速度：{history_avg}")
+            send_alarm = True
+
+        if send_alarm:
+            self.__feishuUtil.set_scenario(self.__scenario_desc)
+            self.__feishuUtil.set_tc_desc(test_desc)
+            self.__feishuUtil.set_branch(self.__branch)
+            self.__feishuUtil.set_current_value(current_value)
+            self.__feishuUtil.set_avg_history(history_avg)
+            self.__feishuUtil.set_commit_id(self.__commit_id)
+            self.__feishuUtil.send_msg()
+
 
 if __name__ == "__main__":
+    taosbmHandler = TaosUtil(None)
+    ret = taosbmHandler.exec_sql(
+        f'select avg(id)  from perf_test.test')
+    print(ret)
     pass
