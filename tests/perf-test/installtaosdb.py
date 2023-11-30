@@ -61,7 +61,7 @@ class InstallTaosDB(object):
             self.__logger.info("本地代码路径 : [{0}]".format(self.__db_install_path))
 
             # 获取测试机器信息
-            condition_info = [("cluster_id", self.__cluster_id, DBDataTypeEnum.int), ("valid", self.__cluster_id, DBDataTypeEnum.int)]
+            condition_info = [("cluster_id", self.__cluster_id, DBDataTypeEnum.int), ("valid", "1", DBDataTypeEnum.int)]
             machine_info = self.__taosdbHandler.select(table="machine_info", condition_info=condition_info)
 
             self.__logger.info("执行机器信息 ->")

@@ -109,14 +109,14 @@ def cli(ctx, version):
 
 @cli.command(help="启动一个后台服务，在服务中根据用户输入的分支信息，循环执行性能测试")
 @click.option("--branches", "-b", type=str, required=True, help="指定分支信息，用逗号分隔", )
-# @click.option("--data-scale", "-s", type=str, required=False, default="mid", help="性能测试数据规模，暂支持3个级别：big、mid和tiny", )
 @click.option("--test-group", "-g", type=str, required=True, help="测试组文件名", )
 @click.option("--machine", "-m", type=str, required=True, help="测试机器集群id", )
+@click.option("--repeat", "-r", type=int, required=False, default=0, help="性能测试循环执行次数，默认为0，表示一直循环执行", )
 def run_PerfTest_Backend(
         branches: str,
-        # data_scale: str,
         test_group: str,
-        machine: str
+        machine: str,
+        repeat: int
 ):
     # 初始化配置文件读取实例
     confile = os.path.join(os.path.dirname(__file__), "conf", "config.ini")
@@ -170,8 +170,16 @@ def run_PerfTest_Backend(
     # 开始执行性能测试
     branch_list = branches.split(',')
     test_group_list = test_group.split(',')
+    exec_count = 0
     # 无限轮询
     while True:
+        if repeat == 0:
+            pass
+        else:
+            if exec_count == repeat:
+                break
+
+        exec_count += 1
         # 循环执行性能测试
         # while True:
         # 轮询每个配置的分支，运行一次性能测试
@@ -202,9 +210,10 @@ def run_PerfTest_Backend(
 
             # 轮询每个测试group，在当前分支循环执行每个测试group
             for tgroup in test_group_list:
-                # 配置数据量级
+                # 配置test_group
                 perfTester.set_test_group(test_group=tgroup)
 
+                appLogger.info(f"开始运行测试组 {tgroup} 中的测试用例" )
                 # 执行测试
                 perfTester.exec_test()
 

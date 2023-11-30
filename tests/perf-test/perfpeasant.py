@@ -162,22 +162,39 @@ class Peasant(object):
         cfHandler = configparser.ConfigParser()
         cfHandler.read(test_group_file, encoding='UTF-8')
 
-        scenario_list = cfHandler.options(section="scenarios")
+        if cfHandler.has_section("scenarios"):
+            scenario_list = cfHandler.options(section="scenarios")
 
-        # 轮询执行TaosBenchmark
-        # 轮询执行scenario
-        for scenario_file in scenario_list:
-            scenario_desc = cfHandler.get(section="scenarios", option=str(scenario_file))
-            scenario_info = {'scenario_file': scenario_file, 'scenario_desc': scenario_desc}
-            self.__taosbmHandller.insert_data(scenario_info=scenario_info)
+            # 轮询执行TaosBenchmark
+            # 轮询执行scenario
+            for scenario_file in scenario_list:
+                scenario_desc = cfHandler.get(section="scenarios", option=str(scenario_file))
+                scenario_info = {'scenario_file': scenario_file, 'scenario_desc': scenario_desc}
+                self.__taosbmHandller.insert_data(scenario_info=scenario_info)
 
-            # 每个scenario下轮询执行test case
-            query_case_list = cfHandler.options(section="query_cases")
+                if cfHandler.has_section("query_cases"):
+                    # 每个scenario下轮询执行test case
+                    query_case_list = cfHandler.options(section="query_cases")
 
-            for query_file in query_case_list:
-                query_sql = cfHandler.get(section="query_cases", option=str(query_file))
-                tc_info = {'query_file': query_file, 'query_sql': query_sql}
-                self.__taosbmHandller.run_test_case(tc_info=tc_info)
+                    for query_file in query_case_list:
+                        query_sql = cfHandler.get(section="query_cases", option=str(query_file))
+                        tc_info = {'query_file': query_file, 'query_sql': query_sql}
+                        self.__taosbmHandller.run_test_case(tc_info=tc_info)
+                else:
+                    self.__logger.warning("test_group文件中没有query_cases信息，跳过数据查询步骤")
+        else:
+            self.__logger.warning("test_group文件中没有scenarios信息，跳过数据生成步骤")
+            if cfHandler.has_section("query_cases"):
+                # 每个scenario下轮询执行test case
+                query_case_list = cfHandler.options(section="query_cases")
+
+                for query_file in query_case_list:
+                    query_sql = cfHandler.get(section="query_cases", option=str(query_file))
+                    tc_info = {'query_file': query_file, 'query_sql': query_sql}
+                    self.__taosbmHandller.run_test_case(tc_info=tc_info)
+            else:
+                self.__logger.warning("test_group文件中没有query_cases信息，跳过数据查询步骤")
+
 
         self.__logger.info("【完成运行测试用例】")
 
