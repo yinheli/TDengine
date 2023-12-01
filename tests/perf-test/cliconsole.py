@@ -242,13 +242,13 @@ def show_machines():
         print(line)
     pass
 
-@cli.command(help="关闭后台运行性能测试的服务，会确保正在运行的测试完成后才会停止服务")
-@click.option("--wait-for-finished", type=str, default=True, help="是否等待正在运行的性能测试完成后在停止服务.默认为True", )
-def abort_PerfTest_Backend(
-        wait_for_finished
-):
-    print(wait_for_finished)
-    pass
+# @cli.command(help="关闭后台运行性能测试的服务，会确保正在运行的测试完成后才会停止服务")
+# @click.option("--wait-for-finished", type=str, default=True, help="是否等待正在运行的性能测试完成后在停止服务.默认为True", )
+# def abort_PerfTest_Backend(
+#         wait_for_finished
+# ):
+#     print(wait_for_finished)
+#     pass
 
 
 if __name__ == "__main__":
