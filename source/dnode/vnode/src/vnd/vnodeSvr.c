@@ -1679,7 +1679,7 @@ _exit:
   if(insert_counter == NULL){
     int32_t label_count =2;
     const char *sample_labels[] = {"vgid", "endpoint"};
-    taos_counter_t *counter = taos_counter_new("insert_counter", "counter for insert sql",  label_count, sample_labels);
+    taos_counter_t *counter = taos_counter_new("cluster_info:insert_counter", "counter for insert sql",  label_count, sample_labels);
     if(taos_collector_registry_register_metric(counter) == 1){
       taos_counter_destroy(counter);
     }

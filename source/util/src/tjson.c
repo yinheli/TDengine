@@ -285,6 +285,23 @@ int32_t tjsonGetArraySize(const SJson* pJson) { return cJSON_GetArraySize(pJson)
 
 SJson* tjsonGetArrayItem(const SJson* pJson, int32_t index) { return cJSON_GetArrayItem(pJson, index); }
 
+SJson* tjsonGetArrayItemByName(const SJson* pJson, const char* pName) { 
+  int32_t size = cJSON_GetArraySize(pJson);
+
+  for(int32_t i = 0; i < size; i++){
+    SJson* item = cJSON_GetArrayItem(pJson, i);
+
+    char name[50] = {0};
+
+    int32_t code = tjsonGetObjectName(item, (char**)&name);
+    if(code != 0 || strcmp(name, pName) == 0){
+      return item;
+    }
+  }
+
+  return NULL;
+}
+
 int32_t tjsonToObject(const SJson* pJson, const char* pName, FToObject func, void* pObj) {
   SJson* pJsonObj = tjsonGetObjectItem(pJson, pName);
   if (NULL == pJsonObj) {

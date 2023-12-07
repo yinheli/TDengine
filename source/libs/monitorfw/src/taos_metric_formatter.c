@@ -13,7 +13,11 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define ALLOW_FORBID_FUNC
+
 #include <stdio.h>
+#include <stdint.h>
+#include "osMemory.h"
 
 // Public
 #include "taos_alloc.h"
@@ -27,6 +31,7 @@
 #include "taos_metric_sample_t.h"
 #include "taos_metric_t.h"
 #include "taos_string_builder_i.h"
+#include "tjson.h"
 
 
 taos_metric_formatter_t *taos_metric_formatter_new() {
@@ -186,6 +191,90 @@ int taos_metric_formatter_load_sample(taos_metric_formatter_t *self, taos_metric
   return taos_string_builder_add_char(self->string_builder, '\n');
 }
 
+int countOccurrences(char *str, char *toSearch) {
+    int count = 0;
+    char *ptr = str;
+    while ((ptr = strstr(ptr, toSearch)) != NULL) {
+        count++;
+        ptr++;
+    }
+    return count;
+}
+
+char *trim(char *str)
+{
+  char *p = str;
+  char *p1;
+  if(p)
+  {
+    p1 = p + strlen(str) - 1;
+    while(*p && isspace(*p)) p++;
+    while(p1 > p && isspace(*p1)) *p1-- = 0;
+  }
+  return p;
+}
+
+void splitStr(char** arr, char* str, const char* del) {
+  char* s = strtok(str, del);
+  while (s != NULL) {
+    *arr++ = s;
+    s = strtok(NULL, del);
+  }
+}
+
+int taos_metric_formatter_load_sample_new(taos_metric_formatter_t *self, taos_metric_sample_t *sample, 
+                                      char *ts, char *format, SJson *pJson) {
+  TAOS_ASSERT(self != NULL);
+  if (self == NULL) return 1;
+
+  int r = 0;
+
+  char* start = strstr(sample->l_value, "{");
+  char* end = strstr(sample->l_value, "}");
+
+  int32_t len = end -start;
+
+  char* keyvalues = taosMemoryMalloc(len);
+
+  memcpy(keyvalues, start + 1, len);
+
+  int32_t count = countOccurrences(keyvalues, ",");
+
+  char* keyvalue = taosMemoryMalloc(sizeof(char*) * count);
+  splitStr(&keyvalue, keyvalues, ",");
+
+  for(int32_t i = 0; i < count; i++){
+    char* arr[2] = {0};
+    splitStr((char**)&arr, keyvalue, "=");
+
+    char* value = trim(arr[1]);
+
+    
+  }
+
+
+  r = taos_string_builder_add_str(self->string_builder, sample->l_value);
+  if (r) return r;
+
+  r = taos_string_builder_add_char(self->string_builder, ' ');
+  if (r) return r;
+
+  char buffer[50];
+  sprintf(buffer, format, sample->r_value);
+  r = taos_string_builder_add_str(self->string_builder, buffer);
+  if (r) return r;
+
+  r = taos_string_builder_add_char(self->string_builder, ' ');
+  if (r) return r;
+
+  r = taos_string_builder_add_str(self->string_builder, ts);
+  if (r) return r;
+
+  taos_metric_sample_set(sample, 0);
+
+  return taos_string_builder_add_char(self->string_builder, '\n');
+}
+
 int taos_metric_formatter_clear(taos_metric_formatter_t *self) {
   TAOS_ASSERT(self != NULL);
   return taos_string_builder_clear(self->string_builder);
@@ -232,6 +321,41 @@ int taos_metric_formatter_load_metric(taos_metric_formatter_t *self, taos_metric
   return taos_string_builder_add_char(self->string_builder, '\n');
 }
 
+int taos_metric_formatter_load_metric_new(taos_metric_formatter_t *self, taos_metric_t *metric, char *ts, char *format, 
+                                          SJson* pJson) {
+  TAOS_ASSERT(self != NULL);
+  if (self == NULL) return 1;
+
+  int r = 0;
+
+  int32_t size = strlen(metric->name);
+  char* name = taosMemoryMalloc(size + 1);
+  memcpy(name, metric->name, size);
+  char* arr[2] = {0};
+  splitStr((char**)&arr, name, ":");
+
+  SJson* item = tjsonGetArrayItemByName(pJson, arr[0]);
+  if(item == NULL){
+    item = tjsonCreateObject();
+    tjsonAddItemToArray(pJson, item);
+  }
+
+
+  for (taos_linked_list_node_t *current_node = metric->samples->keys->head; current_node != NULL;
+       current_node = current_node->next) {
+    const char *key = (const char *)current_node->item;
+    if (metric->type == TAOS_HISTOGRAM) {
+
+    } else {
+      taos_metric_sample_t *sample = (taos_metric_sample_t *)taos_map_get(metric->samples, key);
+      if (sample == NULL) return 1;
+      r = taos_metric_formatter_load_sample_new(self, sample, ts, format, pJson);
+      if (r) return r;
+    }
+  }
+  return taos_string_builder_add_char(self->string_builder, '\n');
+}
+
 int taos_metric_formatter_load_metrics(taos_metric_formatter_t *self, taos_map_t *collectors, char *ts, char *format) {
   TAOS_ASSERT(self != NULL);
   int r = 0;
@@ -244,13 +368,27 @@ int taos_metric_formatter_load_metrics(taos_metric_formatter_t *self, taos_map_t
     taos_map_t *metrics = collector->collect_fn(collector);
     if (metrics == NULL) return 1;
 
-    for (taos_linked_list_node_t *current_node = metrics->keys->head; current_node != NULL;
-         current_node = current_node->next) {
-      const char *metric_name = (const char *)current_node->item;
-      taos_metric_t *metric = (taos_metric_t *)taos_map_get(metrics, metric_name);
-      if (metric == NULL) return 1;
-      r = taos_metric_formatter_load_metric(self, metric, ts, format);
-      if (r) return r;
+    if(strcmp(collector->name, "custom") != 0 ){
+      SJson* pJson = tjsonCreateArray();
+
+      for (taos_linked_list_node_t *current_node = metrics->keys->head; current_node != NULL;
+          current_node = current_node->next) {
+        const char *metric_name = (const char *)current_node->item;
+        taos_metric_t *metric = (taos_metric_t *)taos_map_get(metrics, metric_name);
+        if (metric == NULL) return 1;
+        r = taos_metric_formatter_load_metric_new(self, metric, ts, format, pJson);
+        if (r) return r;
+      }
+    }
+    else{
+      for (taos_linked_list_node_t *current_node = metrics->keys->head; current_node != NULL;
+          current_node = current_node->next) {
+        const char *metric_name = (const char *)current_node->item;
+        taos_metric_t *metric = (taos_metric_t *)taos_map_get(metrics, metric_name);
+        if (metric == NULL) return 1;
+        r = taos_metric_formatter_load_metric(self, metric, ts, format);
+        if (r) return r;
+      }
     }
   }
   return r;

@@ -82,6 +82,7 @@ int32_t tjsonGetDoubleValue(const SJson* pJson, const char* pName, double* pVal)
 
 int32_t tjsonGetArraySize(const SJson* pJson);
 SJson*  tjsonGetArrayItem(const SJson* pJson, int32_t index);
+SJson*  tjsonGetArrayItemByName(const SJson* pJson, const char* pName);
 
 typedef int32_t (*FToJson)(const void* pObj, SJson* pJson);
 
