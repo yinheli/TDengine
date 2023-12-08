@@ -12,8 +12,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 #define _DEFAULT_SOURCE
+
+#include "thash.h"
+#include "tjson.h"
 #include "mndDnode.h"
 #include "audit.h"
 #include "mndCluster.h"
@@ -27,6 +29,7 @@
 #include "mndUser.h"
 #include "mndVgroup.h"
 #include "tmisce.h"
+#include "taos_monitor.h"
 
 #define TSDB_DNODE_VER_NUMBER   2
 #define TSDB_DNODE_RESERVE_SIZE 64
@@ -502,7 +505,48 @@ static int32_t mndProcessStatisReq(SRpcMsg *pReq) {
     goto _OVER;
   }
 
-  monSendContent(pReq->pCont);
+  SJson* pJson = tjsonParse(pReq->pCont);
+
+  SJson* table = tjsonGetObjectItem(pJson, "cluster_info");
+
+  int32_t size = tjsonGetArraySize(table);
+  for(int32_t i = 0; i < size; i++){
+    SJson* item = tjsonGetArrayItem(table, i);
+    char clusterId[TSDB_CLUSTER_ID_LEN];
+    tjsonGetStringValue(item, "cluster_id", clusterId);
+
+    SJson* metrics = tjsonGetObjectItem(item, "metrics");
+
+    int32_t metricLen = tjsonGetArraySize(metrics);
+    for(int32_t j = 0; j < metricLen; j++){
+      SJson *item = tjsonGetArrayItem(metrics, j);
+
+      char name[100] = {0}; //todo
+      tjsonGetStringValue(item, "name", name);
+
+      double value = 0;
+      tjsonGetDoubleValue(item, "value", &value);
+
+      taos_counter_t* metric = taosHashGet(pMnode->clientMetrics, name, strlen(name)); 
+
+      if(metric == NULL){
+        int32_t label_count =1;
+        const char *sample_labels[] = {"cluster_id"};
+        metric = taos_counter_new("cluster_info:insert_counter", "counter for insert sql",  label_count, sample_labels);
+        if(taos_collector_registry_register_metric(metric) == 1){
+          taos_counter_destroy(metric);
+        }
+        taosHashPut(pMnode->clientMetrics, name, strlen(name), metric, sizeof(taos_counter_t*));
+      }
+
+      const char *sample_labels[] = {clusterId};
+      taos_counter_add(metric, value, sample_labels);
+    }
+
+    
+  }
+
+  //monSendContent(pReq->pCont);
 
 _OVER:
   tFreeSStatisReq(&statisReq);

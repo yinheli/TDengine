@@ -201,17 +201,18 @@ int countOccurrences(char *str, char *toSearch) {
     return count;
 }
 
-char *trim(char *str)
+
+void strip(char *s)
 {
-  char *p = str;
-  char *p1;
-  if(p)
-  {
-    p1 = p + strlen(str) - 1;
-    while(*p && isspace(*p)) p++;
-    while(p1 > p && isspace(*p1)) *p1-- = 0;
-  }
-  return p;
+    size_t i;
+    size_t len = strlen(s);
+    size_t offset = 0;
+    for(i = 0; i < len; ++i){
+        char c = s[i];
+        if(c=='\"') ++offset;
+        else s[i-offset] = c;
+    }
+    s[len-offset] = '\0';
 }
 
 void splitStr(char** arr, char* str, const char* del) {
@@ -223,7 +224,7 @@ void splitStr(char** arr, char* str, const char* del) {
 }
 
 int taos_metric_formatter_load_sample_new(taos_metric_formatter_t *self, taos_metric_sample_t *sample, 
-                                      char *ts, char *format, SJson *pJson) {
+                                      char *ts, char *format, char *metricName, SJson *arrayTable) {
   TAOS_ASSERT(self != NULL);
   if (self == NULL) return 1;
 
@@ -235,44 +236,60 @@ int taos_metric_formatter_load_sample_new(taos_metric_formatter_t *self, taos_me
   int32_t len = end -start;
 
   char* keyvalues = taosMemoryMalloc(len);
-
-  memcpy(keyvalues, start + 1, len);
+  memset(keyvalues, 0, len);
+  memcpy(keyvalues, start + 1, len - 1);
 
   int32_t count = countOccurrences(keyvalues, ",");
 
-  char* keyvalue = taosMemoryMalloc(sizeof(char*) * count);
-  splitStr(&keyvalue, keyvalues, ",");
+  char** keyvalue = taosMemoryMalloc(sizeof(char*) * (count + 1));
+  memset(keyvalue, 0, sizeof(char*) * (count + 1));
+  splitStr(keyvalue, keyvalues, ",");
 
-  for(int32_t i = 0; i < count; i++){
-    char* arr[2] = {0};
-    splitStr((char**)&arr, keyvalue, "=");
+  char** arr = taosMemoryMalloc(sizeof(char*) * (count + 1) * 2);
+  memset(arr, 0, sizeof(char*) * (count + 1) * 2);
 
-    char* value = trim(arr[1]);
+  bool isfound = true;
+  for(int32_t i = 0; i < count + 1; i++){
+    char* str = *(keyvalue + i);
 
-    
+    char** pair = arr + i * 2;
+    splitStr(pair, str, "=");
+
+    strip(pair[1]);
   }
 
+  SJson* item = tjsonGetArrayItemByPair(arrayTable, arr, count + 1);
 
-  r = taos_string_builder_add_str(self->string_builder, sample->l_value);
-  if (r) return r;
+  SJson* metrics = NULL;
+  if(item == NULL) {
+    item = tjsonCreateObject();
+    for(int32_t i = 0; i < count + 1; i++){
+      char** pair = arr + i * 2;
 
-  r = taos_string_builder_add_char(self->string_builder, ' ');
-  if (r) return r;
+      char* key = *pair;
+      char* value = *(pair + 1);
 
-  char buffer[50];
-  sprintf(buffer, format, sample->r_value);
-  r = taos_string_builder_add_str(self->string_builder, buffer);
-  if (r) return r;
+      tjsonAddStringToObject(item, key, value);
+    }
 
-  r = taos_string_builder_add_char(self->string_builder, ' ');
-  if (r) return r;
+    metrics = tjsonCreateArray();
+    tjsonAddItemToObject(item, "metrics", metrics);
 
-  r = taos_string_builder_add_str(self->string_builder, ts);
-  if (r) return r;
+    tjsonAddItemToArray(arrayTable, item);
+  }
+  else{
+    metrics = tjsonGetObjectItem(item, "metrics");
+  }
+
+  SJson* metric = tjsonCreateObject();
+  tjsonAddStringToObject(metric, "name", metricName);
+  tjsonAddDoubleToObject(metric, "value", sample->r_value);
+
+  tjsonAddItemToArray(metrics, metric);
 
   taos_metric_sample_set(sample, 0);
 
-  return taos_string_builder_add_char(self->string_builder, '\n');
+  return 0;
 }
 
 int taos_metric_formatter_clear(taos_metric_formatter_t *self) {
@@ -334,10 +351,12 @@ int taos_metric_formatter_load_metric_new(taos_metric_formatter_t *self, taos_me
   char* arr[2] = {0};
   splitStr((char**)&arr, name, ":");
 
-  SJson* item = tjsonGetArrayItemByName(pJson, arr[0]);
-  if(item == NULL){
-    item = tjsonCreateObject();
-    tjsonAddItemToArray(pJson, item);
+  //SJson* item = tjsonGetArrayItemByName(pJson, arr[0]);
+  SJson* arrayTable = tjsonGetObjectItem(pJson, arr[0]);
+  if(arrayTable == NULL){
+    arrayTable = tjsonCreateArray();
+    //tjsonAddItemToArray(pJson, item);
+    tjsonAddItemToObject(pJson, arr[0], arrayTable);
   }
 
 
@@ -349,14 +368,14 @@ int taos_metric_formatter_load_metric_new(taos_metric_formatter_t *self, taos_me
     } else {
       taos_metric_sample_t *sample = (taos_metric_sample_t *)taos_map_get(metric->samples, key);
       if (sample == NULL) return 1;
-      r = taos_metric_formatter_load_sample_new(self, sample, ts, format, pJson);
+      r = taos_metric_formatter_load_sample_new(self, sample, ts, format, arr[1], arrayTable);
       if (r) return r;
     }
   }
   return taos_string_builder_add_char(self->string_builder, '\n');
 }
 
-int taos_metric_formatter_load_metrics(taos_metric_formatter_t *self, taos_map_t *collectors, char *ts, char *format) {
+int taos_metric_formatter_load_metrics(taos_metric_formatter_t *self, taos_map_t *collectors, char *ts, char *format, SJson* pJson) {
   TAOS_ASSERT(self != NULL);
   int r = 0;
   for (taos_linked_list_node_t *current_node = collectors->keys->head; current_node != NULL;
@@ -369,7 +388,9 @@ int taos_metric_formatter_load_metrics(taos_metric_formatter_t *self, taos_map_t
     if (metrics == NULL) return 1;
 
     if(strcmp(collector->name, "custom") != 0 ){
-      SJson* pJson = tjsonCreateArray();
+      
+      tjsonAddStringToObject(pJson, "ts", ts);
+      tjsonAddDoubleToObject(pJson, "protocol", 2);
 
       for (taos_linked_list_node_t *current_node = metrics->keys->head; current_node != NULL;
           current_node = current_node->next) {

@@ -34,6 +34,9 @@
 #include "taos_metric_t.h"
 #include "taos_string_builder_i.h"
 
+#define ALLOW_FORBID_FUNC
+#include "tjson.h"
+
 taos_collector_registry_t *TAOS_COLLECTOR_REGISTRY_DEFAULT;
 
 taos_collector_registry_t *taos_collector_registry_new(const char *name) {
@@ -189,7 +192,8 @@ int taos_collector_registry_validate_metric_name(taos_collector_registry_t *self
 
 const char *taos_collector_registry_bridge(taos_collector_registry_t *self, char *ts, char *format) {
   taos_metric_formatter_clear(self->metric_formatter);
-  taos_metric_formatter_load_metrics(self->metric_formatter, self->collectors, ts, format);
+  SJson* pJson = tjsonCreateObject();
+  taos_metric_formatter_load_metrics(self->metric_formatter, self->collectors, ts, format, pJson);
   char *out = taos_metric_formatter_dump(self->metric_formatter);
 
   int r = 0;
@@ -197,7 +201,8 @@ const char *taos_collector_registry_bridge(taos_collector_registry_t *self, char
   if (r) return NULL;
   taos_free(out);
 
-  return taos_string_builder_str(self->out);
+  //return taos_string_builder_str(self->out);
+  return tjsonToString(pJson);
 }
 
 int taos_collector_registry_clear_out(taos_collector_registry_t *self){

@@ -16,6 +16,7 @@
 #define _DEFAULT_SOURCE
 #include "mndInt.h"
 #include "systable.h"
+#include "taos_monitor.h"
 
 // connection/application/
 int32_t mndInitPerfsTableSchema(const SSysDbTableSchema *pSrc, int32_t colNum, SSchema **pDst) {
@@ -133,6 +134,16 @@ int32_t mndInitPerfs(SMnode *pMnode) {
   return mndPerfsInitMeta(pMnode->perfsMeta);
 }
 
+int32_t mndInitClientMetrics(SMnode *pMnode) {
+  pMnode->clientMetrics = taosHashInit(20, taosGetDefaultHashFunction(TSDB_DATA_TYPE_BINARY), false, HASH_NO_LOCK); //todo
+  if (pMnode->perfsMeta == NULL) {
+    terrno = TSDB_CODE_OUT_OF_MEMORY;
+    return -1;
+  }
+
+  return 0;
+}
+
 void mndCleanupPerfs(SMnode *pMnode) {
   if (NULL == pMnode->perfsMeta) {
     return;
@@ -143,6 +154,24 @@ void mndCleanupPerfs(SMnode *pMnode) {
     STableMetaRsp *meta = (STableMetaRsp *)pIter;
 
     taosMemoryFreeClear(meta->pSchemas);
+
+    pIter = taosHashIterate(pMnode->perfsMeta, pIter);
+  }
+
+  taosHashCleanup(pMnode->perfsMeta);
+  pMnode->perfsMeta = NULL;
+}
+
+void mndCleanupClientMetrics(SMnode *pMnode) {
+  if (NULL == pMnode->perfsMeta) {
+    return;
+  }
+
+  void *pIter = taosHashIterate(pMnode->perfsMeta, NULL);
+  while (pIter) {
+    taos_counter_t* metric = (taos_counter_t*)pIter;
+
+    taos_counter_destroy(metric);
 
     pIter = taosHashIterate(pMnode->perfsMeta, pIter);
   }

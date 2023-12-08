@@ -195,6 +195,8 @@ static void monGenBasicJson(SMonInfo *pMonitor) {
   tjsonAddDoubleToObject(pJson, "protocol", pInfo->protocol);
 }
 
+taos_counter_t *master_uptime = NULL;
+
 static void monGenClusterJson(SMonInfo *pMonitor) {
   SMonClusterInfo *pInfo = &pMonitor->mmInfo.cluster;
   if (pMonitor->mmInfo.cluster.first_ep_dnode_id == 0) return;
@@ -221,6 +223,25 @@ static void monGenClusterJson(SMonInfo *pMonitor) {
   tjsonAddDoubleToObject(pJson, "connections_total", pInfo->connections_total);
   tjsonAddDoubleToObject(pJson, "topics_total", pInfo->topics_toal);
   tjsonAddDoubleToObject(pJson, "streams_total", pInfo->streams_total);
+
+  if(master_uptime == NULL){
+    int32_t label_count =1;
+    const char *sample_labels[] = {"clusterid"};
+    taos_counter_t *counter = taos_counter_new("cluster_info:master_uptime", "counter for insert sql",  label_count, sample_labels);
+    if(taos_collector_registry_register_metric(counter) == 1){
+      taos_counter_destroy(counter);
+    }
+    else{
+      atomic_store_ptr(&master_uptime, counter);
+    }
+  }
+
+  char buf[50];
+  SMonBasicInfo *pBasicInfo = &pMonitor->dmInfo.basic;
+  snprintf(buf, sizeof(buf), "%" PRId64, pBasicInfo->cluster_id);
+  const char *sample_labels[] = {buf};
+
+  taos_counter_inc(master_uptime, sample_labels);
 
   SJson *pDnodesJson = tjsonAddArrayToObject(pJson, "dnodes");
   if (pDnodesJson == NULL) return;
@@ -556,7 +577,7 @@ void monSendPromReport() {
   char ts[50];
   sprintf(ts, "%" PRId64, taosGetTimestamp(TSDB_TIME_PRECISION_MILLI));
   char *pCont = (char *)taos_collector_registry_bridge(TAOS_COLLECTOR_REGISTRY_DEFAULT, ts, "%" PRId64);
-  //uInfoL("report cont:\n%s\n", pCont);
+  uInfoL("report cont:\n%s\n", pCont);
   if (pCont != NULL) {
     EHttpCompFlag flag = tsMonitor.cfg.comp ? HTTP_GZIP : HTTP_FLAT;
     if (taosSendHttpReport(tsMonitor.cfg.server, tsMonFwUri, tsMonitor.cfg.port, pCont, strlen(pCont), flag) != 0) {
