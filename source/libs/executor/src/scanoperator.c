@@ -3491,7 +3491,7 @@ int32_t startRowIdSort(STableMergeScanInfo *pInfo) {
   pSort->dataFileOffset = 0;
   taosGetTmpfilePath(tsTempDir, "tms-block-data", pSort->dataPath);
   pSort->dataFile = fopen(pSort->dataPath, "wb+");
-  setvbuf(pSort->dataFile, pSort->dataFileBuf, _IOFBF, pInfo->bufPageSize*4096);
+  setvbuf(pSort->dataFile, pSort->dataFileBuf, _IOFBF, 4096*4096);
   return 0;
 }
 
@@ -3841,7 +3841,7 @@ SOperatorInfo* createTableMergeScanOperatorInfo(STableScanPhysiNode* pTableScanN
 
     STmsSortRowIdInfo* pSortRowIdInfo = &pInfo->tmsSortRowIdInfo;
     initRowIdSortRowBuf(&pSortRowIdInfo->rowBytes, &pSortRowIdInfo->rowBuf, pInfo->pResBlock);
-    pSortRowIdInfo->dataFileBuf = taosMemoryMalloc(pInfo->bufPageSize * 4096);
+    pSortRowIdInfo->dataFileBuf = taosMemoryMalloc(4096 * 4096);
   }
   initLimitInfo(pTableScanNode->scan.node.pLimit, pTableScanNode->scan.node.pSlimit, &pInfo->limitInfo);
   pInfo->mTableNumRows = tSimpleHashInit(1024,
