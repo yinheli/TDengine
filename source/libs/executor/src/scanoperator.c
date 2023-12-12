@@ -12,6 +12,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+#define ALLOW_FORBID_FUNC
 
 #include "executorInt.h"
 #include "filter.h"
@@ -3293,8 +3294,8 @@ static int32_t transformIntoSortInputBlock(STableMergeScanInfo* pInfo, SSDataBlo
 
   for (int32_t i = 0; i < nRows; ++i) {
     int32_t rowLen = blockRowToBuf(pSrcBlock, i, pSortInfo->rowBuf);
-    taosLSeekFile(pSortInfo->dataFile, pSortInfo->dataFileOffset, SEEK_SET);
-    taosWriteFile(pSortInfo->dataFile, pSortInfo->rowBuf, rowLen);
+    fseek(pSortInfo->dataFile, pSortInfo->dataFileOffset, SEEK_SET);
+    fwrite(pSortInfo->rowBuf, rowLen, 1, pSortInfo->dataFile);
     colDataSetInt64(offsetCol, i, &pSortInfo->dataFileOffset);
     colDataSetInt32(lenCol, i, &rowLen);
 
@@ -3311,8 +3312,8 @@ static void appendOneRowIdRowToDataBlock(STableMergeScanInfo* pInfo, SSDataBlock
   int64_t offset = *(int64_t*)tsortGetValue(pTupleHandle, 1);
   int32_t length = *(int32_t*)tsortGetValue(pTupleHandle, 2);
 
-  taosLSeekFile(pSortInfo->dataFile, offset, SEEK_SET);
-  taosReadFile(pSortInfo->dataFile, pSortInfo->rowBuf, length);
+  fseek(pSortInfo->dataFile, offset, SEEK_SET);
+  fread(pSortInfo->rowBuf, length, 1, pSortInfo->dataFile);
 
   int32_t numOfCols = taosArrayGetSize(pBlock->pDataBlock);
   char* buf = pSortInfo->rowBuf;
@@ -3489,15 +3490,15 @@ int32_t startRowIdSort(STableMergeScanInfo *pInfo) {
   STmsSortRowIdInfo* pSort = &pInfo->tmsSortRowIdInfo;
   pSort->dataFileOffset = 0;
   taosGetTmpfilePath(tsTempDir, "tms-block-data", pSort->dataPath);
-  pSort->dataFile = taosOpenFile(pSort->dataPath, TD_FILE_CREATE | TD_FILE_WRITE | TD_FILE_READ | TD_FILE_TRUNC | TD_FILE_AUTO_DEL);
-
+  pSort->dataFile = fopen(pSort->dataPath, "wb+");
+  setvbuf(pSort->dataFile, pSort->dataFileBuf, _IOFBF, pInfo->bufPageSize*4096);
   return 0;
 }
 
 int32_t stopRowIdSort(STableMergeScanInfo *pInfo) {
   STmsSortRowIdInfo* pSort = &pInfo->tmsSortRowIdInfo;
 
-  taosCloseFile(&pSort->dataFile);
+  fclose(pSort->dataFile);
   taosRemoveFile(pSort->dataPath);
 
   return 0;
@@ -3718,6 +3719,7 @@ void destroyTableMergeScanOperatorInfo(void* param) {
   STableMergeScanInfo* pTableScanInfo = (STableMergeScanInfo*)param;
   cleanupQueryTableDataCond(&pTableScanInfo->base.cond);
 
+  taosMemoryFree(pTableScanInfo->tmsSortRowIdInfo.dataFileBuf);
   taosMemoryFree(pTableScanInfo->tmsSortRowIdInfo.rowBuf);
 
   pTableScanInfo->base.readerAPI.tsdReaderClose(pTableScanInfo->base.dataReader);
@@ -3839,6 +3841,7 @@ SOperatorInfo* createTableMergeScanOperatorInfo(STableScanPhysiNode* pTableScanN
 
     STmsSortRowIdInfo* pSortRowIdInfo = &pInfo->tmsSortRowIdInfo;
     initRowIdSortRowBuf(&pSortRowIdInfo->rowBytes, &pSortRowIdInfo->rowBuf, pInfo->pResBlock);
+    pSortRowIdInfo->dataFileBuf = taosMemoryMalloc(pInfo->bufPageSize * 4096);
   }
   initLimitInfo(pTableScanNode->scan.node.pLimit, pTableScanNode->scan.node.pSlimit, &pInfo->limitInfo);
   pInfo->mTableNumRows = tSimpleHashInit(1024,
