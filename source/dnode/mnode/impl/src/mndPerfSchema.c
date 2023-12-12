@@ -135,7 +135,8 @@ int32_t mndInitPerfs(SMnode *pMnode) {
 }
 
 int32_t mndInitClientMetrics(SMnode *pMnode) {
-  pMnode->clientMetrics = taosHashInit(20, taosGetDefaultHashFunction(TSDB_DATA_TYPE_BINARY), false, HASH_NO_LOCK); //todo
+  //pMnode->clientMetrics = taosHashInit(20, taosGetDefaultHashFunction(TSDB_DATA_TYPE_BINARY), false, HASH_NO_LOCK); //todo
+  pMnode->clientMetrics = taosArrayInit(0, sizeof(void*));
   if (pMnode->perfsMeta == NULL) {
     terrno = TSDB_CODE_OUT_OF_MEMORY;
     return -1;

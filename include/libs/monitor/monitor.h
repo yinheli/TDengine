@@ -120,7 +120,7 @@ typedef struct {
   int32_t streams_total;
   SArray *dnodes;  // array of SMonDnodeDesc
   SArray *mnodes;  // array of SMonMnodeDesc
-  SArray *client_metrics;
+  SArray *clientMetrics;
 } SMonClusterInfo;
 
 typedef struct {

@@ -12,8 +12,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 #define _DEFAULT_SOURCE
+
+#include "tarray.h"
 #include "mndAcct.h"
 #include "mndCluster.h"
 #include "mndConsumer.h"
@@ -42,6 +43,7 @@
 #include "mndUser.h"
 #include "mndVgroup.h"
 #include "mndView.h"
+#include "taos_monitor.h"
 
 static inline int32_t mndAcquireRpc(SMnode *pMnode) {
   int32_t code = 0;
@@ -833,6 +835,25 @@ int32_t mndGetMonitorInfo(SMnode *pMnode, SMonClusterInfo *pClusterInfo, SMonVgr
     }
     taosArrayPush(pClusterInfo->mnodes, &desc);
     sdbRelease(pSdb, pObj);
+  }
+
+  int32_t size = taosArrayGetSize(pMnode->clientMetrics);
+  int32_t monSize = taosArrayGetSize(pClusterInfo->clientMetrics);
+  for(int32_t i = 0; i < size; i++){
+    taos_counter_t* metric = taosArrayGet(pMnode->clientMetrics, i);
+
+    char* arr[2] = {0};
+    taos_monitor_split_str_metric((char**)&arr, metric, ":");
+
+    if(strcmp(arr[0], "cluster_info") == 0){
+      for(int32_t j = 0; j < monSize; j++){
+        taos_counter_t* metric = taosArrayGet(pMnode->clientMetrics, i);
+
+        if(metric == NULL){
+          taosArrayPush(pClusterInfo->clientMetrics, metric);
+        }
+      }
+    }
   }
 
   // vgroup info

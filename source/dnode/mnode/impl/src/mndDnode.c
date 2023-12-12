@@ -14,6 +14,7 @@
  */
 #define _DEFAULT_SOURCE
 
+#include "tarray.h"
 #include "thash.h"
 #include "tjson.h"
 #include "mndDnode.h"
@@ -505,6 +506,8 @@ static int32_t mndProcessStatisReq(SRpcMsg *pReq) {
     goto _OVER;
   }
 
+  mInfo("process statis req, %s", statisReq.pCont);
+
   SJson* pJson = tjsonParse(pReq->pCont);
 
   SJson* table = tjsonGetObjectItem(pJson, "cluster_info");
@@ -512,8 +515,26 @@ static int32_t mndProcessStatisReq(SRpcMsg *pReq) {
   int32_t size = tjsonGetArraySize(table);
   for(int32_t i = 0; i < size; i++){
     SJson* item = tjsonGetArrayItem(table, i);
-    char clusterId[TSDB_CLUSTER_ID_LEN];
-    tjsonGetStringValue(item, "cluster_id", clusterId);
+
+    SJson* arrayTag = tjsonGetObjectItem(item, "tags");
+
+    int32_t tagSize = tjsonGetArraySize(arrayTag);
+
+    char** labels = taosMemoryMalloc(sizeof(char*) * tagSize); //todo
+    char** sample_labels = taosMemoryMalloc(sizeof(char*) * tagSize);
+
+    for(int32_t j = 0; j < tagSize; j++){
+      SJson* item = tjsonGetArrayItem(arrayTag, j);
+
+      *(labels + j) = taosMemoryMalloc(100); //todo
+      tjsonGetStringValue(item, "name", *(labels + j));
+
+      *(sample_labels + j) = taosMemoryMalloc(100);
+      tjsonGetStringValue(item, "value", *(sample_labels + j));
+    }
+
+    //char clusterId[TSDB_CLUSTER_ID_LEN];
+    //tjsonGetStringValue(item, "cluster_id", clusterId);
 
     SJson* metrics = tjsonGetObjectItem(item, "metrics");
 
@@ -527,20 +548,23 @@ static int32_t mndProcessStatisReq(SRpcMsg *pReq) {
       double value = 0;
       tjsonGetDoubleValue(item, "value", &value);
 
-      taos_counter_t* metric = taosHashGet(pMnode->clientMetrics, name, strlen(name)); 
+      //taos_counter_t* metric = taosHashGet(pMnode->clientMetrics, name, strlen(name)); 
+      taos_counter_t* metric = taosArrayGet(pMnode->clientMetrics, j);
 
       if(metric == NULL){
-        int32_t label_count =1;
-        const char *sample_labels[] = {"cluster_id"};
-        metric = taos_counter_new("cluster_info:insert_counter", "counter for insert sql",  label_count, sample_labels);
+        
+
+        //int32_t label_count =1;
+        //const char *sample_labels[] = {"cluster_id"};
+        metric = taos_counter_new(name, "",  tagSize, (const char**)labels);
         if(taos_collector_registry_register_metric(metric) == 1){
           taos_counter_destroy(metric);
         }
-        taosHashPut(pMnode->clientMetrics, name, strlen(name), metric, sizeof(taos_counter_t*));
+        taosArrayPush(pMnode->clientMetrics, metric);
       }
 
-      const char *sample_labels[] = {clusterId};
-      taos_counter_add(metric, value, sample_labels);
+      //const char *sample_labels[] = {clusterId};
+      taos_counter_add(metric, value, (const char**)sample_labels);
     }
 
     

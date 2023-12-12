@@ -14,6 +14,8 @@
  */
 
 #define _DEFAULT_SOURCE
+
+#include "tarray.h"
 #include "monInt.h"
 #include "taoserror.h"
 #include "thttp.h"
@@ -242,6 +244,18 @@ static void monGenClusterJson(SMonInfo *pMonitor) {
   const char *sample_labels[] = {buf};
 
   taos_counter_inc(master_uptime, sample_labels);
+
+  int32_t monSize = taosArrayGetSize(pInfo->clientMetrics);
+  for(int32_t i = 0; i < monSize; i++){
+    taos_counter_t* metric = taosArrayGet(pInfo->clientMetrics, i);
+
+    char* arr[2] = {0};
+    taos_monitor_split_str_metric((char**)&arr, metric, ":");
+
+    if(strcmp(arr[0], "cluster_info") != 0) continue;
+
+    taos_metric_formatter_load_metric_custom(metric, pJson);
+  }
 
   SJson *pDnodesJson = tjsonAddArrayToObject(pJson, "dnodes");
   if (pDnodesJson == NULL) return;
@@ -561,7 +575,7 @@ void monSendReport() {
   monGenLogJson(pMonitor);
 
   char *pCont = tjsonToString(pMonitor->pJson);
-  // uDebugL("report cont:%s\n", pCont);
+  uInfoL("report cont:%s\n", pCont);
   if (pCont != NULL) {
     EHttpCompFlag flag = tsMonitor.cfg.comp ? HTTP_GZIP : HTTP_FLAT;
     if (taosSendHttpReport(tsMonitor.cfg.server, tsMonUri, tsMonitor.cfg.port, pCont, strlen(pCont), flag) != 0) {
@@ -590,7 +604,7 @@ void monSendPromReport() {
 
 void monSendContent(char *pCont) {
   if (!tsEnableMonitor || tsMonitorFqdn[0] == 0 || tsMonitorPort == 0) return;
-  //uInfoL("report cont:\n%s\n", pCont);
+  uInfoL("report cont:\n%s\n", pCont);
   if (pCont != NULL) {
     EHttpCompFlag flag = tsMonitor.cfg.comp ? HTTP_GZIP : HTTP_FLAT;
     if (taosSendHttpReport(tsMonitor.cfg.server, tsMonFwUri, tsMonitor.cfg.port, pCont, strlen(pCont), flag) != 0) {
