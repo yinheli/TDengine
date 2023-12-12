@@ -3491,7 +3491,6 @@ int32_t startRowIdSort(STableMergeScanInfo *pInfo) {
   pSort->dataFileOffset = 0;
   taosGetTmpfilePath(tsTempDir, "tms-block-data", pSort->dataPath);
   pSort->dataFile = fopen(pSort->dataPath, "wb+");
-  setvbuf(pSort->dataFile, pSort->dataFileBuf, _IOFBF, 4096*4096);
   return 0;
 }
 
@@ -3719,7 +3718,6 @@ void destroyTableMergeScanOperatorInfo(void* param) {
   STableMergeScanInfo* pTableScanInfo = (STableMergeScanInfo*)param;
   cleanupQueryTableDataCond(&pTableScanInfo->base.cond);
 
-  taosMemoryFree(pTableScanInfo->tmsSortRowIdInfo.dataFileBuf);
   taosMemoryFree(pTableScanInfo->tmsSortRowIdInfo.rowBuf);
 
   pTableScanInfo->base.readerAPI.tsdReaderClose(pTableScanInfo->base.dataReader);
@@ -3841,7 +3839,6 @@ SOperatorInfo* createTableMergeScanOperatorInfo(STableScanPhysiNode* pTableScanN
 
     STmsSortRowIdInfo* pSortRowIdInfo = &pInfo->tmsSortRowIdInfo;
     initRowIdSortRowBuf(&pSortRowIdInfo->rowBytes, &pSortRowIdInfo->rowBuf, pInfo->pResBlock);
-    pSortRowIdInfo->dataFileBuf = taosMemoryMalloc(4096 * 4096);
   }
   initLimitInfo(pTableScanNode->scan.node.pLimit, pTableScanNode->scan.node.pSlimit, &pInfo->limitInfo);
   pInfo->mTableNumRows = tSimpleHashInit(1024,
