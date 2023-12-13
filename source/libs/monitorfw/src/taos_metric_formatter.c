@@ -251,10 +251,6 @@ int taos_metric_formatter_load_metrics(taos_metric_formatter_t *self, taos_map_t
     if (metrics == NULL) return 1;
 
     if(strcmp(collector->name, "custom") != 0 ){
-      
-      tjsonAddStringToObject(pJson, "ts", ts);
-      tjsonAddDoubleToObject(pJson, "protocol", 2);
-
       for (taos_linked_list_node_t *current_node = metrics->keys->head; current_node != NULL;
           current_node = current_node->next) {
         const char *metric_name = (const char *)current_node->item;
