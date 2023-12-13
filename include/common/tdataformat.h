@@ -78,19 +78,6 @@ const static uint8_t BIT2_MAP[4] = {0b11111100, 0b11110011, 0b11001111, 0b001111
   } while (0)
 #define GET_BIT2(p, i) (((p)[DIV_4(i)] >> MOD_4_TIME_2(i)) & THREE)
 
-// SBuffer ================================
-struct SBuffer {
-  int64_t  nBuf;
-  uint8_t *pBuf;
-};
-
-#define tBufferCreate() \
-  (SBuffer) { .nBuf = 0, .pBuf = NULL }
-void    tBufferDestroy(SBuffer *pBuffer);
-int32_t tBufferInit(SBuffer *pBuffer, int64_t size);
-int32_t tBufferPut(SBuffer *pBuffer, const void *pData, int64_t nData);
-int32_t tBufferReserve(SBuffer *pBuffer, int64_t nData, void **ppData);
-
 // SColVal ================================
 #define CV_FLAG_VALUE ((int8_t)0x0)
 #define CV_FLAG_NONE  ((int8_t)0x1)
