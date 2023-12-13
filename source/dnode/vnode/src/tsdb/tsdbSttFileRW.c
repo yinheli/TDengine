@@ -809,27 +809,27 @@ int32_t tsdbSttFileWriteRow(SSttFileWriter *writer, SRowInfo *row) {
     writer->ctx->tbid->suid = row->suid;
     writer->ctx->tbid->uid = row->uid;
 
-    if (STATIS_BLOCK_SIZE(writer->staticBlock) >= writer->config->maxRow) {
-      code = tsdbSttFileDoWriteStatisBlock(writer);
-      TSDB_CHECK_CODE(code, lino, _exit);
-    }
+    // if (STATIS_BLOCK_SIZE(writer->staticBlock) >= writer->config->maxRow) {
+    //   code = tsdbSttFileDoWriteStatisBlock(writer);
+    //   TSDB_CHECK_CODE(code, lino, _exit);
+    // }
 
-    STbStatisRecord record = {
-        .suid = row->suid,
-        .uid = row->uid,
-        .firstKey = key->ts,
-        .lastKey = key->ts,
-        .count = 1,
-    };
-    code = tStatisBlockPut(writer->staticBlock, &record);
-    TSDB_CHECK_CODE(code, lino, _exit);
+    // STbStatisRecord record = {
+    //     .suid = row->suid,
+    //     .uid = row->uid,
+    //     .firstKey = key->ts,
+    //     .lastKey = key->ts,
+    //     .count = 1,
+    // };
+    // code = tStatisBlockPut(writer->staticBlock, &record);
+    // TSDB_CHECK_CODE(code, lino, _exit);
   } else {
-    ASSERT(key->ts >= TARRAY2_LAST(writer->staticBlock->lastKey));
+    // ASSERT(key->ts >= TARRAY2_LAST(writer->staticBlock->lastKey));
 
-    if (key->ts > TARRAY2_LAST(writer->staticBlock->lastKey)) {
-      TARRAY2_LAST(writer->staticBlock->count)++;
-      TARRAY2_LAST(writer->staticBlock->lastKey) = key->ts;
-    }
+    // if (key->ts > TARRAY2_LAST(writer->staticBlock->lastKey)) {
+    //   TARRAY2_LAST(writer->staticBlock->count)++;
+    //   TARRAY2_LAST(writer->staticBlock->lastKey) = key->ts;
+    // }
   }
 
   if (row->row.type == TSDBROW_ROW_FMT) {
