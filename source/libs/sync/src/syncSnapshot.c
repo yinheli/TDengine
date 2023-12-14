@@ -23,6 +23,8 @@
 #include "syncReplication.h"
 #include "syncUtil.h"
 
+static SyncIndex syncNodeGetSnapBeginIndex(SSyncNode *ths);
+
 static void syncSnapBufferReset(SSyncSnapBuffer *pBuf) {
   for (int64_t i = pBuf->start; i < pBuf->end; ++i) {
     if (pBuf->entryDeleteCb) {
@@ -79,7 +81,6 @@ SSyncSnapshotSender *snapshotSenderCreate(SSyncNode *pSyncNode, int32_t replicaI
   pSender->replicaIndex = replicaIndex;
   pSender->term = raftStoreGetTerm(pSyncNode);
   pSender->startTime = -1;
-  pSender->waitTime = -1;
   pSender->pSyncNode->pFsm->FpGetSnapshotInfo(pSender->pSyncNode->pFsm, &pSender->snapshot);
   pSender->finish = false;
 
@@ -106,6 +107,19 @@ void syncSnapBlockDestroy(void *ptr) {
   taosMemoryFree(pBlk);
 }
 
+static int32_t snapshotSenderClearInfoData(SSyncSnapshotSender *pSender) {
+  if (pSender->snapshotParam.data) {
+    taosMemoryFree(pSender->snapshotParam.data);
+    pSender->snapshotParam.data = NULL;
+  }
+
+  if (pSender->snapshot.data) {
+    taosMemoryFree(pSender->snapshot.data);
+    pSender->snapshot.data = NULL;
+  }
+  return 0;
+}
+
 void snapshotSenderDestroy(SSyncSnapshotSender *pSender) {
   if (pSender == NULL) return;
 
@@ -120,10 +134,8 @@ void snapshotSenderDestroy(SSyncSnapshotSender *pSender) {
     syncSnapBufferDestroy(&pSender->pSndBuf);
   }
 
-  if (pSender->snapshotParam.data) {
-    taosMemoryFree(pSender->snapshotParam.data);
-    pSender->snapshotParam.data = NULL;
-  }
+  snapshotSenderClearInfoData(pSender);
+
   // free sender
   taosMemoryFree(pSender);
 }
@@ -199,7 +211,6 @@ void snapshotSenderStop(SSyncSnapshotSender *pSender, bool finish) {
   taosThreadMutexLock(&pSender->pSndBuf->mutex);
   {
     pSender->finish = finish;
-    pSender->waitTime = -1;
 
     // close reader
     if (pSender->pReader != NULL) {
@@ -208,6 +219,8 @@ void snapshotSenderStop(SSyncSnapshotSender *pSender, bool finish) {
     }
 
     syncSnapBufferReset(pSender->pSndBuf);
+
+    snapshotSenderClearInfoData(pSender);
 
     SRaftId destId = pSender->pSyncNode->replicasId[pSender->replicaIndex];
     sSInfo(pSender, "snapshot sender stop, to dnode:%d, finish:%d", DID(&destId), finish);
@@ -371,14 +384,7 @@ int32_t syncNodeStartSnapshot(SSyncNode *pSyncNode, SRaftId *pDestId) {
     return 0;
   }
 
-  int64_t timeNow = taosGetTimestampMs();
-  if (pSender->waitTime <= 0) {
-    pSender->waitTime = timeNow + SNAPSHOT_WAIT_MS;
-  }
-  if (timeNow < pSender->waitTime) {
-    sSDebug(pSender, "snapshot sender waitTime not expired yet, ignore");
-    return 0;
-  }
+  taosMsleep(1);
 
   int32_t code = snapshotSenderStart(pSender);
   if (code != 0) {
@@ -426,6 +432,19 @@ SSyncSnapshotReceiver *snapshotReceiverCreate(SSyncNode *pSyncNode, SRaftId from
   return pReceiver;
 }
 
+static int32_t snapshotReceiverClearInfoData(SSyncSnapshotReceiver *pReceiver) {
+  if (pReceiver->snapshotParam.data) {
+    taosMemoryFree(pReceiver->snapshotParam.data);
+    pReceiver->snapshotParam.data = NULL;
+  }
+
+  if (pReceiver->snapshot.data) {
+    taosMemoryFree(pReceiver->snapshot.data);
+    pReceiver->snapshot.data = NULL;
+  }
+  return 0;
+}
+
 void snapshotReceiverDestroy(SSyncSnapshotReceiver *pReceiver) {
   if (pReceiver == NULL) return;
 
@@ -439,21 +458,12 @@ void snapshotReceiverDestroy(SSyncSnapshotReceiver *pReceiver) {
     pReceiver->pWriter = NULL;
   }
 
-  // free data of snapshot info
-  if (pReceiver->snapshotParam.data) {
-    taosMemoryFree(pReceiver->snapshotParam.data);
-    pReceiver->snapshotParam.data = NULL;
-  }
-
-  if (pReceiver->snapshot.data) {
-    taosMemoryFree(pReceiver->snapshot.data);
-    pReceiver->snapshot.data = NULL;
-  }
-
   // free snap buf
   if (pReceiver->pRcvBuf) {
     syncSnapBufferDestroy(&pReceiver->pRcvBuf);
   }
+
+  snapshotReceiverClearInfoData(pReceiver);
 
   // free receiver
   taosMemoryFree(pReceiver);
@@ -514,7 +524,9 @@ void snapshotReceiverStart(SSyncSnapshotReceiver *pReceiver, SyncSnapshotSend *p
   pReceiver->term = pPreMsg->term;
   pReceiver->fromId = pPreMsg->srcId;
   pReceiver->startTime = pPreMsg->startTime;
-  ASSERT(pReceiver->startTime);
+
+  pReceiver->snapshotParam.start = syncNodeGetSnapBeginIndex(pReceiver->pSyncNode);
+  pReceiver->snapshotParam.end = -1;
 
   sRInfo(pReceiver, "snapshot receiver start, from dnode:%d.", DID(&pReceiver->fromId));
 }
@@ -538,6 +550,8 @@ void snapshotReceiverStop(SSyncSnapshotReceiver *pReceiver) {
     }
 
     syncSnapBufferReset(pReceiver->pRcvBuf);
+
+    snapshotReceiverClearInfoData(pReceiver);
   }
   taosThreadMutexUnlock(&pReceiver->pRcvBuf->mutex);
 }
@@ -669,7 +683,10 @@ static int32_t syncSnapReceiverExchgSnapInfo(SSyncNode *pSyncNode, SSyncSnapshot
   memcpy(pInfo->data, pMsg->data, pMsg->dataLen);
 
   // exchange snap info
-  pSyncNode->pFsm->FpGetSnapshotInfo(pSyncNode->pFsm, pInfo);
+  if (pSyncNode->pFsm->FpGetSnapshotInfo(pSyncNode->pFsm, pInfo) != 0) {
+    sRError(pReceiver, "failed to get snapshot info. type: %d", pMsg->payloadType);
+    goto _out;
+  }
   SSyncTLV *datHead = pInfo->data;
   if (datHead->typ != TDMT_SYNC_PREP_SNAPSHOT_REPLY) {
     sRError(pReceiver, "unexpected data typ in data of snapshot info. typ: %d", datHead->typ);
