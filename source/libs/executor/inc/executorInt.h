@@ -42,6 +42,7 @@ extern "C" {
 // #include "tstream.h"
 // #include "tstreamUpdate.h"
 #include "tlrucache.h"
+#include "rocksdb/c.h"
 
 typedef int32_t (*__block_search_fn_t)(char* data, int32_t num, int64_t key, int32_t order);
 
@@ -275,12 +276,12 @@ typedef struct STableScanInfo {
 
 typedef struct STmsSortRowIdInfo {
   int32_t blkId;
-  int64_t dataFileOffset;
-  TdFilePtr idxFile;
-  char idxPath[PATH_MAX];
-  TdFilePtr dataFile;
-  char dataPath[PATH_MAX];
   SSHashObj* pBlkDataHash;  // blkId->SSDataBlock*
+  rocksdb_options_t *options;
+  rocksdb_writeoptions_t *writeoptions;
+  rocksdb_readoptions_t *readoptions;
+  rocksdb_writebatch_t *writebatch;
+  rocksdb_t *db;  
 } STmsSortRowIdInfo;
 
 typedef struct STableMergeScanInfo {
