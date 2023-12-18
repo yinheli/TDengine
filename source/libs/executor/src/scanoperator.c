@@ -3230,7 +3230,7 @@ static int32_t initRowIdSortRowBuf(int32_t* rowBytes, int32_t* bufCap, char** ro
   int32_t nullFlagSize = sizeof(int8_t) * numCols;
   (*rowBytes) += nullFlagSize;
 
-  (*bufCap) = MIN((*rowBytes)*4096, 8192*4096);
+  (*bufCap) = *rowBytes;
 
   if (*bufCap >= 0) {
 
@@ -3274,6 +3274,40 @@ static int32_t blockRowToBuf(SSDataBlock* pBlock, int32_t rowIdx, char* buf) {
   return (int32_t)(pStart - (char*)buf);    
 }
 
+static int32_t initRocksdb(STableMergeScanInfo* pInfo) {
+  STmsSortRowIdInfo* pSortInfo = &pInfo->tmsSortRowIdInfo;
+
+  pSortInfo->options = rocksdb_options_create();
+  rocksdb_options_set_create_if_missing(pSortInfo->options, 1);
+  rocksdb_options_set_disable_auto_compactions(pSortInfo->options, 1);
+
+  pSortInfo->writeoptions = rocksdb_writeoptions_create();
+  rocksdb_writeoptions_disable_WAL(pSortInfo->writeoptions, 1);
+
+  pSortInfo->readoptions = rocksdb_readoptions_create();
+
+  pSortInfo->writebatch = rocksdb_writebatch_create();
+
+  char *err = NULL;
+
+  pSortInfo->db = rocksdb_open(pSortInfo->options, "/tmp/rocks-tms", &err);
+  if (err != NULL) {
+    rocksdb_free(err);
+  }
+  return 0;
+}
+
+
+static int32_t cleanupRocksdb(STableMergeScanInfo* pInfo) {
+  STmsSortRowIdInfo* pSortInfo = &pInfo->tmsSortRowIdInfo;
+  rocksdb_close(pSortInfo->db);
+  rocksdb_writebatch_destroy(pSortInfo->writebatch);
+  rocksdb_readoptions_destroy(pSortInfo->readoptions);
+  rocksdb_writeoptions_destroy(pSortInfo->writeoptions);
+  rocksdb_options_destroy(pSortInfo->options);
+  return 0;
+}
+
 static int32_t transformIntoSortInputBlock(STableMergeScanInfo* pInfo, SSDataBlock* pSrcBlock, SSDataBlock* pSortInputBlk) {
   //TODO: batch save
   int32_t code = 0;
@@ -3291,31 +3325,24 @@ static int32_t transformIntoSortInputBlock(STableMergeScanInfo* pInfo, SSDataBlo
 
   SColumnInfoData* offsetCol = taosArrayGet(pSortInputBlk->pDataBlock, 1);
 
-  SColumnInfoData* lenCol = taosArrayGet(pSortInputBlk->pDataBlock, 2);
+  char* err = NULL;
 
-  int64_t rowBufFileOffset = pSortInfo->rowFileOffset;
-  int32_t rowBufSize = 0;
   for (int32_t i = 0; i < nRows; ++i) {
-    if (rowBufSize + pSortInfo->rowBytes > pSortInfo->rowBufCap) {
-      taosLSeekFile(pSortInfo->dataFile, rowBufFileOffset, SEEK_SET);
-      taosWriteFile(pSortInfo->dataFile, pSortInfo->rowBuf, rowBufSize);
-      rowBufFileOffset = pSortInfo->rowFileOffset;
-      rowBufSize = 0;      
+    if (rocksdb_writebatch_count(pSortInfo->writebatch) >= 4096) {
+      rocksdb_write(pSortInfo->db, pSortInfo->writeoptions, pSortInfo->writebatch, &err);
+      rocksdb_writebatch_clear(pSortInfo->writebatch);  
     }
-    int32_t rowLen = blockRowToBuf(pSrcBlock, i, pSortInfo->rowBuf+rowBufSize);
-    rowBufSize += rowLen;
+    int32_t rowLen = blockRowToBuf(pSrcBlock, i, pSortInfo->rowBuf);
+    rocksdb_writebatch_put(pSortInfo->writebatch, (char*)&pSortInfo->rowId, sizeof(int64_t), pSortInfo->rowBuf, rowLen);
 
-    colDataSetInt64(offsetCol, i, &pSortInfo->rowFileOffset);
-    colDataSetInt32(lenCol, i, &rowLen);
+    colDataSetInt64(offsetCol, i, &pSortInfo->rowId);
 
-    pSortInfo->rowFileOffset = pSortInfo->rowFileOffset + rowLen;
+    pSortInfo->rowId++;
   }
 
-  if (rowBufSize > 0) {
-    taosLSeekFile(pSortInfo->dataFile, rowBufFileOffset, SEEK_SET);
-    taosWriteFile(pSortInfo->dataFile, pSortInfo->rowBuf, rowBufSize);
-    rowBufFileOffset = pSortInfo->rowFileOffset;
-    rowBufSize = 0;     
+  if (rocksdb_writebatch_count(pSortInfo->writebatch) > 0) {
+      rocksdb_write(pSortInfo->db, pSortInfo->writeoptions, pSortInfo->writebatch, &err);
+      rocksdb_writebatch_clear(pSortInfo->writebatch);     
   }
 
   pSortInputBlk->info.rows = nRows;
@@ -3325,14 +3352,12 @@ static int32_t transformIntoSortInputBlock(STableMergeScanInfo* pInfo, SSDataBlo
 static void appendOneRowIdRowToDataBlock(STableMergeScanInfo* pInfo, SSDataBlock* pBlock, STupleHandle* pTupleHandle) {
   STmsSortRowIdInfo* pSortInfo = &pInfo->tmsSortRowIdInfo;
 
-  int64_t offset = *(int64_t*)tsortGetValue(pTupleHandle, 1);
-  int32_t length = *(int32_t*)tsortGetValue(pTupleHandle, 2);
-
-  taosLSeekFile(pSortInfo->dataFile, offset, SEEK_SET);
-  taosReadFile(pSortInfo->dataFile, pSortInfo->rowBuf, length);
+  int64_t blockId = *(int64_t*)tsortGetValue(pTupleHandle, 1);
+  size_t length = 0;
+  char* err = NULL;
+  char* buf = rocksdb_get(pSortInfo->db, pSortInfo->readoptions, (char*)&blockId, sizeof(blockId), &length, &err);
 
   int32_t numOfCols = taosArrayGetSize(pBlock->pDataBlock);
-  char* buf = pSortInfo->rowBuf;
   char* isNull = (char*)buf;
   char* pStart = (char*)buf + sizeof(int8_t) * numOfCols;
   for (int32_t i = 0; i < numOfCols; ++i) {
@@ -3353,7 +3378,7 @@ static void appendOneRowIdRowToDataBlock(STableMergeScanInfo* pInfo, SSDataBlock
       colDataSetNULL(pColInfo, pBlock->info.rows);
     }
   }
-
+  rocksdb_free(buf);
   pBlock->info.dataLoad = 1;
   pBlock->info.scanFlag = ((SDataBlockInfo*)tsortGetBlockInfo(pTupleHandle))->scanFlag;
   pBlock->info.rows += 1;
@@ -3560,9 +3585,7 @@ void tableMergeScanTsdbNotifyCb(ETsdReaderNotifyType type, STsdReaderNotifyInfo*
 
 int32_t startRowIdSort(STableMergeScanInfo *pInfo) {
   STmsSortRowIdInfo* pSort = &pInfo->tmsSortRowIdInfo;
-  pSort->rowFileOffset = 0;
-  taosGetTmpfilePath(tsTempDir, "tms-block-data", pSort->dataPath);
-  pSort->dataFile = taosOpenFile(pSort->dataPath, TD_FILE_CREATE | TD_FILE_WRITE | TD_FILE_READ | TD_FILE_TRUNC);
+  initRocksdb(pInfo);
 
   return 0;
 }
@@ -3570,8 +3593,7 @@ int32_t startRowIdSort(STableMergeScanInfo *pInfo) {
 int32_t stopRowIdSort(STableMergeScanInfo *pInfo) {
   STmsSortRowIdInfo* pSort = &pInfo->tmsSortRowIdInfo;
 
-  taosCloseFile(&pSort->dataFile);
-  taosRemoveFile(pSort->dataPath);
+  cleanupRocksdb(pInfo);
 
   return 0;
 }
@@ -3917,10 +3939,8 @@ SOperatorInfo* createTableMergeScanOperatorInfo(STableScanPhysiNode* pTableScanN
     SSDataBlock* pSortInput = createDataBlock();
     SColumnInfoData tsCol = createColumnInfoData(TSDB_DATA_TYPE_TIMESTAMP, 8, 1);
     blockDataAppendColInfo(pSortInput, &tsCol);
-    SColumnInfoData offsetCol = createColumnInfoData(TSDB_DATA_TYPE_BIGINT, 8, 2);
-    blockDataAppendColInfo(pSortInput, &offsetCol);
-    SColumnInfoData  lenCol = createColumnInfoData(TSDB_DATA_TYPE_INT, 4, 3);
-    blockDataAppendColInfo(pSortInput, &lenCol);
+    SColumnInfoData rowIdCol = createColumnInfoData(TSDB_DATA_TYPE_BIGINT, 8, 2);
+    blockDataAppendColInfo(pSortInput, &rowIdCol);
     pInfo->pSortInputBlock = pSortInput;
 
     SArray*         pList = taosArrayInit(1, sizeof(SBlockOrderInfo));
