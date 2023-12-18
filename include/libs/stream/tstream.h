@@ -323,7 +323,6 @@ typedef struct SStreamStatus {
   int8_t         schedStatus;
   int8_t         keepTaskStatus;
   bool           appendTranstateBlock;  // has append the transfer state data block already, todo: remove it
-  int8_t         pauseAllowed;          // allowed task status to be set to be paused
   int32_t        timerActive;           // timer is active
   int32_t        inScanHistorySentinel;
 } SStreamStatus;
@@ -509,11 +508,8 @@ typedef struct SStreamMeta {
   SArray*  chkpSaved;
   SArray*  chkpInUse;
   SRWLatch chkpDirLock;
-
-  void*   qHandle;
-  int32_t pauseTaskNum;
-
-  void* bkdChkptMgt;
+  void*    qHandle;
+  void*    bkdChkptMgt;
 } SStreamMeta;
 
 int32_t tEncodeStreamEpInfo(SEncoder* pEncoder, const SStreamChildEpInfo* pInfo);
@@ -840,11 +836,10 @@ int32_t      streamMetaUnregisterTask(SStreamMeta* pMeta, int64_t streamId, int3
 int32_t      streamMetaGetNumOfTasks(SStreamMeta* pMeta);
 SStreamTask* streamMetaAcquireTask(SStreamMeta* pMeta, int64_t streamId, int32_t taskId);
 void         streamMetaReleaseTask(SStreamMeta* pMeta, SStreamTask* pTask);
-int32_t      streamMetaReopen(SStreamMeta* pMeta);
+void         streamMetaClear(SStreamMeta* pMeta);
 void         streamMetaInitBackend(SStreamMeta* pMeta);
 int32_t      streamMetaCommit(SStreamMeta* pMeta);
 int32_t      streamMetaLoadAllTasks(SStreamMeta* pMeta);
-int32_t      streamMetaReloadAllTasks(SStreamMeta* pMeta);
 int64_t      streamMetaGetLatestCheckpointId(SStreamMeta* pMeta);
 void         streamMetaNotifyClose(SStreamMeta* pMeta);
 int32_t      streamTaskSetDb(SStreamMeta* pMeta, void* pTask, char* key);
