@@ -3219,6 +3219,11 @@ _error:
 }
 
 // ========================= table merge scan
+typedef struct STmsSortBlockInfo {
+  int32_t blkId;
+  int32_t length;
+  int64_t offset;
+} STmsSortBlockInfo;
 
 static int32_t saveSourceBlock(STmsSortRowIdInfo* pSortInfo, const SSDataBlock* pSrcBlock, int32_t *pSzBlk) {
   int32_t szBlk = blockDataGetSize(pSrcBlock) + sizeof(int32_t) + taosArrayGetSize(pSrcBlock->pDataBlock) * sizeof(int32_t);
@@ -3227,11 +3232,14 @@ static int32_t saveSourceBlock(STmsSortRowIdInfo* pSortInfo, const SSDataBlock* 
     return TSDB_CODE_OUT_OF_MEMORY;
   }
   blockDataToBuf(buf, pSrcBlock);
-
-  char* err = NULL;
-  rocksdb_put(pSortInfo->db, pSortInfo->writeoptions, (char*)&pSortInfo->blkId, sizeof(int32_t), buf, szBlk, &err);
-
+  taosLSeekFile(pSortInfo->dataFile, pSortInfo->dataFileOffset, SEEK_SET);
+  taosWriteFile(pSortInfo->dataFile, buf, szBlk);
   taosMemoryFree(buf);
+
+  STmsSortBlockInfo info = {.blkId = pSortInfo->blkId
+                            , .offset = pSortInfo->dataFileOffset, .length = szBlk};
+  taosLSeekFile(pSortInfo->idxFile, pSortInfo->blkId*sizeof(STmsSortBlockInfo), SEEK_SET);
+  taosWriteFile(pSortInfo->idxFile, &info, sizeof(info));
 
   *pSzBlk = szBlk;
 
@@ -3274,6 +3282,7 @@ static int32_t transformIntoSortInputBlock(STableMergeScanInfo* pInfo, SSDataBlo
   fillSortInputBlock(pInfo, pSrcBlock, pSortInputBlk);
 
   ++pSortInfo->blkId;
+  pSortInfo->dataFileOffset = ((pSortInfo->dataFileOffset + szBlk) + 4096) & ~4096;
 
   return code;
 }
@@ -3287,55 +3296,20 @@ static int32_t retrieveSourceBlock(STableMergeScanInfo* pInfo, int32_t blockId, 
     *ppBlock = *(SSDataBlock**)pBlkHashVal;
   }
   else {
-    size_t blkLen = 0;
-    char* err = NULL;
-    char* buf = rocksdb_get(pSortInfo->db, pSortInfo->readoptions, (char*)&blockId, sizeof(int32_t), &blkLen, &err);
+    STmsSortBlockInfo blkInfo = {0};
+
+    taosLSeekFile(pSortInfo->idxFile, blockId * sizeof(STmsSortBlockInfo), SEEK_SET);
+    taosReadFile(pSortInfo->idxFile, &blkInfo, sizeof(STmsSortBlockInfo));
+    taosLSeekFile(pSortInfo->dataFile, blkInfo.offset, SEEK_SET);
+    char* buf = taosMemoryMalloc(blkInfo.length);
+    taosReadFile(pSortInfo->dataFile, buf, blkInfo.length);
     SSDataBlock* pBlock = createOneDataBlock(pInfo->pReaderBlock, false);
     blockDataFromBuf(pBlock, buf);
-    rocksdb_free(buf);
+    taosMemoryFree(buf);
 
     *ppBlock = pBlock;
     tSimpleHashPut(pSortInfo->pBlkDataHash, &blockId, sizeof(blockId), &pBlock, sizeof(pBlock));
   }
-  return 0;
-}
-
-static int32_t initRocksdb(STableMergeScanInfo* pInfo) {
-  STmsSortRowIdInfo* pSortInfo = &pInfo->tmsSortRowIdInfo;
-
-  pSortInfo->options = rocksdb_options_create();
-  rocksdb_options_set_create_if_missing(pSortInfo->options, 1);
-  rocksdb_options_set_disable_auto_compactions(pSortInfo->options, 1);
-
-  pSortInfo->writeoptions = rocksdb_writeoptions_create();
-  rocksdb_writeoptions_disable_WAL(pSortInfo->writeoptions, 1);
-
-  pSortInfo->readoptions = rocksdb_readoptions_create();
-
-  pSortInfo->writebatch = rocksdb_writebatch_create();
-
-  char *err = NULL;
-  if (taosDirExist("/tmp/rocks-tms")) {
-    taosRemoveDir("/tmp/rocks-tms");
-  }
-  pSortInfo->db = rocksdb_open(pSortInfo->options, "/tmp/rocks-tms", &err);
-  if (err != NULL) {
-    rocksdb_free(err);
-  }
-  return 0;
-}
-
-
-static int32_t cleanupRocksdb(STableMergeScanInfo* pInfo) {
-  STmsSortRowIdInfo* pSortInfo = &pInfo->tmsSortRowIdInfo;
-  if (pSortInfo->db != NULL) {
-    rocksdb_close(pSortInfo->db);
-    pSortInfo->db = NULL;
-  }
-  rocksdb_writebatch_destroy(pSortInfo->writebatch);
-  rocksdb_readoptions_destroy(pSortInfo->readoptions);
-  rocksdb_writeoptions_destroy(pSortInfo->writeoptions);
-  rocksdb_options_destroy(pSortInfo->options);
   return 0;
 }
 
@@ -3570,14 +3544,21 @@ void tableMergeScanTsdbNotifyCb(ETsdReaderNotifyType type, STsdReaderNotifyInfo*
 int32_t startRowIdSort(STableMergeScanInfo *pInfo) {
   STmsSortRowIdInfo* pSort = &pInfo->tmsSortRowIdInfo;
   pSort->blkId = 0;
+  pSort->dataFileOffset = 0;
+  taosGetTmpfilePath(tsTempDir, "tms-block-info", pSort->idxPath);
+  pSort->idxFile = taosOpenFile(pSort->idxPath, TD_FILE_CREATE | TD_FILE_WRITE | TD_FILE_READ | TD_FILE_TRUNC | TD_FILE_AUTO_DEL);
+  taosGetTmpfilePath(tsTempDir, "tms-block-data", pSort->dataPath);
+  pSort->dataFile = taosOpenFile(pSort->dataPath, TD_FILE_CREATE | TD_FILE_WRITE | TD_FILE_READ | TD_FILE_TRUNC | TD_FILE_AUTO_DEL);
   pSort->pBlkDataHash = tSimpleHashInit(2048, taosGetDefaultHashFunction(TSDB_DATA_TYPE_INT));
-  initRocksdb(pInfo);
   return 0;
 }
 
 int32_t stopRowIdSort(STableMergeScanInfo *pInfo) {
   STmsSortRowIdInfo* pSort = &pInfo->tmsSortRowIdInfo;
-  cleanupRocksdb(pInfo);
+  taosCloseFile(&pSort->idxFile);
+  taosRemoveFile(pSort->idxPath);
+  taosCloseFile(&pSort->dataFile);
+  taosRemoveFile(pSort->dataPath);
 
   tSimpleHashCleanup(pSort->pBlkDataHash);
   return 0;
