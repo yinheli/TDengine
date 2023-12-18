@@ -3289,7 +3289,9 @@ static int32_t initRocksdb(STableMergeScanInfo* pInfo) {
   pSortInfo->writebatch = rocksdb_writebatch_create();
 
   char *err = NULL;
-
+  if (taosDirExist("/tmp/rocks-tms")) {
+    taosRemoveDir("/tmp/rocks-tms");
+  }
   pSortInfo->db = rocksdb_open(pSortInfo->options, "/tmp/rocks-tms", &err);
   if (err != NULL) {
     rocksdb_free(err);
@@ -3300,7 +3302,10 @@ static int32_t initRocksdb(STableMergeScanInfo* pInfo) {
 
 static int32_t cleanupRocksdb(STableMergeScanInfo* pInfo) {
   STmsSortRowIdInfo* pSortInfo = &pInfo->tmsSortRowIdInfo;
-  rocksdb_close(pSortInfo->db);
+  if (pSortInfo->db != NULL) {
+    rocksdb_close(pSortInfo->db);
+    pSortInfo->db = NULL;
+  }
   rocksdb_writebatch_destroy(pSortInfo->writebatch);
   rocksdb_readoptions_destroy(pSortInfo->readoptions);
   rocksdb_writeoptions_destroy(pSortInfo->writeoptions);
