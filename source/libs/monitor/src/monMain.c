@@ -22,10 +22,23 @@
 #include "ttime.h"
 #include "taos_monitor.h"
 #include "tglobal.h"
+#include "thash.h"
 
 static SMonitor tsMonitor = {0};
 static char* tsMonUri = "/report";
 static char* tsMonFwUri = "/td_metric";
+
+#define MASTER_UPTIME  "cluster_info:master_uptime"
+#define DBS_TOTAL "cluster_info:dbs_total"
+#define TBS_TOTAL "cluster_info:tbs_total"
+#define STBS_TOTAL "cluster_info:stbs_total"
+#define VGROUPS_TOTAL "cluster_info:vgroups_total"
+#define VGROUPS_ALIVE "cluster_info:vgroups_alive"
+#define VNODES_TOTAL "cluster_info:vnodes_total"
+#define VNODES_ALIVE "cluster_info:vnodes_alive"
+#define CONNECTIONS_TOTAL "cluster_info:connections_total"
+#define TOPICS_TOTAL "cluster_info:topics_total"
+#define STREAMS_TOTAL "cluster_info:streams_total"
 
 void monRecordLog(int64_t ts, ELogLevel level, const char *content) {
   taosThreadMutexLock(&tsMonitor.lock);
@@ -116,6 +129,24 @@ int32_t monInit(const SMonCfg *pCfg) {
 
   taos_collector_registry_default_init();
 
+  tsMonitor.metrics = taosHashInit(16, taosGetDefaultHashFunction(TSDB_DATA_TYPE_BINARY), true, HASH_ENTRY_LOCK);
+
+  int32_t label_count =1;
+  const char *sample_labels[] = {"clusterid"};
+
+  taos_gauge_t *gauge = NULL;
+
+  char *metric[] = {MASTER_UPTIME, DBS_TOTAL, TBS_TOTAL, STBS_TOTAL, VGROUPS_TOTAL,
+  VGROUPS_ALIVE, VNODES_TOTAL, VNODES_ALIVE, CONNECTIONS_TOTAL, TOPICS_TOTAL, STREAMS_TOTAL};
+
+  for(int32_t i = 0; i < 11; i++){
+    gauge= taos_gauge_new(metric[i], "guage for uptime",  label_count, sample_labels);
+    if(taos_collector_registry_register_metric(gauge) == 1){
+      taos_counter_destroy(gauge);
+    }
+    taosHashPut(tsMonitor.metrics, metric[i], strlen(metric[i]), &gauge, sizeof(taos_gauge_t *));
+  } 
+
   return 0;
 }
 
@@ -197,7 +228,46 @@ static void monGenBasicJson(SMonInfo *pMonitor) {
   tjsonAddDoubleToObject(pJson, "protocol", pInfo->protocol);
 }
 
-taos_counter_t *master_uptime = NULL;
+static void monGenClusterInfoTable(SMonBasicInfo *pBasicInfo, SMonClusterInfo *pInfo){
+  char buf[50];
+  snprintf(buf, sizeof(buf), "%" PRId64, pBasicInfo->cluster_id);
+  const char *sample_labels[] = {buf};
+
+  taos_gauge_t **metric = NULL;
+  
+  metric = taosHashGet(tsMonitor.metrics, MASTER_UPTIME, strlen(MASTER_UPTIME));
+  taos_gauge_set(*metric, pInfo->master_uptime, sample_labels);
+
+  metric = taosHashGet(tsMonitor.metrics, DBS_TOTAL, strlen(DBS_TOTAL));
+  taos_gauge_set(*metric, pInfo->dbs_total, sample_labels);
+
+  metric = taosHashGet(tsMonitor.metrics, TBS_TOTAL, strlen(TBS_TOTAL));
+  taos_gauge_set(*metric, pInfo->tbs_total, sample_labels);
+
+  metric = taosHashGet(tsMonitor.metrics, STBS_TOTAL, strlen(STBS_TOTAL));
+  taos_gauge_set(*metric, pInfo->stbs_total, sample_labels);
+
+  metric = taosHashGet(tsMonitor.metrics, VGROUPS_TOTAL, strlen(VGROUPS_TOTAL));
+  taos_gauge_set(*metric, pInfo->vgroups_total, sample_labels);
+
+  metric = taosHashGet(tsMonitor.metrics, VGROUPS_ALIVE, strlen(VGROUPS_ALIVE));
+  taos_gauge_set(*metric, pInfo->vgroups_alive, sample_labels);
+
+  metric = taosHashGet(tsMonitor.metrics, VNODES_TOTAL, strlen(VNODES_TOTAL));
+  taos_gauge_set(*metric, pInfo->vnodes_total, sample_labels);
+
+  metric = taosHashGet(tsMonitor.metrics, VNODES_ALIVE, strlen(VNODES_ALIVE));
+  taos_gauge_set(*metric, pInfo->vnodes_alive, sample_labels);
+
+  metric = taosHashGet(tsMonitor.metrics, CONNECTIONS_TOTAL, strlen(CONNECTIONS_TOTAL));
+  taos_gauge_set(*metric, pInfo->vnodes_alive, sample_labels);
+
+  metric = taosHashGet(tsMonitor.metrics, TOPICS_TOTAL, strlen(TOPICS_TOTAL));
+  taos_gauge_set(*metric, pInfo->topics_toal, sample_labels);
+
+  metric = taosHashGet(tsMonitor.metrics, STREAMS_TOTAL, strlen(STREAMS_TOTAL));
+  taos_gauge_set(*metric, pInfo->streams_total, sample_labels);
+}
 
 static void monGenClusterJson(SMonInfo *pMonitor) {
   SMonClusterInfo *pInfo = &pMonitor->mmInfo.cluster;
@@ -226,24 +296,7 @@ static void monGenClusterJson(SMonInfo *pMonitor) {
   tjsonAddDoubleToObject(pJson, "topics_total", pInfo->topics_toal);
   tjsonAddDoubleToObject(pJson, "streams_total", pInfo->streams_total);
 
-  if(master_uptime == NULL){
-    int32_t label_count =1;
-    const char *sample_labels[] = {"clusterid"};
-    taos_counter_t *counter = taos_counter_new("cluster_info:master_uptime", "counter for insert sql",  label_count, sample_labels);
-    if(taos_collector_registry_register_metric(counter) == 1){
-      taos_counter_destroy(counter);
-    }
-    else{
-      atomic_store_ptr(&master_uptime, counter);
-    }
-  }
-
-  char buf[50];
-  SMonBasicInfo *pBasicInfo = &pMonitor->dmInfo.basic;
-  snprintf(buf, sizeof(buf), "%" PRId64, pBasicInfo->cluster_id);
-  const char *sample_labels[] = {buf};
-
-  taos_counter_inc(master_uptime, sample_labels);
+  monGenClusterInfoTable(&pMonitor->dmInfo.basic, pInfo);
 
   int32_t monSize = taosArrayGetSize(pInfo->clientMetrics);
   for(int32_t i = 0; i < monSize; i++){

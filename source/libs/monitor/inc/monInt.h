@@ -20,6 +20,7 @@
 #include "query.h"
 
 #include "tjson.h"
+#include "thash.h"
 
 typedef struct {
   int64_t    curTime;
@@ -45,6 +46,7 @@ typedef struct {
   SMonSmInfo    smInfo;
   SMonQmInfo    qmInfo;
   SMonBmInfo    bmInfo;
+  SHashObj     *metrics;
 } SMonitor;
 
 #ifdef __cplusplus
