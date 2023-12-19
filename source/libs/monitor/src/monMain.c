@@ -40,6 +40,9 @@ static char* tsMonFwUri = "/td_metric";
 #define TOPICS_TOTAL "cluster_info:topics_total"
 #define STREAMS_TOTAL "cluster_info:streams_total"
 
+#define TABLES_NUM "cluster_vgroups_info:tables_num"
+#define STATUS "cluster_vgroups_info:status"
+
 void monRecordLog(int64_t ts, ELogLevel level, const char *content) {
   taosThreadMutexLock(&tsMonitor.lock);
   int32_t size = taosArrayGetSize(tsMonitor.logs);
@@ -130,22 +133,30 @@ int32_t monInit(const SMonCfg *pCfg) {
   taos_collector_registry_default_init();
 
   tsMonitor.metrics = taosHashInit(16, taosGetDefaultHashFunction(TSDB_DATA_TYPE_BINARY), true, HASH_ENTRY_LOCK);
+  taos_gauge_t *gauge = NULL;
 
   int32_t label_count =1;
   const char *sample_labels[] = {"clusterid"};
-
-  taos_gauge_t *gauge = NULL;
-
   char *metric[] = {MASTER_UPTIME, DBS_TOTAL, TBS_TOTAL, STBS_TOTAL, VGROUPS_TOTAL,
   VGROUPS_ALIVE, VNODES_TOTAL, VNODES_ALIVE, CONNECTIONS_TOTAL, TOPICS_TOTAL, STREAMS_TOTAL};
-
   for(int32_t i = 0; i < 11; i++){
-    gauge= taos_gauge_new(metric[i], "guage for uptime",  label_count, sample_labels);
+    gauge= taos_gauge_new(metric[i], "",  label_count, sample_labels);
     if(taos_collector_registry_register_metric(gauge) == 1){
       taos_counter_destroy(gauge);
     }
     taosHashPut(tsMonitor.metrics, metric[i], strlen(metric[i]), &gauge, sizeof(taos_gauge_t *));
   } 
+
+  int32_t vgroup_label_count = 3;
+  const char *vgroup_sample_labels[] = {"clusterid", "vgroup_id", "database_name"};
+  char *vgroup_metrics[] = {TABLES_NUM, STATUS};
+  for(int32_t i = 0; i < 2; i++){
+    gauge= taos_gauge_new(vgroup_metrics[i], "",  label_count, sample_labels);
+    if(taos_collector_registry_register_metric(gauge) == 1){
+      taos_counter_destroy(gauge);
+    }
+    taosHashPut(tsMonitor.metrics, vgroup_metrics[i], strlen(vgroup_metrics[i]), &gauge, sizeof(taos_gauge_t *));
+  }
 
   return 0;
 }
@@ -348,6 +359,9 @@ static void monGenVgroupJson(SMonInfo *pMonitor) {
   SJson *pJson = tjsonAddArrayToObject(pMonitor->pJson, "vgroup_infos");
   if (pJson == NULL) return;
 
+  char cluster_id[TSDB_CLUSTER_ID_LEN];
+  snprintf(cluster_id, sizeof(cluster_id), "%" PRId64, pMonitor->dmInfo.basic.cluster_id);
+
   for (int32_t i = 0; i < taosArrayGetSize(pInfo->vgroups); ++i) {
     SJson *pVgroupJson = tjsonCreateObject();
     if (pVgroupJson == NULL) continue;
@@ -358,9 +372,21 @@ static void monGenVgroupJson(SMonInfo *pMonitor) {
 
     SMonVgroupDesc *pVgroupDesc = taosArrayGet(pInfo->vgroups, i);
     tjsonAddDoubleToObject(pVgroupJson, "vgroup_id", pVgroupDesc->vgroup_id);
+    char vgroup_id[50];
+    snprintf(vgroup_id, sizeof(vgroup_id), "%" PRId64, pMonitor->dmInfo.basic.cluster_id);
     tjsonAddStringToObject(pVgroupJson, "database_name", pVgroupDesc->database_name);
     tjsonAddDoubleToObject(pVgroupJson, "tables_num", pVgroupDesc->tables_num);
     tjsonAddStringToObject(pVgroupJson, "status", pVgroupDesc->status);
+
+    const char *sample_labels[] = {cluster_id, vgroup_id, pVgroupDesc->database_name};
+
+    taos_gauge_t **metric = NULL;
+  
+    metric = taosHashGet(tsMonitor.metrics, TABLES_NUM, strlen(TABLES_NUM));
+    taos_gauge_set(*metric, pVgroupDesc->tables_num, sample_labels);
+
+    //metric = taosHashGet(tsMonitor.metrics, STATUS, strlen(STATUS));
+    //taos_gauge_set(*metric, pVgroupDesc->status, sample_labels);
 
     SJson *pVnodesJson = tjsonAddArrayToObject(pVgroupJson, "vnodes");
     if (pVnodesJson == NULL) continue;
