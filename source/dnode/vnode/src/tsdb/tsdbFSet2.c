@@ -520,6 +520,7 @@ int32_t tsdbTFileSetRemove(STFileSet *fset) {
   for (tsdb_ftype_t ftype = TSDB_FTYPE_MIN; ftype < TSDB_FTYPE_MAX; ++ftype) {
     if (fset->farr[ftype] == NULL) continue;
     tsdbTFileObjRemove(fset->farr[ftype]);
+    fset->farr[ftype] = NULL;
   }
 
   TARRAY2_DESTROY(fset->lvlArr, tsdbSttLvlRemove);
