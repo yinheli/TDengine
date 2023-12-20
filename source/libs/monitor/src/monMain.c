@@ -12,9 +12,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 #define _DEFAULT_SOURCE
-
 #include "tarray.h"
 #include "monInt.h"
 #include "taoserror.h"
@@ -216,6 +214,7 @@ void monCleanup() {
   tFreeSMonBmInfo(&tsMonitor.bmInfo);
   taosThreadMutexDestroy(&tsMonitor.lock);
 
+  taosHashCleanup(tsMonitor.metrics);
   taos_collector_registry_destroy(TAOS_COLLECTOR_REGISTRY_DEFAULT);
   TAOS_COLLECTOR_REGISTRY_DEFAULT = NULL;
 }
@@ -801,6 +800,7 @@ void monSendPromReport() {
     }else{
       taos_collector_registry_clear_out(TAOS_COLLECTOR_REGISTRY_DEFAULT);
     }
+    taosMemoryFreeClear(pCont);
   }
 }
 

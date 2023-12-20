@@ -16,7 +16,6 @@
 #define ALLOW_FORBID_FUNC
 
 #include <stdio.h>
-
 #include "taos_metric_formatter_i.h"
 #include "taos_metric_sample_t.h"
 #include "tjson.h"
@@ -88,6 +87,10 @@ int taos_metric_formatter_load_sample_new(taos_metric_formatter_t *self, taos_me
     metrics = tjsonGetObjectItem(item, "metrics");
   }
 
+  taosMemoryFreeClear(arr);
+  taosMemoryFreeClear(keyvalue);
+  taosMemoryFreeClear(keyvalues);
+
   SJson* metric = tjsonCreateObject();
   tjsonAddStringToObject(metric, "name", metricName);
   tjsonAddDoubleToObject(metric, "value", sample->r_value);
@@ -108,6 +111,7 @@ int taos_metric_formatter_load_metric_new(taos_metric_formatter_t *self, taos_me
 
   int32_t size = strlen(metric->name);
   char* name = taosMemoryMalloc(size + 1);
+  memset(name, 0, size + 1);
   memcpy(name, metric->name, size);
   char* arr[2] = {0};
   taos_monitor_split_str((char**)&arr, name, ":");
@@ -133,5 +137,6 @@ int taos_metric_formatter_load_metric_new(taos_metric_formatter_t *self, taos_me
       if (r) return r;
     }
   }
+  taosMemoryFreeClear(name);
   return r;
 }

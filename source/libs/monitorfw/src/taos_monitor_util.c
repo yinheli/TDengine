@@ -24,10 +24,10 @@
 
 void taos_monitor_split_str(char** arr, char* str, const char* del) {
   char *lasts;
-  char* s = strtok_r(str, del, &lasts);
+  char* s = strsep(&str, del);
   while (s != NULL) {
     *arr++ = s;
-    s = strtok_r(NULL, del, &lasts);
+    s = strsep(&str, del);
   }
 }
 

@@ -204,7 +204,9 @@ const char *taos_collector_registry_bridge(taos_collector_registry_t *self, char
   taos_free(out);
 
   //return taos_string_builder_str(self->out);
-  return tjsonToString(pJson);
+  char * str = tjsonToString(pJson);
+  tjsonDelete(pJson);
+  return str;
 }
 
 int taos_collector_registry_clear_out(taos_collector_registry_t *self){
