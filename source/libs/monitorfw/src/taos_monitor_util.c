@@ -23,10 +23,11 @@
 #include "taos_metric_t.h"
 
 void taos_monitor_split_str(char** arr, char* str, const char* del) {
-  char* s = strtok(str, del);
+  char *lasts;
+  char* s = strtok_r(str, del, &lasts);
   while (s != NULL) {
     *arr++ = s;
-    s = strtok(NULL, del);
+    s = strtok_r(NULL, del, &lasts);
   }
 }
 

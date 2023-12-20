@@ -12,8 +12,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
 #define _DEFAULT_SOURCE
+
+#include "tarray.h"
 #include "mndInt.h"
 #include "systable.h"
 #include "taos_monitor.h"
@@ -164,19 +165,16 @@ void mndCleanupPerfs(SMnode *pMnode) {
 }
 
 void mndCleanupClientMetrics(SMnode *pMnode) {
-  if (NULL == pMnode->perfsMeta) {
+  if (NULL == pMnode->clientMetrics) {
     return;
   }
 
-  void *pIter = taosHashIterate(pMnode->perfsMeta, NULL);
-  while (pIter) {
-    taos_counter_t* metric = (taos_counter_t*)pIter;
-
+  int32_t size = taosArrayGetSize(pMnode->clientMetrics);
+  for(int32_t i = 0; i < size; i++){
+    taos_counter_t* metric = taosArrayGet(pMnode->clientMetrics, i);
     taos_counter_destroy(metric);
-
-    pIter = taosHashIterate(pMnode->perfsMeta, pIter);
   }
 
-  taosHashCleanup(pMnode->perfsMeta);
-  pMnode->perfsMeta = NULL;
+  taosArrayDestroy(pMnode->clientMetrics);
+  pMnode->clientMetrics = NULL;
 }
