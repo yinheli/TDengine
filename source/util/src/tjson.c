@@ -285,7 +285,7 @@ int32_t tjsonGetArraySize(const SJson* pJson) { return cJSON_GetArraySize(pJson)
 
 SJson* tjsonGetArrayItem(const SJson* pJson, int32_t index) { return cJSON_GetArrayItem(pJson, index); }
 
-SJson* tjsonGetArrayItemByPair(const SJson* pJson, char** pairs, int32_t count) { //todo
+bool tjsonGetArrayItemByPair(const SJson* pJson, char** pairs, int32_t count) { //todo
   int32_t size = cJSON_GetArraySize(pJson);
 
   for(int32_t i = 0; i < size; i++){

@@ -57,7 +57,18 @@ int taos_metric_formatter_load_sample_new(taos_metric_formatter_t *self, taos_me
     strip(pair[1]);
   }
 
-  SJson* item = tjsonGetArrayItemByPair(arrayTable, arr, count + 1);
+  
+
+  int32_t table_size = tjsonGetArraySize(arrayTable);
+
+  SJson* item = NULL;
+  for(int32_t i = 0; i < table_size; i++){
+    item = tjsonGetArrayItem(arrayTable, i);
+
+    SJson* tag = tjsonGetObjectItem(item, "tags");
+
+    if(tjsonGetArrayItemByPair(arrayTable, arr, count + 1)) break;
+  }
 
   SJson* metrics = NULL;
   if(item == NULL) {
