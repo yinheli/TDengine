@@ -57,7 +57,7 @@ static char* tsMonFwUri = "/td_metric";
 #define NET_OUT "dnodes_info:net_out"
 #define IO_READ "dnodes_info:io_read"
 #define IO_WRITE "dnodes_info:io_write"
-#define IO_READ_DISK "dnodes_info:o_read_disk"
+#define IO_READ_DISK "dnodes_info:io_read_disk"
 #define IO_WRITE_DISK "dnodes_info:io_write_disk"
 #define REQ_SELECT "req_select"
 #define REQ_SELECT_RATE "req_select_rate"
@@ -357,6 +357,7 @@ static void monGenClusterJson(SMonInfo *pMonitor) {
 
   monGenClusterInfoTable(&pMonitor->dmInfo.basic, pInfo);
 
+  /*
   int32_t monSize = taosArrayGetSize(pInfo->clientMetrics);
   for(int32_t i = 0; i < monSize; i++){
     taos_counter_t* metric = taosArrayGet(pInfo->clientMetrics, i);
@@ -368,11 +369,21 @@ static void monGenClusterJson(SMonInfo *pMonitor) {
 
     taos_metric_formatter_load_metric_custom(metric, pJson);
   }
+  */
+
+  void *pIter = taosHashIterate(pInfo->monitor_client_metrics, NULL);
+  while (pIter) {
+    taos_counter_t** metric = (taos_counter_t**)pIter;
+
+    taos_metric_formatter_load_metric_custom(*metric, pJson);
+
+    pIter = taosHashIterate(pInfo->monitor_client_metrics, pIter);
+  }
 
   SJson *pDnodesJson = tjsonAddArrayToObject(pJson, "dnodes");
   if (pDnodesJson == NULL) return;
 
-  char cluster_id[TSDB_CLUSTER_ID_LEN];
+  char cluster_id[TSDB_CLUSTER_ID_LEN] = {0};
   snprintf(cluster_id, sizeof(cluster_id), "%" PRId64, pMonitor->dmInfo.basic.cluster_id);
   taos_gauge_t **metric = NULL;
 
@@ -390,19 +401,21 @@ static void monGenClusterJson(SMonInfo *pMonitor) {
 
     if (tjsonAddItemToArray(pDnodesJson, pDnodeJson) != 0) tjsonDelete(pDnodeJson);
 
-    char dnode_id[50];
-    snprintf(dnode_id, sizeof(dnode_id), "%d", pDnodeDesc->dnode_id);
+    if(pMonitor->dmInfo.basic.cluster_id != 0){
+      char dnode_id[50] = {0};
+      snprintf(dnode_id, sizeof(dnode_id), "%d", pDnodeDesc->dnode_id);
 
-    const char *sample_labels[] = {cluster_id, dnode_id, pDnodeDesc->dnode_ep};
+      const char *sample_labels[] = {cluster_id, dnode_id, pDnodeDesc->dnode_ep};
 
-    metric = taosHashGet(tsMonitor.metrics, DNODE_STATUS, strlen(DNODE_STATUS));
+      metric = taosHashGet(tsMonitor.metrics, DNODE_STATUS, strlen(DNODE_STATUS));
 
-    int32_t status = 0;
-    if(strcmp(pDnodeDesc->status, "ready") == 0){
-      status = 1;
-      dnode_alive++;
-    }
-    taos_gauge_set(*metric, status, sample_labels);
+      int32_t status = 0;
+      if(strcmp(pDnodeDesc->status, "ready") == 0){
+        status = 1;
+        dnode_alive++;
+      }
+      taos_gauge_set(*metric, status, sample_labels);
+    } 
   }
 
   if(pMonitor->dmInfo.basic.cluster_id != 0){
@@ -839,8 +852,11 @@ void monSendReport() {
 void monSendPromReport() {
   char ts[50];
   sprintf(ts, "%" PRId64, taosGetTimestamp(TSDB_TIME_PRECISION_MILLI));
-  char *pCont = (char *)taos_collector_registry_bridge(TAOS_COLLECTOR_REGISTRY_DEFAULT, ts, "%" PRId64);
+
+  char* promStr = NULL;
+  char *pCont = (char *)taos_collector_registry_bridge(TAOS_COLLECTOR_REGISTRY_DEFAULT, ts, "%" PRId64, &promStr);
   uInfoL("report cont:\n%s\n", pCont);
+  uInfoL("report cont prom:\n%s\n", promStr);
   if (pCont != NULL) {
     EHttpCompFlag flag = tsMonitor.cfg.comp ? HTTP_GZIP : HTTP_FLAT;
     if (taosSendHttpReport(tsMonitor.cfg.server, tsMonFwUri, tsMonitor.cfg.port, pCont, strlen(pCont), flag) != 0) {

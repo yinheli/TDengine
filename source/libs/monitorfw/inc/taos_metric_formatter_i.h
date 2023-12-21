@@ -70,7 +70,7 @@ int taos_metric_formatter_load_metric(taos_metric_formatter_t *self, taos_metric
 /**
  * @brief API PRIVATE Loads the given metrics
  */
-int taos_metric_formatter_load_metrics(taos_metric_formatter_t *self, taos_map_t *collectors, char *ts, char *format, SJson* pJson);
+int taos_metric_formatter_load_metrics(taos_metric_formatter_t *self, taos_map_t *collectors, char *ts, char *format, SJson* tableArray);
 
 /**
  * @brief API PRIVATE Clear the underlying string_builder

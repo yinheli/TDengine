@@ -22,8 +22,10 @@
 #define TAOS_MONITOR_UTIL_H
 
 #include "taos_metric.h"
+#include "tjson.h"
 
 void taos_monitor_split_str(char** arr, char* str, const char* del);
-void taos_monitor_split_str_metric(char** arr, taos_metric_t* metric, const char* del);
+void taos_monitor_split_str_metric(char** arr, taos_metric_t* metric, const char* del, char** buf);
+char* taos_monitor_get_metric_name(taos_metric_t* metric);
 
 #endif  // TAOS_MONITOR_UTIL_H

@@ -285,34 +285,6 @@ int32_t tjsonGetArraySize(const SJson* pJson) { return cJSON_GetArraySize(pJson)
 
 SJson* tjsonGetArrayItem(const SJson* pJson, int32_t index) { return cJSON_GetArrayItem(pJson, index); }
 
-bool tjsonGetArrayItemByPair(const SJson* pJson, char** pairs, int32_t count) { //todo
-  int32_t size = cJSON_GetArraySize(pJson);
-
-  for(int32_t i = 0; i < size; i++){
-    SJson* item = cJSON_GetArrayItem(pJson, i);
-
-    bool isfound = true;
-    for(int32_t j = 0; j < count; j++){
-
-      char** pair = pairs + j * 2;
-
-      char* key = *pair;
-      char* value = *(pair + 1);
-      char tmp[50] = {0}; //todo
-
-      int32_t code = tjsonGetStringValue(item, key, tmp);
-      if(code == 0 && strcmp(value, tmp) != 0){
-        isfound = false;
-        break;
-      }
-    }
-
-    if(isfound) return item;
-  }
-
-  return NULL;
-}
-
 int32_t tjsonToObject(const SJson* pJson, const char* pName, FToObject func, void* pObj) {
   SJson* pJsonObj = tjsonGetObjectItem(pJson, pName);
   if (NULL == pJsonObj) {

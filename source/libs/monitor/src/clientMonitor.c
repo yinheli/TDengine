@@ -16,7 +16,7 @@ int32_t sendReport(ClientMonitor* pMonitor, char* pCont);
 void    generateClusterReport(ClientMonitor* pMonitor, bool send) {
   char ts[50];
   sprintf(ts, "%" PRId64, taosGetTimestamp(TSDB_TIME_PRECISION_MILLI));
-  char* pCont = (char*)taos_collector_registry_bridge(pMonitor->registry, ts, "%" PRId64);
+  char* pCont = (char*)taos_collector_registry_bridge(pMonitor->registry, ts, "%" PRId64, NULL);
   if (send && strlen(pCont) != TSDB_CODE_SUCCESS) {
     if (sendReport(pMonitor, pCont) == 0) {
       taos_collector_registry_clear_out(pMonitor->registry);

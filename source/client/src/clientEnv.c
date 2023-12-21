@@ -111,6 +111,8 @@ static void deregisterRequest(SRequestObj *pRequest) {
     }
   }
 
+  duration = 7000000;
+
   if (duration >= (tsSlowLogThreshold * 1000000UL)) {
     atomic_add_fetch_64((int64_t *)&pActivity->numOfSlowQueries, 1);
     if (tsSlowLogScope & reqType) {

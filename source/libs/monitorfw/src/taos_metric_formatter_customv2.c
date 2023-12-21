@@ -21,9 +21,10 @@
 #include "tjson.h"
 #include "taos_monitor_util_i.h"
 #include "taos_assert.h"
+#include "tdef.h"
 
 int taos_metric_formatter_load_sample_new(taos_metric_formatter_t *self, taos_metric_sample_t *sample, 
-                                      char *ts, char *format, char *metricName, SJson *arrayTable) {
+                                      char *ts, char *format, char *metricName, SJson *arrayMetricGroups) {
   TAOS_ASSERT(self != NULL);
   if (self == NULL) return 1;
 
@@ -57,17 +58,18 @@ int taos_metric_formatter_load_sample_new(taos_metric_formatter_t *self, taos_me
     strip(pair[1]);
   }
 
-  
-
-  int32_t table_size = tjsonGetArraySize(arrayTable);
+  int32_t table_size = tjsonGetArraySize(arrayMetricGroups);
 
   SJson* item = NULL;
   for(int32_t i = 0; i < table_size; i++){
-    item = tjsonGetArrayItem(arrayTable, i);
+    SJson *cur = tjsonGetArrayItem(arrayMetricGroups, i);
 
-    SJson* tag = tjsonGetObjectItem(item, "tags");
+    SJson* tag = tjsonGetObjectItem(cur, "tags");
 
-    if(tjsonGetArrayItemByPair(arrayTable, arr, count + 1)) break;
+    if(taos_monitor_is_match(tag, arr, count + 1)) {
+      item = cur;
+      break;
+    }
   }
 
   SJson* metrics = NULL;
@@ -92,7 +94,7 @@ int taos_metric_formatter_load_sample_new(taos_metric_formatter_t *self, taos_me
     metrics = tjsonCreateArray();
     tjsonAddItemToObject(item, "metrics", metrics);
 
-    tjsonAddItemToArray(arrayTable, item);
+    tjsonAddItemToArray(arrayMetricGroups, item);
   }
   else{
     metrics = tjsonGetObjectItem(item, "metrics");
@@ -114,7 +116,7 @@ int taos_metric_formatter_load_sample_new(taos_metric_formatter_t *self, taos_me
 }
 
 int taos_metric_formatter_load_metric_new(taos_metric_formatter_t *self, taos_metric_t *metric, char *ts, char *format, 
-                                          SJson* pJson) {
+                                          SJson* tableArray) {
   TAOS_ASSERT(self != NULL);
   if (self == NULL) return 1;
 
@@ -124,18 +126,43 @@ int taos_metric_formatter_load_metric_new(taos_metric_formatter_t *self, taos_me
   char* name = taosMemoryMalloc(size + 1);
   memset(name, 0, size + 1);
   memcpy(name, metric->name, size);
-  char* arr[2] = {0};
+  char* arr[2] = {0}; //arr[0] is table name, arr[1] is metric name
   taos_monitor_split_str((char**)&arr, name, ":");
 
-  //SJson* item = tjsonGetArrayItemByName(pJson, arr[0]);
-  SJson* arrayTable = tjsonGetObjectItem(pJson, arr[0]);
-  if(arrayTable == NULL){
-    arrayTable = tjsonCreateArray();
-    //tjsonAddItemToArray(pJson, item);
-    tjsonAddItemToObject(pJson, arr[0], arrayTable);
+  bool isFound = false;
+  SJson* table = NULL;
+  SJson* arrayMetricGroups = NULL;
+
+  int32_t table_count = tjsonGetArraySize(tableArray);
+  for(int32_t i = 0; i < table_count; i++){
+    SJson* table = tjsonGetArrayItem(tableArray, i);
+
+    char tableName[MONITOR_TABLENAME_LEN] = {0};
+    tjsonGetStringValue(table, "name", tableName);
+    if(strcmp(tableName, arr[0]) == 0){
+      isFound = true;
+      arrayMetricGroups = tjsonGetObjectItem(table, "metric_groups");
+      break;
+    }
+    /*
+    arrayMetricGroups = tjsonGetObjectItem(table, arr[0]);
+    if(arrayMetricGroups != NULL) {
+      isFound = true;
+      break;
+    }
+    */
   }
 
+  if(!isFound){
+    table = tjsonCreateObject();
+    tjsonAddItemToArray(tableArray, table);
 
+    tjsonAddStringToObject(table, "name", arr[0]);
+
+    arrayMetricGroups = tjsonCreateArray();
+    tjsonAddItemToObject(table, "metric_groups", arrayMetricGroups);
+  }
+  
   for (taos_linked_list_node_t *current_node = metric->samples->keys->head; current_node != NULL;
        current_node = current_node->next) {
     const char *key = (const char *)current_node->item;
@@ -144,7 +171,7 @@ int taos_metric_formatter_load_metric_new(taos_metric_formatter_t *self, taos_me
     } else {
       taos_metric_sample_t *sample = (taos_metric_sample_t *)taos_map_get(metric->samples, key);
       if (sample == NULL) return 1;
-      r = taos_metric_formatter_load_sample_new(self, sample, ts, format, arr[1], arrayTable);
+      r = taos_metric_formatter_load_sample_new(self, sample, ts, format, arr[1], arrayMetricGroups);
       if (r) return r;
     }
   }

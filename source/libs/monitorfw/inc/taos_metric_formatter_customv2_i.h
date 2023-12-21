@@ -19,8 +19,8 @@
 #include <stdint.h>
 
 int taos_metric_formatter_load_sample_new(taos_metric_formatter_t *self, taos_metric_sample_t *sample, 
-                                      char *ts, char *format, char *metricName, SJson *arrayTable);
+                                      char *ts, char *format, char *metricName, SJson *arrayMetricGroups);
 int taos_metric_formatter_load_metric_new(taos_metric_formatter_t *self, taos_metric_t *metric, char *ts, char *format, 
-                                          SJson* pJson);                                      
+                                          SJson* tableArray);                                      
 
 #endif  // TAOS_METRIC_FORMATTER_CUSTOMV2_I_H

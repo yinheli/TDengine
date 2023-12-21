@@ -21,5 +21,6 @@
 void taos_monitor_split_str(char** arr, char* str, const char* del);
 int countOccurrences(char *str, char *toSearch);
 void strip(char *s);
+bool taos_monitor_is_match(const SJson* tags, char** pairs, int32_t count);
 
 #endif  // TAOS_MONITOR_UTIL_I_H

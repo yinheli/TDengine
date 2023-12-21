@@ -136,9 +136,9 @@ int32_t mndInitPerfs(SMnode *pMnode) {
 }
 
 int32_t mndInitClientMetrics(SMnode *pMnode) {
-  //pMnode->clientMetrics = taosHashInit(20, taosGetDefaultHashFunction(TSDB_DATA_TYPE_BINARY), false, HASH_NO_LOCK); //todo
-  pMnode->clientMetrics = taosArrayInit(0, sizeof(void*));
-  if (pMnode->perfsMeta == NULL) {
+  pMnode->clientMetrics = taosHashInit(20, taosGetDefaultHashFunction(TSDB_DATA_TYPE_BINARY), false, HASH_ENTRY_LOCK); //todo
+  //pMnode->clientMetrics = taosArrayInit(0, sizeof(void*));
+  if (pMnode->clientMetrics == NULL) {
     terrno = TSDB_CODE_OUT_OF_MEMORY;
     return -1;
   }
@@ -168,7 +168,7 @@ void mndCleanupClientMetrics(SMnode *pMnode) {
   if (NULL == pMnode->clientMetrics) {
     return;
   }
-
+  /*
   int32_t size = taosArrayGetSize(pMnode->clientMetrics);
   for(int32_t i = 0; i < size; i++){
     taos_counter_t* metric = taosArrayGet(pMnode->clientMetrics, i);
@@ -176,5 +176,17 @@ void mndCleanupClientMetrics(SMnode *pMnode) {
   }
 
   taosArrayDestroy(pMnode->clientMetrics);
+  */
+
+  void *pIter = taosHashIterate(pMnode->clientMetrics, NULL);
+  while (pIter) {
+    taos_counter_t* metric = (taos_counter_t*)pIter;
+
+    taosMemoryFreeClear(metric);
+
+    pIter = taosHashIterate(pMnode->clientMetrics, pIter);
+  }
+
+  taosHashCleanup(pMnode->clientMetrics);
   pMnode->clientMetrics = NULL;
 }

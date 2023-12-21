@@ -506,69 +506,85 @@ static int32_t mndProcessStatisReq(SRpcMsg *pReq) {
     goto _OVER;
   }
 
-  mInfo("process statis req, %s", statisReq.pCont);
+  mInfo("process statis req,\n %s", statisReq.pCont);
 
-  SJson* pJson = tjsonParse(pReq->pCont);
+  SJson* pJson = tjsonParse(statisReq.pCont);
 
-  SJson* table = tjsonGetObjectItem(pJson, "cluster_info");
+  SJson* tables = tjsonGetObjectItem(pJson, "tables");
 
-  int32_t size = tjsonGetArraySize(table);
-  for(int32_t i = 0; i < size; i++){
-    SJson* item = tjsonGetArrayItem(table, i);
+  int32_t tableSize = tjsonGetArraySize(tables);
+  for(int32_t i = 0; i < tableSize; i++){
+    SJson* table = tjsonGetArrayItem(tables, i);
 
-    SJson* arrayTag = tjsonGetObjectItem(item, "tags");
+    char tableName[MONITOR_TABLENAME_LEN] = {0};
+    tjsonGetStringValue(table, "name", tableName);
 
-    int32_t tagSize = tjsonGetArraySize(arrayTag);
+    SJson* metricGroups = tjsonGetObjectItem(table, "metric_groups");
 
-    char** labels = taosMemoryMalloc(sizeof(char*) * tagSize); //todo
-    char** sample_labels = taosMemoryMalloc(sizeof(char*) * tagSize);
+    int32_t size = tjsonGetArraySize(metricGroups);
+    for(int32_t i = 0; i < size; i++){
+      SJson* item = tjsonGetArrayItem(metricGroups, i);
 
-    for(int32_t j = 0; j < tagSize; j++){
-      SJson* item = tjsonGetArrayItem(arrayTag, j);
+      SJson* arrayTag = tjsonGetObjectItem(item, "tags");
 
-      *(labels + j) = taosMemoryMalloc(100); //todo
-      tjsonGetStringValue(item, "name", *(labels + j));
+      int32_t tagSize = tjsonGetArraySize(arrayTag);
 
-      *(sample_labels + j) = taosMemoryMalloc(100);
-      tjsonGetStringValue(item, "value", *(sample_labels + j));
-    }
+      char** labels = taosMemoryMalloc(sizeof(char*) * tagSize); //todo
+      char** sample_labels = taosMemoryMalloc(sizeof(char*) * tagSize);
 
-    //char clusterId[TSDB_CLUSTER_ID_LEN];
-    //tjsonGetStringValue(item, "cluster_id", clusterId);
+      for(int32_t j = 0; j < tagSize; j++){
+        SJson* item = tjsonGetArrayItem(arrayTag, j);
 
-    SJson* metrics = tjsonGetObjectItem(item, "metrics");
+        *(labels + j) = taosMemoryMalloc(100); //todo
+        tjsonGetStringValue(item, "name", *(labels + j));
 
-    int32_t metricLen = tjsonGetArraySize(metrics);
-    for(int32_t j = 0; j < metricLen; j++){
-      SJson *item = tjsonGetArrayItem(metrics, j);
-
-      char name[100] = {0}; //todo
-      tjsonGetStringValue(item, "name", name);
-
-      double value = 0;
-      tjsonGetDoubleValue(item, "value", &value);
-
-      //taos_counter_t* metric = taosHashGet(pMnode->clientMetrics, name, strlen(name)); 
-      taos_counter_t* metric = taosArrayGet(pMnode->clientMetrics, j);
-
-      if(metric == NULL){
-        
-
-        //int32_t label_count =1;
-        //const char *sample_labels[] = {"cluster_id"};
-        metric = taos_counter_new(name, "",  tagSize, (const char**)labels);
-        if(taos_collector_registry_register_metric(metric) == 1){
-          taos_counter_destroy(metric);
-        }
-        taosArrayPush(pMnode->clientMetrics, metric);
+        *(sample_labels + j) = taosMemoryMalloc(100);
+        tjsonGetStringValue(item, "value", *(sample_labels + j));
       }
 
-      //const char *sample_labels[] = {clusterId};
-      taos_counter_add(metric, value, (const char**)sample_labels);
-    }
+      SJson* metrics = tjsonGetObjectItem(item, "metrics");
 
-    
+      int32_t metricLen = tjsonGetArraySize(metrics);
+      for(int32_t j = 0; j < metricLen; j++){
+        SJson *item = tjsonGetArrayItem(metrics, j);
+
+        char name[100] = {0}; //todo
+        tjsonGetStringValue(item, "name", name);
+
+        double value = 0;
+        tjsonGetDoubleValue(item, "value", &value);
+
+        int32_t metricNameLen = strlen(name) + strlen(tableName) + 2;
+        char* metricName = taosMemoryMalloc(metricNameLen);
+        memset(metricName, 0, metricNameLen);
+        sprintf(metricName, "%s:%s", tableName, name);
+
+        taos_counter_t** pmetric = taosHashGet(pMnode->clientMetrics, metricName, metricNameLen - 1); 
+        //taos_counter_t* metric = taosArrayGet(pMnode->clientMetrics, j);
+
+        taos_counter_t* metric = NULL;
+
+        if(pmetric == NULL){
+          metric = taos_counter_new(metricName, "",  tagSize, (const char**)labels);
+          if(taos_collector_registry_register_metric(metric) == 1){
+            taos_counter_destroy(metric);
+          }
+          //taosArrayPush(pMnode->clientMetrics, metric);
+
+          taosHashPut(pMnode->clientMetrics, metricName, metricNameLen - 1, &metric, sizeof(taos_counter_t*));
+        }
+        else{
+          metric = *pmetric;
+        }
+
+        taos_counter_add(metric, value, (const char**)sample_labels);
+      }
+
+      
+    }
   }
+
+  
 
   //monSendContent(pReq->pCont);
 

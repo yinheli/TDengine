@@ -538,6 +538,7 @@ enum {
 #define VNODE_TIMEOUT_SEC 60
 #define MNODE_TIMEOUT_SEC 60
 
+#define MONITOR_TABLENAME_LEN 200
 #ifdef __cplusplus
 }
 #endif

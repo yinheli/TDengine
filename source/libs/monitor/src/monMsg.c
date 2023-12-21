@@ -24,9 +24,11 @@ void tFreeSMonMmInfo(SMonMmInfo *pInfo) {
   taosArrayDestroy(pInfo->cluster.dnodes);
   taosArrayDestroy(pInfo->vgroup.vgroups);
   taosArrayDestroy(pInfo->stb.stbs);
+  taosHashCleanup(pInfo->cluster.monitor_client_metrics);
   pInfo->cluster.mnodes = NULL;
   pInfo->cluster.dnodes = NULL;
   pInfo->vgroup.vgroups = NULL;
+  pInfo->cluster.monitor_client_metrics = NULL;
   pInfo->stb.stbs = NULL;
   pInfo->log.logs = NULL;
 }

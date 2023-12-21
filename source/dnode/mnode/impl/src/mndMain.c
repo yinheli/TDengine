@@ -13,7 +13,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 #define _DEFAULT_SOURCE
-
+#include "thash.h"
 #include "tarray.h"
 #include "mndAcct.h"
 #include "mndCluster.h"
@@ -781,8 +781,10 @@ int32_t mndGetMonitorInfo(SMnode *pMnode, SMonClusterInfo *pClusterInfo, SMonVgr
   pClusterInfo->mnodes = taosArrayInit(sdbGetSize(pSdb, SDB_MNODE), sizeof(SMonMnodeDesc));
   pVgroupInfo->vgroups = taosArrayInit(sdbGetSize(pSdb, SDB_VGROUP), sizeof(SMonVgroupDesc));
   pStbInfo->stbs = taosArrayInit(sdbGetSize(pSdb, SDB_STB), sizeof(SMonStbDesc));
+  pClusterInfo->monitor_client_metrics = 
+    taosHashInit(0, taosGetDefaultHashFunction(TSDB_DATA_TYPE_BINARY), false, HASH_ENTRY_LOCK);
   if (pClusterInfo->dnodes == NULL || pClusterInfo->mnodes == NULL || pVgroupInfo->vgroups == NULL ||
-      pStbInfo->stbs == NULL) {
+      pStbInfo->stbs == NULL || pClusterInfo->monitor_client_metrics == NULL) {
     mndReleaseRpc(pMnode);
     return -1;
   }
@@ -837,6 +839,7 @@ int32_t mndGetMonitorInfo(SMnode *pMnode, SMonClusterInfo *pClusterInfo, SMonVgr
     sdbRelease(pSdb, pObj);
   }
 
+  /*
   int32_t size = taosArrayGetSize(pMnode->clientMetrics);
   int32_t monSize = taosArrayGetSize(pClusterInfo->clientMetrics);
   for(int32_t i = 0; i < size; i++){
@@ -854,6 +857,22 @@ int32_t mndGetMonitorInfo(SMnode *pMnode, SMonClusterInfo *pClusterInfo, SMonVgr
         }
       }
     }
+  }
+  */
+
+  pIter = taosHashIterate(pMnode->clientMetrics, NULL);
+  while (pIter) {
+    taos_counter_t** metric = (taos_counter_t**)pIter;
+
+    char* metricName = taos_monitor_get_metric_name(*metric);
+    int32_t metricNameLen = strlen(metricName);
+    taos_counter_t* metricInMonitor = taosHashGet(pClusterInfo->monitor_client_metrics, metricName, metricNameLen);
+
+    if(metricInMonitor == NULL){
+      taosHashPut(pClusterInfo->monitor_client_metrics, metricName, metricNameLen, metric, sizeof(taos_counter_t*));
+    }
+
+    pIter = taosHashIterate(pMnode->clientMetrics, pIter);
   }
 
   // vgroup info
