@@ -81,7 +81,13 @@ bool taos_monitor_is_match(const SJson* tags, char** pairs, int32_t count) { //t
   for(int32_t i = 0; i < size; i++){
     SJson* item = tjsonGetArrayItem(tags, i);
 
-    bool isfound = true;
+    char item_name[50] = {0}; //todo
+    tjsonGetStringValue(item, "name", item_name);
+
+    char item_value[50] = {0}; //todo
+    tjsonGetStringValue(item, "value", item_value);
+
+    bool isfound = false;
     for(int32_t j = 0; j < count; j++){
 
       char** pair = pairs + j * 2;
@@ -89,10 +95,9 @@ bool taos_monitor_is_match(const SJson* tags, char** pairs, int32_t count) { //t
       char* key = *pair;
       char* value = *(pair + 1);
 
-      char tmp[50] = {0}; //todo
-      int32_t code = tjsonGetStringValue(item, key, tmp);
-      if(code == 0 && strcmp(value, tmp) != 0){
-        isfound = false;
+      
+      if(strcmp(value, item_value) == 0 && strcmp(key, item_name) == 0){
+        isfound = true;
         break;
       }
     }
