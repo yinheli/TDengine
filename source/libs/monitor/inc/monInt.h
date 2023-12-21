@@ -49,6 +49,9 @@ typedef struct {
   SHashObj     *metrics;
 } SMonitor;
 
+void monInitNewMonitor();
+void monGenClusterInfoTable(SMonBasicInfo *pBasicInfo, SMonClusterInfo *pInfo);
+
 #ifdef __cplusplus
 }
 #endif
