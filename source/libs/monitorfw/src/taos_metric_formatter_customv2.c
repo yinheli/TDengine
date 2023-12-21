@@ -24,7 +24,8 @@
 #include "tdef.h"
 
 int taos_metric_formatter_load_sample_new(taos_metric_formatter_t *self, taos_metric_sample_t *sample, 
-                                      char *ts, char *format, char *metricName, SJson *arrayMetricGroups) {
+                                      char *ts, char *format, char *metricName, int32_t metric_type,
+                                      SJson *arrayMetricGroups) {
   TAOS_ASSERT(self != NULL);
   if (self == NULL) return 1;
 
@@ -107,6 +108,7 @@ int taos_metric_formatter_load_sample_new(taos_metric_formatter_t *self, taos_me
   SJson* metric = tjsonCreateObject();
   tjsonAddStringToObject(metric, "name", metricName);
   tjsonAddDoubleToObject(metric, "value", sample->r_value);
+  tjsonAddDoubleToObject(metric, "type", metric_type);
 
   tjsonAddItemToArray(metrics, metric);
 
@@ -171,7 +173,7 @@ int taos_metric_formatter_load_metric_new(taos_metric_formatter_t *self, taos_me
     } else {
       taos_metric_sample_t *sample = (taos_metric_sample_t *)taos_map_get(metric->samples, key);
       if (sample == NULL) return 1;
-      r = taos_metric_formatter_load_sample_new(self, sample, ts, format, arr[1], arrayMetricGroups);
+      r = taos_metric_formatter_load_sample_new(self, sample, ts, format, arr[1], metric->type, arrayMetricGroups);
       if (r) return r;
     }
   }

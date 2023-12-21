@@ -554,6 +554,9 @@ static int32_t mndProcessStatisReq(SRpcMsg *pReq) {
         double value = 0;
         tjsonGetDoubleValue(item, "value", &value);
 
+        double type = 0;
+        tjsonGetDoubleValue(item, "type", &type);
+
         int32_t metricNameLen = strlen(name) + strlen(tableName) + 2;
         char* metricName = taosMemoryMalloc(metricNameLen);
         memset(metricName, 0, metricNameLen);
@@ -565,10 +568,17 @@ static int32_t mndProcessStatisReq(SRpcMsg *pReq) {
         taos_counter_t* metric = NULL;
 
         if(pmetric == NULL){
-          metric = taos_counter_new(metricName, "",  tagSize, (const char**)labels);
+          if(type == 0){
+            metric = taos_counter_new(metricName, "",  tagSize, (const char**)labels);
+          }
+          if(type == 1){
+            metric = taos_gauge_new(metricName, "",  tagSize, (const char**)labels);
+          }
+
           if(taos_collector_registry_register_metric(metric) == 1){
             taos_counter_destroy(metric);
           }
+          
           //taosArrayPush(pMnode->clientMetrics, metric);
 
           taosHashPut(pMnode->clientMetrics, metricName, metricNameLen - 1, &metric, sizeof(taos_counter_t*));
@@ -576,11 +586,14 @@ static int32_t mndProcessStatisReq(SRpcMsg *pReq) {
         else{
           metric = *pmetric;
         }
-
-        taos_counter_add(metric, value, (const char**)sample_labels);
+        
+        if(type == 0){
+          taos_counter_add(metric, value, (const char**)sample_labels);
+        }
+        if(type == 1){
+          taos_gauge_set(metric, value, (const char**)sample_labels);
+        }
       }
-
-      
     }
   }
 
