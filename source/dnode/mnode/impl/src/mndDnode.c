@@ -579,8 +579,8 @@ static int32_t mndProcessStatisReq(SRpcMsg *pReq) {
             taos_counter_destroy(metric);
           }
           
+          //for v1 protocol
           //taosArrayPush(pMnode->clientMetrics, metric);
-
           taosHashPut(pMnode->clientMetrics, metricName, metricNameLen - 1, &metric, sizeof(taos_counter_t*));
         }
         else{

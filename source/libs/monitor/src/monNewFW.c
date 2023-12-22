@@ -169,3 +169,177 @@ void monGenClusterInfoTable(SMonBasicInfo *pBasicInfo, SMonClusterInfo *pInfo){
   metric = taosHashGet(tsMonitor.metrics, DNODES_ALIVE, strlen(DNODES_ALIVE));
   taos_gauge_set(*metric, dnode_alive, sample_labels);
 }
+
+void monGenVgroupInfoTable(SMonInfo *pMonitor){
+  if(pMonitor->dmInfo.basic.cluster_id == 0) return;
+
+  SMonVgroupInfo *pInfo = &pMonitor->mmInfo.vgroup;
+  if (pMonitor->mmInfo.cluster.first_ep_dnode_id == 0) return;
+
+  char cluster_id[TSDB_CLUSTER_ID_LEN];
+  snprintf(cluster_id, sizeof(cluster_id), "%" PRId64, pMonitor->dmInfo.basic.cluster_id);
+
+  for (int32_t i = 0; i < taosArrayGetSize(pInfo->vgroups); ++i) {
+    SMonVgroupDesc *pVgroupDesc = taosArrayGet(pInfo->vgroups, i);
+
+    char vgroup_id[50];
+    snprintf(vgroup_id, sizeof(vgroup_id), "%" PRId64, pMonitor->dmInfo.basic.cluster_id);
+
+    const char *sample_labels[] = {cluster_id, vgroup_id, pVgroupDesc->database_name};
+
+    taos_gauge_t **metric = NULL;
+  
+    metric = taosHashGet(tsMonitor.metrics, TABLES_NUM, strlen(TABLES_NUM));
+    taos_gauge_set(*metric, pVgroupDesc->tables_num, sample_labels);
+
+    metric = taosHashGet(tsMonitor.metrics, STATUS, strlen(STATUS));
+    int32_t status = 0;
+    if(strcmp(pVgroupDesc->status, "ready") == 0){
+      status = 1;
+    }
+    taos_gauge_set(*metric, status, sample_labels);
+ }
+}
+
+void monGenDnodeInfoTable(SMonInfo *pMonitor) {
+  if(pMonitor->dmInfo.basic.cluster_id == 0) return;
+
+  SMonDnodeInfo *pInfo = &pMonitor->dmInfo.dnode;
+  SMonSysInfo   *pSys = &pMonitor->dmInfo.sys;
+  SVnodesStat   *pStat = &pMonitor->vmInfo.vstat;
+  SMonClusterInfo *pClusterInfo = &pMonitor->mmInfo.cluster;
+
+  double interval = (pMonitor->curTime - pMonitor->lastTime) / 1000.0;
+  if (pMonitor->curTime - pMonitor->lastTime == 0) {
+    interval = 1;
+  }
+
+  double cpu_engine = 0;
+  double mem_engine = 0;
+  double net_in = 0;
+  double net_out = 0;
+  double io_read = 0;
+  double io_write = 0;
+  double io_read_disk = 0;
+  double io_write_disk = 0;
+
+  SMonSysInfo *sysArrays[6];
+  sysArrays[0] = &pMonitor->dmInfo.sys;
+  sysArrays[1] = &pMonitor->mmInfo.sys;
+  sysArrays[2] = &pMonitor->vmInfo.sys;
+  sysArrays[3] = &pMonitor->qmInfo.sys;
+  sysArrays[4] = &pMonitor->smInfo.sys;
+  sysArrays[5] = &pMonitor->bmInfo.sys;
+  for (int32_t i = 0; i < 6; ++i) {
+    cpu_engine += sysArrays[i]->cpu_engine;
+    mem_engine += sysArrays[i]->mem_engine;
+    net_in += sysArrays[i]->net_in;
+    net_out += sysArrays[i]->net_out;
+    io_read += sysArrays[i]->io_read;
+    io_write += sysArrays[i]->io_write;
+    io_read_disk += sysArrays[i]->io_read_disk;
+    io_write_disk += sysArrays[i]->io_write_disk;
+  }
+
+  double req_select_rate = pStat->numOfSelectReqs / interval;
+  double req_insert_rate = pStat->numOfInsertReqs / interval;
+  double req_insert_batch_rate = pStat->numOfBatchInsertReqs / interval;
+  double net_in_rate = net_in / interval;
+  double net_out_rate = net_out / interval;
+  double io_read_rate = io_read / interval;
+  double io_write_rate = io_write / interval;
+  double io_read_disk_rate = io_read_disk / interval;
+  double io_write_disk_rate = io_write_disk / interval;
+
+  if(pMonitor->dmInfo.basic.cluster_id != 0){
+    char cluster_id[TSDB_CLUSTER_ID_LEN];
+    snprintf(cluster_id, sizeof(cluster_id), "%" PRId64, pMonitor->dmInfo.basic.cluster_id);
+
+    char dnode_id[50];
+    snprintf(dnode_id, sizeof(dnode_id), "%d", pMonitor->dmInfo.basic.dnode_id);
+
+    const char *sample_labels[] = {cluster_id, dnode_id, pMonitor->dmInfo.basic.dnode_ep};
+
+    taos_gauge_t **metric = NULL;
+
+    metric = taosHashGet(tsMonitor.metrics, UPTIME, strlen(UPTIME));
+    taos_gauge_set(*metric, pInfo->uptime, sample_labels);
+
+    metric = taosHashGet(tsMonitor.metrics, CPU_ENGINE, strlen(CPU_ENGINE));
+    taos_gauge_set(*metric, cpu_engine, sample_labels);
+
+    metric = taosHashGet(tsMonitor.metrics, CPU_SYSTEM, strlen(CPU_SYSTEM));
+    taos_gauge_set(*metric, pSys->cpu_system, sample_labels);
+
+    metric = taosHashGet(tsMonitor.metrics, MEM_ENGINE, strlen(MEM_ENGINE));
+    taos_gauge_set(*metric, mem_engine, sample_labels);
+
+    metric = taosHashGet(tsMonitor.metrics, MEM_SYSTEM, strlen(MEM_SYSTEM));
+    taos_gauge_set(*metric, pSys->mem_system, sample_labels);
+
+    metric = taosHashGet(tsMonitor.metrics, DISK_ENGINE, strlen(DISK_ENGINE));
+    taos_gauge_set(*metric, pSys->disk_engine, sample_labels);
+
+    metric = taosHashGet(tsMonitor.metrics, DISK_USED, strlen(DISK_USED));
+    taos_gauge_set(*metric, pSys->disk_used, sample_labels);
+
+    metric = taosHashGet(tsMonitor.metrics, NET_IN, strlen(NET_IN));
+    taos_gauge_set(*metric, net_in_rate, sample_labels);
+
+    metric = taosHashGet(tsMonitor.metrics, NET_OUT, strlen(NET_OUT));
+    taos_gauge_set(*metric, net_out_rate, sample_labels);
+
+    metric = taosHashGet(tsMonitor.metrics, IO_READ, strlen(IO_READ));
+    taos_gauge_set(*metric, io_read_rate, sample_labels);
+
+    metric = taosHashGet(tsMonitor.metrics, IO_WRITE, strlen(IO_WRITE));
+    taos_gauge_set(*metric, io_write_rate, sample_labels);
+
+    metric = taosHashGet(tsMonitor.metrics, IO_READ_DISK, strlen(IO_READ_DISK));
+    taos_gauge_set(*metric, io_read_disk_rate, sample_labels);
+
+    metric = taosHashGet(tsMonitor.metrics, IO_WRITE_DISK, strlen(IO_WRITE_DISK));
+    taos_gauge_set(*metric, io_write_disk_rate, sample_labels);
+
+    metric = taosHashGet(tsMonitor.metrics, ERRORS, strlen(ERRORS));
+    taos_gauge_set(*metric, io_read_disk_rate, sample_labels);
+
+    metric = taosHashGet(tsMonitor.metrics, VNODES_NUM, strlen(VNODES_NUM));
+    taos_gauge_set(*metric, pStat->errors, sample_labels);
+
+    metric = taosHashGet(tsMonitor.metrics, MASTERS, strlen(MASTERS));
+    taos_gauge_set(*metric, pStat->masterNum, sample_labels);
+
+    metric = taosHashGet(tsMonitor.metrics, HAS_MNODE, strlen(HAS_MNODE));
+    taos_gauge_set(*metric, pInfo->has_mnode, sample_labels);
+
+    metric = taosHashGet(tsMonitor.metrics, HAS_QNODE, strlen(HAS_QNODE));
+    taos_gauge_set(*metric, pInfo->has_qnode, sample_labels);
+
+    metric = taosHashGet(tsMonitor.metrics, HAS_SNODE, strlen(HAS_SNODE));
+    taos_gauge_set(*metric, pInfo->has_snode, sample_labels);
+  }
+
+  char cluster_id[TSDB_CLUSTER_ID_LEN] = {0};
+  snprintf(cluster_id, sizeof(cluster_id), "%" PRId64, pMonitor->dmInfo.basic.cluster_id);
+  taos_gauge_t **metric = NULL;
+
+  for (int32_t i = 0; i < taosArrayGetSize(pClusterInfo->dnodes); ++i) {
+    SMonDnodeDesc *pDnodeDesc = taosArrayGet(pClusterInfo->dnodes, i);
+
+    if(pMonitor->dmInfo.basic.cluster_id != 0){
+      char dnode_id[50] = {0};
+      snprintf(dnode_id, sizeof(dnode_id), "%d", pDnodeDesc->dnode_id);
+
+      const char *sample_labels[] = {cluster_id, dnode_id, pDnodeDesc->dnode_ep};
+
+      metric = taosHashGet(tsMonitor.metrics, DNODE_STATUS, strlen(DNODE_STATUS));
+
+      int32_t status = 0;
+      if(strcmp(pDnodeDesc->status, "ready") == 0){
+        status = 1;
+      }
+      taos_gauge_set(*metric, status, sample_labels);
+    } 
+  }
+}

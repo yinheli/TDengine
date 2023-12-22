@@ -838,7 +838,8 @@ int32_t mndGetMonitorInfo(SMnode *pMnode, SMonClusterInfo *pClusterInfo, SMonVgr
     taosArrayPush(pClusterInfo->mnodes, &desc);
     sdbRelease(pSdb, pObj);
   }
-
+  
+  //for v1 protocol
   /*
   int32_t size = taosArrayGetSize(pMnode->clientMetrics);
   int32_t monSize = taosArrayGetSize(pClusterInfo->clientMetrics);

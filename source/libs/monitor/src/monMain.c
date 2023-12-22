@@ -25,55 +25,6 @@ SMonitor tsMonitor = {0};
 static char* tsMonUri = "/report";
 static char* tsMonFwUri = "/td_metric";
 
-#define MASTER_UPTIME  "cluster_info:master_uptime"
-#define DBS_TOTAL "cluster_info:dbs_total"
-#define TBS_TOTAL "cluster_info:tbs_total"
-#define STBS_TOTAL "cluster_info:stbs_total"
-#define VGROUPS_TOTAL "cluster_info:vgroups_total"
-#define VGROUPS_ALIVE "cluster_info:vgroups_alive"
-#define VNODES_TOTAL "cluster_info:vnodes_total"
-#define VNODES_ALIVE "cluster_info:vnodes_alive"
-#define DNODES_TOTAL "cluster_info:dnodes_total"
-#define DNODES_ALIVE "cluster_info:dnodes_alive"
-#define CONNECTIONS_TOTAL "cluster_info:connections_total"
-#define TOPICS_TOTAL "cluster_info:topics_total"
-#define STREAMS_TOTAL "cluster_info:streams_total"
-
-#define TABLES_NUM "cluster_vgroups_info:tables_num"
-#define STATUS "cluster_vgroups_info:status"
-
-#define UPTIME "dnodes_info:uptime"
-#define CPU_ENGINE "dnodes_info:cpu_engine"
-#define CPU_SYSTEM "dnodes_info:cpu_system"
-#define CPU_CORES "dnodes_info:cpu_cores"
-#define MEM_ENGINE "dnodes_info:mem_engine"
-#define MEM_SYSTEM "dnodes_info:mem_system"
-#define MEM_TOTAL "dnodes_info:mem_total"
-#define DISK_ENGINE "dnodes_info:disk_engine"
-#define DISK_USED "dnodes_info:disk_used"
-#define DISK_TOTAL "dnodes_info:disk_total"
-#define NET_IN "dnodes_info:net_in"
-#define NET_OUT "dnodes_info:net_out"
-#define IO_READ "dnodes_info:io_read"
-#define IO_WRITE "dnodes_info:io_write"
-#define IO_READ_DISK "dnodes_info:io_read_disk"
-#define IO_WRITE_DISK "dnodes_info:io_write_disk"
-#define REQ_SELECT "req_select"
-#define REQ_SELECT_RATE "req_select_rate"
-#define REQ_INSERT "req_insert"
-#define REQ_INSERT_SUCCESS "req_insert_success"
-#define REQ_INSERT_RATE "req_insert_rate"
-#define REQ_INSERT_BATCH "req_insert_batch"
-#define REQ_INSERT_BATCH_SUCCESS "req_insert_batch_success"
-#define REQ_INSERT_BATCH_RATE "req_insert_batch_rate"
-#define ERRORS "dnodes_info:errors"
-#define VNODES_NUM "dnodes_info:vnodes_num"
-#define MASTERS "dnodes_info:masters"
-#define HAS_MNODE "dnodes_info:has_mnode"
-#define HAS_QNODE "dnodes_info:has_qnode"
-#define HAS_SNODE "dnodes_info:has_snode"
-#define DNODE_STATUS "dnodes_info:status"
-
 void monRecordLog(int64_t ts, ELogLevel level, const char *content) {
   taosThreadMutexLock(&tsMonitor.lock);
   int32_t size = taosArrayGetSize(tsMonitor.logs);
@@ -275,8 +226,7 @@ static void monGenClusterJson(SMonInfo *pMonitor) {
   tjsonAddDoubleToObject(pJson, "streams_total", pInfo->streams_total);
 
   monGenClusterInfoTable(&pMonitor->dmInfo.basic, pInfo);
-
-  /*
+/*
   int32_t monSize = taosArrayGetSize(pInfo->clientMetrics);
   for(int32_t i = 0; i < monSize; i++){
     taos_counter_t* metric = taosArrayGet(pInfo->clientMetrics, i);
@@ -302,13 +252,6 @@ static void monGenClusterJson(SMonInfo *pMonitor) {
   SJson *pDnodesJson = tjsonAddArrayToObject(pJson, "dnodes");
   if (pDnodesJson == NULL) return;
 
-  char cluster_id[TSDB_CLUSTER_ID_LEN] = {0};
-  snprintf(cluster_id, sizeof(cluster_id), "%" PRId64, pMonitor->dmInfo.basic.cluster_id);
-  taos_gauge_t **metric = NULL;
-
-  int32_t dnode_total = taosArrayGetSize(pInfo->dnodes);
-  int32_t dnode_alive = 0;
-
   for (int32_t i = 0; i < taosArrayGetSize(pInfo->dnodes); ++i) {
     SJson *pDnodeJson = tjsonCreateObject();
     if (pDnodeJson == NULL) continue;
@@ -318,23 +261,7 @@ static void monGenClusterJson(SMonInfo *pMonitor) {
     tjsonAddStringToObject(pDnodeJson, "dnode_ep", pDnodeDesc->dnode_ep);
     tjsonAddStringToObject(pDnodeJson, "status", pDnodeDesc->status);
 
-    if (tjsonAddItemToArray(pDnodesJson, pDnodeJson) != 0) tjsonDelete(pDnodeJson);
-
-    if(pMonitor->dmInfo.basic.cluster_id != 0){
-      char dnode_id[50] = {0};
-      snprintf(dnode_id, sizeof(dnode_id), "%d", pDnodeDesc->dnode_id);
-
-      const char *sample_labels[] = {cluster_id, dnode_id, pDnodeDesc->dnode_ep};
-
-      metric = taosHashGet(tsMonitor.metrics, DNODE_STATUS, strlen(DNODE_STATUS));
-
-      int32_t status = 0;
-      if(strcmp(pDnodeDesc->status, "ready") == 0){
-        status = 1;
-        dnode_alive++;
-      }
-      taos_gauge_set(*metric, status, sample_labels);
-    } 
+    if (tjsonAddItemToArray(pDnodesJson, pDnodeJson) != 0) tjsonDelete(pDnodeJson); 
   }
 
   SJson *pMnodesJson = tjsonAddArrayToObject(pJson, "mnodes");
@@ -351,37 +278,6 @@ static void monGenClusterJson(SMonInfo *pMonitor) {
 
     if (tjsonAddItemToArray(pMnodesJson, pMnodeJson) != 0) tjsonDelete(pMnodeJson);
   }
-}
-
-static void monGenVgroupInfoTable(SMonInfo *pMonitor){
-  if(pMonitor->dmInfo.basic.cluster_id == 0) return;
-
-  SMonVgroupInfo *pInfo = &pMonitor->mmInfo.vgroup;
-  if (pMonitor->mmInfo.cluster.first_ep_dnode_id == 0) return;
-
-  char cluster_id[TSDB_CLUSTER_ID_LEN];
-  snprintf(cluster_id, sizeof(cluster_id), "%" PRId64, pMonitor->dmInfo.basic.cluster_id);
-
-  for (int32_t i = 0; i < taosArrayGetSize(pInfo->vgroups); ++i) {
-    SMonVgroupDesc *pVgroupDesc = taosArrayGet(pInfo->vgroups, i);
-
-    char vgroup_id[50];
-    snprintf(vgroup_id, sizeof(vgroup_id), "%" PRId64, pMonitor->dmInfo.basic.cluster_id);
-
-    const char *sample_labels[] = {cluster_id, vgroup_id, pVgroupDesc->database_name};
-
-    taos_gauge_t **metric = NULL;
-  
-    metric = taosHashGet(tsMonitor.metrics, TABLES_NUM, strlen(TABLES_NUM));
-    taos_gauge_set(*metric, pVgroupDesc->tables_num, sample_labels);
-
-    metric = taosHashGet(tsMonitor.metrics, STATUS, strlen(STATUS));
-    int32_t status = 0;
-    if(strcmp(pVgroupDesc->status, "ready") == 0){
-      status = 1;
-    }
-    taos_gauge_set(*metric, status, sample_labels);
- }
 }
 
 static void monGenVgroupJson(SMonInfo *pMonitor) {
@@ -547,74 +443,7 @@ static void monGenDnodeJson(SMonInfo *pMonitor) {
   tjsonAddDoubleToObject(pJson, "has_qnode", pInfo->has_qnode);
   tjsonAddDoubleToObject(pJson, "has_snode", pInfo->has_snode);
 
-  if(pMonitor->dmInfo.basic.cluster_id != 0){
-    char cluster_id[TSDB_CLUSTER_ID_LEN];
-    snprintf(cluster_id, sizeof(cluster_id), "%" PRId64, pMonitor->dmInfo.basic.cluster_id);
-
-    char dnode_id[50];
-    snprintf(dnode_id, sizeof(dnode_id), "%d", pMonitor->dmInfo.basic.dnode_id);
-
-    const char *sample_labels[] = {cluster_id, dnode_id, pMonitor->dmInfo.basic.dnode_ep};
-
-    taos_gauge_t **metric = NULL;
-
-    metric = taosHashGet(tsMonitor.metrics, UPTIME, strlen(UPTIME));
-    taos_gauge_set(*metric, pInfo->uptime, sample_labels);
-
-    metric = taosHashGet(tsMonitor.metrics, CPU_ENGINE, strlen(CPU_ENGINE));
-    taos_gauge_set(*metric, cpu_engine, sample_labels);
-
-    metric = taosHashGet(tsMonitor.metrics, CPU_SYSTEM, strlen(CPU_SYSTEM));
-    taos_gauge_set(*metric, pSys->cpu_system, sample_labels);
-
-    metric = taosHashGet(tsMonitor.metrics, MEM_ENGINE, strlen(MEM_ENGINE));
-    taos_gauge_set(*metric, mem_engine, sample_labels);
-
-    metric = taosHashGet(tsMonitor.metrics, MEM_SYSTEM, strlen(MEM_SYSTEM));
-    taos_gauge_set(*metric, pSys->mem_system, sample_labels);
-
-    metric = taosHashGet(tsMonitor.metrics, DISK_ENGINE, strlen(DISK_ENGINE));
-    taos_gauge_set(*metric, pSys->disk_engine, sample_labels);
-
-    metric = taosHashGet(tsMonitor.metrics, DISK_USED, strlen(DISK_USED));
-    taos_gauge_set(*metric, pSys->disk_used, sample_labels);
-
-    metric = taosHashGet(tsMonitor.metrics, NET_IN, strlen(NET_IN));
-    taos_gauge_set(*metric, net_in_rate, sample_labels);
-
-    metric = taosHashGet(tsMonitor.metrics, NET_OUT, strlen(NET_OUT));
-    taos_gauge_set(*metric, net_out_rate, sample_labels);
-
-    metric = taosHashGet(tsMonitor.metrics, IO_READ, strlen(IO_READ));
-    taos_gauge_set(*metric, io_read_rate, sample_labels);
-
-    metric = taosHashGet(tsMonitor.metrics, IO_WRITE, strlen(IO_WRITE));
-    taos_gauge_set(*metric, io_write_rate, sample_labels);
-
-    metric = taosHashGet(tsMonitor.metrics, IO_READ_DISK, strlen(IO_READ_DISK));
-    taos_gauge_set(*metric, io_read_disk_rate, sample_labels);
-
-    metric = taosHashGet(tsMonitor.metrics, IO_WRITE_DISK, strlen(IO_WRITE_DISK));
-    taos_gauge_set(*metric, io_write_disk_rate, sample_labels);
-
-    metric = taosHashGet(tsMonitor.metrics, ERRORS, strlen(ERRORS));
-    taos_gauge_set(*metric, io_read_disk_rate, sample_labels);
-
-    metric = taosHashGet(tsMonitor.metrics, VNODES_NUM, strlen(VNODES_NUM));
-    taos_gauge_set(*metric, pStat->errors, sample_labels);
-
-    metric = taosHashGet(tsMonitor.metrics, MASTERS, strlen(MASTERS));
-    taos_gauge_set(*metric, pStat->masterNum, sample_labels);
-
-    metric = taosHashGet(tsMonitor.metrics, HAS_MNODE, strlen(HAS_MNODE));
-    taos_gauge_set(*metric, pInfo->has_mnode, sample_labels);
-
-    metric = taosHashGet(tsMonitor.metrics, HAS_QNODE, strlen(HAS_QNODE));
-    taos_gauge_set(*metric, pInfo->has_qnode, sample_labels);
-
-    metric = taosHashGet(tsMonitor.metrics, HAS_SNODE, strlen(HAS_SNODE));
-    taos_gauge_set(*metric, pInfo->has_snode, sample_labels);
-  }
+  monGenDnodeInfoTable(pMonitor);
 }
 
 static void monGenDiskJson(SMonInfo *pMonitor) {
