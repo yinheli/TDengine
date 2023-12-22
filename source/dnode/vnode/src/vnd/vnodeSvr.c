@@ -47,6 +47,8 @@ static int32_t vnodeProcessConfigChangeReq(SVnode *pVnode, int64_t ver, void *pR
 
 taos_counter_t *insert_counter = NULL;
 taos_counter_t *vnode_insert_counter = NULL;
+char strClusterId[TSDB_CLUSTER_ID_LEN] = {0};
+char strDnodeId[50] = {0};
 
 static int32_t vnodePreprocessCreateTableReq(SVnode *pVnode, SDecoder *pCoder, int64_t btime, int64_t *pUid) {
   int32_t code = 0;
@@ -1689,6 +1691,12 @@ _exit:
     else{
       atomic_store_ptr(&insert_counter, counter);
     }
+
+    int64_t clusterId = pVnode->config.syncCfg.nodeInfo[0].clusterId;
+    snprintf(strClusterId, sizeof(strClusterId), "%" PRId64, clusterId);
+
+    int32_t dnodeId = pVnode->config.syncCfg.nodeInfo[0].nodeId;
+    snprintf(strDnodeId, sizeof(strDnodeId), "%d", dnodeId);
   }
 
   if(vnode_insert_counter == NULL){
@@ -1702,16 +1710,6 @@ _exit:
       atomic_store_ptr(&vnode_insert_counter, counter);
     }
   }
-
-
-  int64_t clusterId = pVnode->config.syncCfg.nodeInfo[0].clusterId;
-
-  char strClusterId[TSDB_CLUSTER_ID_LEN];
-  snprintf(strClusterId, sizeof(strClusterId), "%" PRId64, clusterId);
-
-  int32_t dnodeId = pVnode->config.syncCfg.nodeInfo[0].nodeId;
-  char strDnodeId[50];
-  snprintf(strDnodeId, sizeof(strDnodeId), "%d", dnodeId);
 
   const char *sample_labels[] = {strClusterId, strDnodeId, tsLocalEp};
   taos_counter_inc(insert_counter, sample_labels);
