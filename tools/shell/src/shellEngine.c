@@ -729,7 +729,7 @@ void init_dump_info(tsDumpInfo *dump_info, TAOS_RES *tres, const char *sql, bool
   dump_info->fields = taos_fetch_fields(tres);
   dump_info->precision = taos_result_precision(tres);
 
-  dump_info->resShowMaxNum = UINT64_MAX;
+  dump_info->resShowMaxNum = SHELL_DEFAULT_RES_SHOW_NUM;
 
   if (shell.args.commands == NULL && shell.args.file[0] == 0 && !shellIsShowWhole(dump_info->sql)) {
     dump_info->resShowMaxNum = SHELL_DEFAULT_RES_SHOW_NUM;
