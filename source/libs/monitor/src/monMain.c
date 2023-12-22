@@ -225,7 +225,6 @@ static void monGenClusterJson(SMonInfo *pMonitor) {
   tjsonAddDoubleToObject(pJson, "topics_total", pInfo->topics_toal);
   tjsonAddDoubleToObject(pJson, "streams_total", pInfo->streams_total);
 
-  monGenClusterInfoTable(&pMonitor->dmInfo.basic, pInfo);
 /*
   int32_t monSize = taosArrayGetSize(pInfo->clientMetrics);
   for(int32_t i = 0; i < monSize; i++){
@@ -261,7 +260,7 @@ static void monGenClusterJson(SMonInfo *pMonitor) {
     tjsonAddStringToObject(pDnodeJson, "dnode_ep", pDnodeDesc->dnode_ep);
     tjsonAddStringToObject(pDnodeJson, "status", pDnodeDesc->status);
 
-    if (tjsonAddItemToArray(pDnodesJson, pDnodeJson) != 0) tjsonDelete(pDnodeJson); 
+    if (tjsonAddItemToArray(pDnodesJson, pDnodeJson) != 0) tjsonDelete(pDnodeJson);
   }
 
   SJson *pMnodesJson = tjsonAddArrayToObject(pJson, "mnodes");
@@ -317,8 +316,6 @@ static void monGenVgroupJson(SMonInfo *pMonitor) {
       if (tjsonAddItemToArray(pVnodesJson, pVnodeJson) != 0) tjsonDelete(pVnodeJson);
     }
   }
-
-  monGenVgroupInfoTable(pMonitor);
 }
 
 static void monGenStbJson(SMonInfo *pMonitor) {
@@ -442,8 +439,6 @@ static void monGenDnodeJson(SMonInfo *pMonitor) {
   tjsonAddDoubleToObject(pJson, "has_mnode", pInfo->has_mnode);
   tjsonAddDoubleToObject(pJson, "has_qnode", pInfo->has_qnode);
   tjsonAddDoubleToObject(pJson, "has_snode", pInfo->has_snode);
-
-  monGenDnodeInfoTable(pMonitor);
 }
 
 static void monGenDiskJson(SMonInfo *pMonitor) {
@@ -569,6 +564,12 @@ void monSendReport() {
   monGenDnodeJson(pMonitor);
   monGenDiskJson(pMonitor);
   monGenLogJson(pMonitor);
+
+  monGenClusterInfoTable(pMonitor);
+  monGenVgroupInfoTable(pMonitor);
+  monGenDnodeInfoTable(pMonitor);
+  monGenDataDiskTable(pMonitor);
+  monGenLogDiskTable(pMonitor);
 
   char *pCont = tjsonToString(pMonitor->pJson);
   uInfoL("report cont:%s\n", pCont);

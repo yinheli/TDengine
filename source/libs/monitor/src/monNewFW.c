@@ -33,6 +33,9 @@ extern SMonitor tsMonitor;
 #define CONNECTIONS_TOTAL "cluster_info:connections_total"
 #define TOPICS_TOTAL "cluster_info:topics_total"
 #define STREAMS_TOTAL "cluster_info:streams_total"
+#define EXPIRE_TIME  "cluster_info:expire_time"
+#define TIMESERIES_USED "cluster_info:timeseries_used"
+#define TIMESERIES_TOTAL "cluster_info:timeseries_total"
 
 #define TABLES_NUM "cluster_vgroups_info:tables_num"
 #define STATUS "cluster_vgroups_info:status"
@@ -69,6 +72,14 @@ extern SMonitor tsMonitor;
 #define HAS_SNODE "dnodes_info:has_snode"
 #define DNODE_STATUS "dnodes_info:status"
 
+#define DNODE_DATA_AVAIL "dnodes_data_dirs:avail"
+#define DNODE_DATA_USED "dnodes_data_dirs:used"
+#define DNODE_DATA_TOTAL "dnodes_data_dirs:total"
+
+#define DNODE_LOG_AVAIL "dnodes_log_dirs:avail"
+#define DNODE_LOG_USED "dnodes_log_dirs:used"
+#define DNODE_LOG_TOTAL "dnodes_log_dirs:total"
+
 void monInitNewMonitor(){
   tsMonitor.metrics = taosHashInit(16, taosGetDefaultHashFunction(TSDB_DATA_TYPE_BINARY), true, HASH_ENTRY_LOCK);
   taos_gauge_t *gauge = NULL;
@@ -77,8 +88,9 @@ void monInitNewMonitor(){
   const char *sample_labels[] = {"clusterid"};
   char *metric[] = {MASTER_UPTIME, DBS_TOTAL, TBS_TOTAL, STBS_TOTAL, VGROUPS_TOTAL,
                 VGROUPS_ALIVE, VNODES_TOTAL, VNODES_ALIVE, CONNECTIONS_TOTAL, TOPICS_TOTAL, STREAMS_TOTAL,
-                    DNODES_TOTAL, DNODES_ALIVE};
-  for(int32_t i = 0; i < 13; i++){
+                    DNODES_TOTAL, DNODES_ALIVE, EXPIRE_TIME, TIMESERIES_USED,
+                    TIMESERIES_TOTAL};
+  for(int32_t i = 0; i < 16; i++){
     gauge= taos_gauge_new(metric[i], "",  label_count, sample_labels);
     if(taos_collector_registry_register_metric(gauge) == 1){
       taos_counter_destroy(gauge);
@@ -109,10 +121,38 @@ void monInitNewMonitor(){
     }
     taosHashPut(tsMonitor.metrics, dnodes_gauges[i], strlen(dnodes_gauges[i]), &gauge, sizeof(taos_gauge_t *));
   }
+
+  int32_t dnodes_data_label_count = 5;
+  const char *dnodes_data_sample_labels[] = {"clusterid", "dnode_id", "dnode_ep", "data_dir_name", "data_dir_level"};
+  char *dnodes_data_gauges[] = {DNODE_DATA_AVAIL, DNODE_DATA_USED, DNODE_DATA_TOTAL};
+  for(int32_t i = 0; i < 3; i++){
+    gauge= taos_gauge_new(dnodes_data_gauges[i], "",  dnodes_data_label_count, dnodes_data_sample_labels);
+    if(taos_collector_registry_register_metric(gauge) == 1){
+      taos_counter_destroy(gauge);
+    }
+    taosHashPut(tsMonitor.metrics, dnodes_data_gauges[i], strlen(dnodes_data_gauges[i]), &gauge, sizeof(taos_gauge_t *));
+  }
+
+  int32_t dnodes_log_label_count = 4;
+  const char *dnodes_log_sample_labels[] = {"clusterid", "dnode_id", "dnode_ep", "data_dir_name"};
+  char *dnodes_log_gauges[] = {DNODE_LOG_AVAIL, DNODE_LOG_USED, DNODE_LOG_TOTAL};
+  for(int32_t i = 0; i < 3; i++){
+    gauge= taos_gauge_new(dnodes_log_gauges[i], "",  dnodes_log_label_count, dnodes_log_sample_labels);
+    if(taos_collector_registry_register_metric(gauge) == 1){
+      taos_counter_destroy(gauge);
+    }
+    taosHashPut(tsMonitor.metrics, dnodes_log_gauges[i], strlen(dnodes_log_gauges[i]), &gauge, sizeof(taos_gauge_t *));
+  }
 }
 
-void monGenClusterInfoTable(SMonBasicInfo *pBasicInfo, SMonClusterInfo *pInfo){
+void monGenClusterInfoTable(SMonInfo *pMonitor){
+  SMonClusterInfo *pInfo = &pMonitor->mmInfo.cluster;
+  SMonBasicInfo *pBasicInfo = &pMonitor->dmInfo.basic;
+  SMonGrantInfo *pGrantInfo = &pMonitor->mmInfo.grant;
+
   if(pBasicInfo->cluster_id == 0) return;
+
+  //cluster info
   char buf[50] = {0};
   snprintf(buf, sizeof(buf), "%" PRId64, pBasicInfo->cluster_id);
   const char *sample_labels[] = {buf};
@@ -152,6 +192,7 @@ void monGenClusterInfoTable(SMonBasicInfo *pBasicInfo, SMonClusterInfo *pInfo){
   metric = taosHashGet(tsMonitor.metrics, STREAMS_TOTAL, strlen(STREAMS_TOTAL));
   taos_gauge_set(*metric, pInfo->streams_total, sample_labels);
 
+  //dnodes number
   int32_t dnode_total = taosArrayGetSize(pInfo->dnodes);
   int32_t dnode_alive = 0;
 
@@ -168,6 +209,16 @@ void monGenClusterInfoTable(SMonBasicInfo *pBasicInfo, SMonClusterInfo *pInfo){
 
   metric = taosHashGet(tsMonitor.metrics, DNODES_ALIVE, strlen(DNODES_ALIVE));
   taos_gauge_set(*metric, dnode_alive, sample_labels);
+
+  //grant info
+  metric = taosHashGet(tsMonitor.metrics, EXPIRE_TIME, strlen(EXPIRE_TIME));
+  taos_gauge_set(*metric, pGrantInfo->expire_time, sample_labels);
+
+  metric = taosHashGet(tsMonitor.metrics, TIMESERIES_USED, strlen(TIMESERIES_USED));
+  taos_gauge_set(*metric, pGrantInfo->timeseries_used, sample_labels);
+
+  metric = taosHashGet(tsMonitor.metrics, TIMESERIES_TOTAL, strlen(TIMESERIES_TOTAL));
+  taos_gauge_set(*metric, pGrantInfo->timeseries_total, sample_labels);
 }
 
 void monGenVgroupInfoTable(SMonInfo *pMonitor){
@@ -343,3 +394,75 @@ void monGenDnodeInfoTable(SMonInfo *pMonitor) {
     } 
   }
 }
+
+void monGenDataDiskTable(SMonInfo *pMonitor){
+  if(pMonitor->dmInfo.basic.cluster_id == 0) return;
+
+  SMonDiskInfo *pInfo = &pMonitor->vmInfo.tfs;
+
+  char cluster_id[TSDB_CLUSTER_ID_LEN];
+  snprintf(cluster_id, sizeof(cluster_id), "%" PRId64, pMonitor->dmInfo.basic.cluster_id);
+
+  char dnode_id[50];
+  snprintf(dnode_id, sizeof(dnode_id), "%d", pMonitor->dmInfo.basic.dnode_id);
+
+
+  taos_gauge_t **metric = NULL;
+
+  for (int32_t i = 0; i < taosArrayGetSize(pInfo->datadirs); ++i) {
+    SMonDiskDesc *pDatadirDesc = taosArrayGet(pInfo->datadirs, i);
+
+    char level[50];
+    snprintf(dnode_id, sizeof(dnode_id), "%d", pDatadirDesc->level);
+
+    const char *sample_labels[] = {cluster_id, dnode_id, pMonitor->dmInfo.basic.dnode_ep, pDatadirDesc->name, level};
+
+    metric = taosHashGet(tsMonitor.metrics, DNODE_DATA_AVAIL, strlen(DNODE_DATA_AVAIL));
+    taos_gauge_set(*metric, pDatadirDesc->size.avail, sample_labels); 
+
+    metric = taosHashGet(tsMonitor.metrics, DNODE_DATA_USED, strlen(DNODE_DATA_USED));
+    taos_gauge_set(*metric, pDatadirDesc->size.used, sample_labels); 
+
+    metric = taosHashGet(tsMonitor.metrics, DNODE_DATA_TOTAL, strlen(DNODE_DATA_TOTAL));
+    taos_gauge_set(*metric, pDatadirDesc->size.total, sample_labels); 
+  }
+}
+
+void monGenLogDiskTable(SMonInfo *pMonitor){
+  if(pMonitor->dmInfo.basic.cluster_id == 0) return;
+
+  SMonDiskDesc *pLogDesc = &pMonitor->dmInfo.dnode.logdir;
+  SMonDiskDesc *pTempDesc = &pMonitor->dmInfo.dnode.tempdir;
+
+  char cluster_id[TSDB_CLUSTER_ID_LEN];
+  snprintf(cluster_id, sizeof(cluster_id), "%" PRId64, pMonitor->dmInfo.basic.cluster_id);
+
+  char dnode_id[50];
+  snprintf(dnode_id, sizeof(dnode_id), "%d", pMonitor->dmInfo.basic.dnode_id);
+
+  taos_gauge_t **metric = NULL;
+
+  const char *sample_log_labels[] = {cluster_id, dnode_id, pMonitor->dmInfo.basic.dnode_ep, pLogDesc->name};
+
+  metric = taosHashGet(tsMonitor.metrics, DNODE_LOG_AVAIL, strlen(DNODE_LOG_AVAIL));
+  taos_gauge_set(*metric, pLogDesc->size.avail, sample_log_labels); 
+
+  metric = taosHashGet(tsMonitor.metrics, DNODE_LOG_USED, strlen(DNODE_LOG_USED));
+  taos_gauge_set(*metric, pLogDesc->size.used, sample_log_labels); 
+
+  metric = taosHashGet(tsMonitor.metrics, DNODE_LOG_TOTAL, strlen(DNODE_LOG_TOTAL));
+  taos_gauge_set(*metric, pLogDesc->size.total, sample_log_labels); 
+
+  const char *sample_temp_labels[] = {cluster_id, dnode_id, pMonitor->dmInfo.basic.dnode_ep, pTempDesc->name};
+
+  metric = taosHashGet(tsMonitor.metrics, DNODE_LOG_AVAIL, strlen(DNODE_LOG_AVAIL));
+  taos_gauge_set(*metric, pTempDesc->size.avail, sample_temp_labels); 
+
+  metric = taosHashGet(tsMonitor.metrics, DNODE_LOG_USED, strlen(DNODE_LOG_USED));
+  taos_gauge_set(*metric, pTempDesc->size.used, sample_temp_labels); 
+
+  metric = taosHashGet(tsMonitor.metrics, DNODE_LOG_TOTAL, strlen(DNODE_LOG_TOTAL));
+  taos_gauge_set(*metric, pTempDesc->size.total, sample_temp_labels); 
+}
+
+

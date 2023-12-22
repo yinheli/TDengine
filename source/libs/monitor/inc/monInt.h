@@ -50,9 +50,11 @@ typedef struct {
 } SMonitor;
 
 void monInitNewMonitor();
-void monGenClusterInfoTable(SMonBasicInfo *pBasicInfo, SMonClusterInfo *pInfo);
+void monGenClusterInfoTable(SMonInfo *pMonitor);
 void monGenVgroupInfoTable(SMonInfo *pMonitor);
 void monGenDnodeInfoTable(SMonInfo *pMonitor);
+void monGenDataDiskTable(SMonInfo *pMonitor);
+void monGenLogDiskTable(SMonInfo *pMonitor);
 
 #ifdef __cplusplus
 }
