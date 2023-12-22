@@ -55,6 +55,8 @@ void monGenVgroupInfoTable(SMonInfo *pMonitor);
 void monGenDnodeInfoTable(SMonInfo *pMonitor);
 void monGenDataDiskTable(SMonInfo *pMonitor);
 void monGenLogDiskTable(SMonInfo *pMonitor);
+void monGenMnodeRoleTable(SMonInfo *pMonitor);
+void monGenVnodeRoleTable(SMonInfo *pMonitor);
 
 #ifdef __cplusplus
 }

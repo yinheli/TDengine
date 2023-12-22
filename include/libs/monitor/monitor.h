@@ -100,6 +100,7 @@ typedef struct {
   int32_t mnode_id;
   char    mnode_ep[TSDB_EP_LEN];
   char    role[MON_ROLE_LEN];
+  int32_t syncState;
 } SMonMnodeDesc;
 
 typedef struct {
@@ -126,6 +127,7 @@ typedef struct {
 typedef struct {
   int32_t dnode_id;
   char    vnode_role[MON_ROLE_LEN];
+  int32_t syncState;
 } SMonVnodeDesc;
 
 typedef struct {
