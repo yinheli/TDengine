@@ -20,53 +20,57 @@
 
 extern SMonitor tsMonitor;
 
-#define MASTER_UPTIME  "cluster_info:master_uptime"
-#define DBS_TOTAL "cluster_info:dbs_total"
-#define TBS_TOTAL "cluster_info:tbs_total"
-#define STBS_TOTAL "cluster_info:stbs_total"
-#define VGROUPS_TOTAL "cluster_info:vgroups_total"
-#define VGROUPS_ALIVE "cluster_info:vgroups_alive"
-#define VNODES_TOTAL "cluster_info:vnodes_total"
-#define VNODES_ALIVE "cluster_info:vnodes_alive"
-#define DNODES_TOTAL "cluster_info:dnodes_total"
-#define DNODES_ALIVE "cluster_info:dnodes_alive"
-#define CONNECTIONS_TOTAL "cluster_info:connections_total"
-#define TOPICS_TOTAL "cluster_info:topics_total"
-#define STREAMS_TOTAL "cluster_info:streams_total"
-#define EXPIRE_TIME  "cluster_info:expire_time"
-#define TIMESERIES_USED "cluster_info:timeseries_used"
-#define TIMESERIES_TOTAL "cluster_info:timeseries_total"
+#define CLUSTER_INFO_V2 "cluster_info_v2"
+
+#define MASTER_UPTIME  CLUSTER_INFO_V2":master_uptime"
+#define DBS_TOTAL CLUSTER_INFO_V2":dbs_total"
+#define TBS_TOTAL CLUSTER_INFO_V2":tbs_total"
+#define STBS_TOTAL CLUSTER_INFO_V2":stbs_total"
+#define VGROUPS_TOTAL CLUSTER_INFO_V2":vgroups_total"
+#define VGROUPS_ALIVE CLUSTER_INFO_V2":vgroups_alive"
+#define VNODES_TOTAL CLUSTER_INFO_V2":vnodes_total"
+#define VNODES_ALIVE CLUSTER_INFO_V2":vnodes_alive"
+#define DNODES_TOTAL CLUSTER_INFO_V2":dnodes_total"
+#define DNODES_ALIVE CLUSTER_INFO_V2":dnodes_alive"
+#define CONNECTIONS_TOTAL CLUSTER_INFO_V2":connections_total"
+#define TOPICS_TOTAL CLUSTER_INFO_V2":topics_total"
+#define STREAMS_TOTAL CLUSTER_INFO_V2":streams_total"
+#define EXPIRE_TIME  CLUSTER_INFO_V2":expire_time"
+#define TIMESERIES_USED CLUSTER_INFO_V2":timeseries_used"
+#define TIMESERIES_TOTAL CLUSTER_INFO_V2":timeseries_total"
 
 #define TABLES_NUM "cluster_vgroups_info:tables_num"
 #define STATUS "cluster_vgroups_info:status"
 
-#define UPTIME "dnodes_info:uptime"
-#define CPU_ENGINE "dnodes_info:cpu_engine"
-#define CPU_SYSTEM "dnodes_info:cpu_system"
-#define CPU_CORES "dnodes_info:cpu_cores"
-#define MEM_ENGINE "dnodes_info:mem_engine"
-#define MEM_SYSTEM "dnodes_info:mem_system"
-#define MEM_TOTAL "dnodes_info:mem_total"
-#define DISK_ENGINE "dnodes_info:disk_engine"
-#define DISK_USED "dnodes_info:disk_used"
-#define DISK_TOTAL "dnodes_info:disk_total"
-#define NET_IN "dnodes_info:net_in"
-#define NET_OUT "dnodes_info:net_out"
-#define IO_READ "dnodes_info:io_read"
-#define IO_WRITE "dnodes_info:io_write"
-#define IO_READ_DISK "dnodes_info:io_read_disk"
-#define IO_WRITE_DISK "dnodes_info:io_write_disk"
-#define ERRORS "dnodes_info:errors"
-#define VNODES_NUM "dnodes_info:vnodes_num"
-#define MASTERS "dnodes_info:masters"
-#define HAS_MNODE "dnodes_info:has_mnode"
-#define HAS_QNODE "dnodes_info:has_qnode"
-#define HAS_SNODE "dnodes_info:has_snode"
-#define DNODE_STATUS "dnodes_info:status"
-#define DNODE_LOG_ERROR "dnodes_info:ERROR"
-#define DNODE_LOG_INFO "dnodes_info:INFO"
-#define DNODE_LOG_DEBUG "dnodes_info:DEBUG"
-#define DNODE_LOG_TRACE "dnodes_info:TRACE"
+#define DNODE_INFO_V2 "dnodes_info_v2"
+
+#define UPTIME DNODE_INFO_V2":uptime"
+#define CPU_ENGINE DNODE_INFO_V2":cpu_engine"
+#define CPU_SYSTEM DNODE_INFO_V2":cpu_system"
+#define CPU_CORES DNODE_INFO_V2":cpu_cores"
+#define MEM_ENGINE DNODE_INFO_V2":mem_engine"
+#define MEM_SYSTEM DNODE_INFO_V2":mem_system"
+#define MEM_TOTAL DNODE_INFO_V2":mem_total"
+#define DISK_ENGINE DNODE_INFO_V2":disk_engine"
+#define DISK_USED DNODE_INFO_V2":disk_used"
+#define DISK_TOTAL DNODE_INFO_V2":disk_total"
+#define NET_IN DNODE_INFO_V2":net_in"
+#define NET_OUT DNODE_INFO_V2":net_out"
+#define IO_READ DNODE_INFO_V2":io_read"
+#define IO_WRITE DNODE_INFO_V2":io_write"
+#define IO_READ_DISK DNODE_INFO_V2":io_read_disk"
+#define IO_WRITE_DISK DNODE_INFO_V2":io_write_disk"
+#define ERRORS DNODE_INFO_V2":errors"
+#define VNODES_NUM DNODE_INFO_V2":vnodes_num"
+#define MASTERS DNODE_INFO_V2":masters"
+#define HAS_MNODE DNODE_INFO_V2":has_mnode"
+#define HAS_QNODE DNODE_INFO_V2":has_qnode"
+#define HAS_SNODE DNODE_INFO_V2":has_snode"
+#define DNODE_STATUS DNODE_INFO_V2":status"
+#define DNODE_LOG_ERROR DNODE_INFO_V2":ERROR"
+#define DNODE_LOG_INFO DNODE_INFO_V2":INFO"
+#define DNODE_LOG_DEBUG DNODE_INFO_V2":DEBUG"
+#define DNODE_LOG_TRACE DNODE_INFO_V2":TRACE"
 
 #define DNODE_DATA_AVAIL "dnodes_data_dirs:avail"
 #define DNODE_DATA_USED "dnodes_data_dirs:used"
@@ -76,8 +80,8 @@ extern SMonitor tsMonitor;
 #define DNODE_LOG_USED "dnodes_log_dirs:used"
 #define DNODE_LOG_TOTAL "dnodes_log_dirs:total"
 
-#define MNODE_ROLE "mnodes:role"
-#define VNODE_ROLE "vnodes:role"
+#define MNODE_ROLE "mnodes_info:role"
+#define VNODE_ROLE "vnodes_info:role"
 
 void monInitNewMonitor(){
   tsMonitor.metrics = taosHashInit(16, taosGetDefaultHashFunction(TSDB_DATA_TYPE_BINARY), true, HASH_ENTRY_LOCK);
@@ -96,7 +100,7 @@ void monInitNewMonitor(){
     }
     taosHashPut(tsMonitor.metrics, metric[i], strlen(metric[i]), &gauge, sizeof(taos_gauge_t *));
   } 
-
+/*
   int32_t vgroup_label_count = 3;
   const char *vgroup_sample_labels[] = {"cluster_id", "vgroup_id", "database_name"};
   char *vgroup_metrics[] = {TABLES_NUM, STATUS};
@@ -107,7 +111,7 @@ void monInitNewMonitor(){
     }
     taosHashPut(tsMonitor.metrics, vgroup_metrics[i], strlen(vgroup_metrics[i]), &gauge, sizeof(taos_gauge_t *));
   }
-
+*/
   int32_t dnodes_label_count = 3;
   const char *dnodes_sample_labels[] = {"cluster_id", "dnode_id", "dnode_ep"};
   char *dnodes_gauges[] = {UPTIME, CPU_ENGINE, CPU_SYSTEM, MEM_ENGINE, MEM_SYSTEM, DISK_ENGINE, DISK_USED, NET_IN,
@@ -121,7 +125,7 @@ void monInitNewMonitor(){
     }
     taosHashPut(tsMonitor.metrics, dnodes_gauges[i], strlen(dnodes_gauges[i]), &gauge, sizeof(taos_gauge_t *));
   }
-
+/*
   int32_t dnodes_data_label_count = 5;
   const char *dnodes_data_sample_labels[] = {"cluster_id", "dnode_id", "dnode_ep", "data_dir_name", "data_dir_level"};
   char *dnodes_data_gauges[] = {DNODE_DATA_AVAIL, DNODE_DATA_USED, DNODE_DATA_TOTAL};
@@ -165,6 +169,7 @@ void monInitNewMonitor(){
     }
     taosHashPut(tsMonitor.metrics, vnodes_role_gauges[i], strlen(vnodes_role_gauges[i]), &gauge, sizeof(taos_gauge_t *));
   }
+  */
 }
 
 void monGenClusterInfoTable(SMonInfo *pMonitor){
@@ -187,7 +192,7 @@ void monGenClusterInfoTable(SMonInfo *pMonitor){
 
   metric = taosHashGet(tsMonitor.metrics, DBS_TOTAL, strlen(DBS_TOTAL));
   taos_gauge_set(*metric, pInfo->dbs_total, sample_labels);
-
+/*
   metric = taosHashGet(tsMonitor.metrics, TBS_TOTAL, strlen(TBS_TOTAL));
   taos_gauge_set(*metric, pInfo->tbs_total, sample_labels);
 
@@ -242,6 +247,7 @@ void monGenClusterInfoTable(SMonInfo *pMonitor){
 
   metric = taosHashGet(tsMonitor.metrics, TIMESERIES_TOTAL, strlen(TIMESERIES_TOTAL));
   taos_gauge_set(*metric, pGrantInfo->timeseries_total, sample_labels);
+  */
 }
 
 void monGenVgroupInfoTable(SMonInfo *pMonitor){
@@ -339,7 +345,7 @@ void monGenDnodeInfoTable(SMonInfo *pMonitor) {
 
   metric = taosHashGet(tsMonitor.metrics, UPTIME, strlen(UPTIME));
   taos_gauge_set(*metric, pInfo->uptime, sample_labels);
-/*
+
   metric = taosHashGet(tsMonitor.metrics, CPU_ENGINE, strlen(CPU_ENGINE));
   taos_gauge_set(*metric, cpu_engine, sample_labels);
 
@@ -451,7 +457,6 @@ void monGenDnodeInfoTable(SMonInfo *pMonitor) {
 
   metric = taosHashGet(tsMonitor.metrics, DNODE_LOG_TRACE, strlen(DNODE_LOG_TRACE));
   taos_gauge_set(*metric, numOfTraceLogs, sample_labels);
-  */
 }
 
 void monGenDataDiskTable(SMonInfo *pMonitor){

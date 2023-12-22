@@ -566,13 +566,13 @@ void monSendReport() {
   monGenLogJson(pMonitor);
 
 
-  //monGenClusterInfoTable(pMonitor);
+  monGenClusterInfoTable(pMonitor);
   //monGenVgroupInfoTable(pMonitor);
   monGenDnodeInfoTable(pMonitor);
   //monGenDataDiskTable(pMonitor);
   //monGenLogDiskTable(pMonitor);
   //monGenMnodeRoleTable(pMonitor);
-  monGenVnodeRoleTable(pMonitor);
+  //monGenVnodeRoleTable(pMonitor);
 
   char *pCont = tjsonToString(pMonitor->pJson);
   uInfoL("report cont:%s\n", pCont);
