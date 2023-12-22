@@ -23,7 +23,6 @@
 #include "vnodeInt.h"
 #include "taos_monitor.h"
 
-
 static int32_t vnodeProcessCreateStbReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp);
 static int32_t vnodeProcessAlterStbReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp);
 static int32_t vnodeProcessDropStbReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp);
@@ -43,7 +42,11 @@ static int32_t vnodeProcessDropIndexReq(SVnode *pVnode, int64_t ver, void *pReq,
 static int32_t vnodeProcessCompactVnodeReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp);
 static int32_t vnodeProcessConfigChangeReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp);
 
+#define DNODE_INSERT "dnodes_info:req_insert"
+#define VNODE_INSERT "vnodes_insert_req:req_insert"
+
 taos_counter_t *insert_counter = NULL;
+taos_counter_t *vnode_insert_counter = NULL;
 
 static int32_t vnodePreprocessCreateTableReq(SVnode *pVnode, SDecoder *pCoder, int64_t btime, int64_t *pUid) {
   int32_t code = 0;
@@ -1677,9 +1680,9 @@ _exit:
   }
 
   if(insert_counter == NULL){
-    int32_t label_count =2;
-    const char *sample_labels[] = {"vgid", "endpoint"};
-    taos_counter_t *counter = taos_counter_new("cluster_info:insert_counter", "counter for insert sql",  label_count, sample_labels);
+    int32_t label_count =3;
+    const char *sample_labels[] = {"cluster_id", "dnode_id", "dnode_ep"};
+    taos_counter_t *counter = taos_counter_new(DNODE_INSERT, "counter for insert sql",  label_count, sample_labels);
     if(taos_collector_registry_register_metric(counter) == 1){
       taos_counter_destroy(counter);
     }
@@ -1688,11 +1691,36 @@ _exit:
     }
   }
 
+  if(vnode_insert_counter == NULL){
+    int32_t label_count =4;
+    const char *sample_labels[] = {"cluster_id", "dnode_id", "dnode_ep", "vgroup_id"};
+    taos_counter_t *counter = taos_counter_new(VNODE_INSERT, "counter for insert sql",  label_count, sample_labels);
+    if(taos_collector_registry_register_metric(counter) == 1){
+      taos_counter_destroy(counter);
+    }
+    else{
+      atomic_store_ptr(&vnode_insert_counter, counter);
+    }
+  }
+
+
+  int64_t clusterId = pVnode->config.syncCfg.nodeInfo[0].clusterId;
+
+  char strClusterId[TSDB_CLUSTER_ID_LEN];
+  snprintf(strClusterId, sizeof(strClusterId), "%" PRId64, clusterId);
+
+  int32_t dnodeId = pVnode->config.syncCfg.nodeInfo[0].nodeId;
+  char strDnodeId[50];
+  snprintf(strDnodeId, sizeof(strDnodeId), "%d", dnodeId);
+
+  const char *sample_labels[] = {strClusterId, strDnodeId, tsLocalEp};
+  taos_counter_inc(insert_counter, sample_labels);
+
   char vgId[50];
   sprintf(vgId, "%"PRId32, TD_VID(pVnode));
-  const char *sample_labels[] = {vgId, tsLocalEp};
 
-  taos_counter_inc(insert_counter, sample_labels);
+  const char *vnodes_sample_labels[] = {strClusterId, strDnodeId, tsLocalEp, vgId};
+  taos_counter_inc(vnode_insert_counter, vnodes_sample_labels);
 
   // clear
   taosArrayDestroy(newTbUids);

@@ -56,14 +56,6 @@ extern SMonitor tsMonitor;
 #define IO_WRITE "dnodes_info:io_write"
 #define IO_READ_DISK "dnodes_info:io_read_disk"
 #define IO_WRITE_DISK "dnodes_info:io_write_disk"
-#define REQ_SELECT "req_select"
-#define REQ_SELECT_RATE "req_select_rate"
-#define REQ_INSERT "req_insert"
-#define REQ_INSERT_SUCCESS "req_insert_success"
-#define REQ_INSERT_RATE "req_insert_rate"
-#define REQ_INSERT_BATCH "req_insert_batch"
-#define REQ_INSERT_BATCH_SUCCESS "req_insert_batch_success"
-#define REQ_INSERT_BATCH_RATE "req_insert_batch_rate"
 #define ERRORS "dnodes_info:errors"
 #define VNODES_NUM "dnodes_info:vnodes_num"
 #define MASTERS "dnodes_info:masters"
@@ -92,7 +84,7 @@ void monInitNewMonitor(){
   taos_gauge_t *gauge = NULL;
 
   int32_t label_count =1;
-  const char *sample_labels[] = {"clusterid"};
+  const char *sample_labels[] = {"cluster_id"};
   char *metric[] = {MASTER_UPTIME, DBS_TOTAL, TBS_TOTAL, STBS_TOTAL, VGROUPS_TOTAL,
                 VGROUPS_ALIVE, VNODES_TOTAL, VNODES_ALIVE, CONNECTIONS_TOTAL, TOPICS_TOTAL, STREAMS_TOTAL,
                     DNODES_TOTAL, DNODES_ALIVE, EXPIRE_TIME, TIMESERIES_USED,
@@ -106,7 +98,7 @@ void monInitNewMonitor(){
   } 
 
   int32_t vgroup_label_count = 3;
-  const char *vgroup_sample_labels[] = {"clusterid", "vgroup_id", "database_name"};
+  const char *vgroup_sample_labels[] = {"cluster_id", "vgroup_id", "database_name"};
   char *vgroup_metrics[] = {TABLES_NUM, STATUS};
   for(int32_t i = 0; i < 2; i++){
     gauge= taos_gauge_new(vgroup_metrics[i], "",  vgroup_label_count, vgroup_sample_labels);
@@ -117,7 +109,7 @@ void monInitNewMonitor(){
   }
 
   int32_t dnodes_label_count = 3;
-  const char *dnodes_sample_labels[] = {"clusterid", "dnode_id", "dnode_ep"};
+  const char *dnodes_sample_labels[] = {"cluster_id", "dnode_id", "dnode_ep"};
   char *dnodes_gauges[] = {UPTIME, CPU_ENGINE, CPU_SYSTEM, MEM_ENGINE, MEM_SYSTEM, DISK_ENGINE, DISK_USED, NET_IN,
                             NET_OUT, IO_READ, IO_WRITE, IO_READ_DISK, IO_WRITE_DISK, ERRORS,
                              VNODES_NUM, MASTERS, HAS_MNODE, HAS_QNODE, HAS_SNODE, DNODE_STATUS,
@@ -131,7 +123,7 @@ void monInitNewMonitor(){
   }
 
   int32_t dnodes_data_label_count = 5;
-  const char *dnodes_data_sample_labels[] = {"clusterid", "dnode_id", "dnode_ep", "data_dir_name", "data_dir_level"};
+  const char *dnodes_data_sample_labels[] = {"cluster_id", "dnode_id", "dnode_ep", "data_dir_name", "data_dir_level"};
   char *dnodes_data_gauges[] = {DNODE_DATA_AVAIL, DNODE_DATA_USED, DNODE_DATA_TOTAL};
   for(int32_t i = 0; i < 3; i++){
     gauge= taos_gauge_new(dnodes_data_gauges[i], "",  dnodes_data_label_count, dnodes_data_sample_labels);
@@ -142,7 +134,7 @@ void monInitNewMonitor(){
   }
 
   int32_t dnodes_log_label_count = 4;
-  const char *dnodes_log_sample_labels[] = {"clusterid", "dnode_id", "dnode_ep", "data_dir_name"};
+  const char *dnodes_log_sample_labels[] = {"cluster_id", "dnode_id", "dnode_ep", "data_dir_name"};
   char *dnodes_log_gauges[] = {DNODE_LOG_AVAIL, DNODE_LOG_USED, DNODE_LOG_TOTAL};
   for(int32_t i = 0; i < 3; i++){
     gauge= taos_gauge_new(dnodes_log_gauges[i], "",  dnodes_log_label_count, dnodes_log_sample_labels);
@@ -152,8 +144,8 @@ void monInitNewMonitor(){
     taosHashPut(tsMonitor.metrics, dnodes_log_gauges[i], strlen(dnodes_log_gauges[i]), &gauge, sizeof(taos_gauge_t *));
   }
 
-  int32_t mnodes_role_label_count = 1;
-  const char *mnodes_role_sample_labels[] = {"clusterid", "mnode_id", "mnode_ep"};
+  int32_t mnodes_role_label_count = 3;
+  const char *mnodes_role_sample_labels[] = {"cluster_id", "mnode_id", "mnode_ep"};
   char *mnodes_role_gauges[] = {MNODE_ROLE};
   for(int32_t i = 0; i < 1; i++){
     gauge= taos_gauge_new(mnodes_role_gauges[i], "",  mnodes_role_label_count, mnodes_role_sample_labels);
@@ -163,8 +155,8 @@ void monInitNewMonitor(){
     taosHashPut(tsMonitor.metrics, mnodes_role_gauges[i], strlen(mnodes_role_gauges[i]), &gauge, sizeof(taos_gauge_t *));
   }
 
-  int32_t vnodes_role_label_count = 1;
-  const char *vnodes_role_sample_labels[] = {"clusterid", "vgroup_id", "database_name", "dnode_id"};
+  int32_t vnodes_role_label_count = 4;
+  const char *vnodes_role_sample_labels[] = {"cluster_id", "vgroup_id", "database_name", "dnode_id"};
   char *vnodes_role_gauges[] = {VNODE_ROLE};
   for(int32_t i = 0; i < 1; i++){
     gauge= taos_gauge_new(vnodes_role_gauges[i], "",  vnodes_role_label_count, vnodes_role_sample_labels);
@@ -347,7 +339,7 @@ void monGenDnodeInfoTable(SMonInfo *pMonitor) {
 
   metric = taosHashGet(tsMonitor.metrics, UPTIME, strlen(UPTIME));
   taos_gauge_set(*metric, pInfo->uptime, sample_labels);
-
+/*
   metric = taosHashGet(tsMonitor.metrics, CPU_ENGINE, strlen(CPU_ENGINE));
   taos_gauge_set(*metric, cpu_engine, sample_labels);
 
@@ -459,6 +451,7 @@ void monGenDnodeInfoTable(SMonInfo *pMonitor) {
 
   metric = taosHashGet(tsMonitor.metrics, DNODE_LOG_TRACE, strlen(DNODE_LOG_TRACE));
   taos_gauge_set(*metric, numOfTraceLogs, sample_labels);
+  */
 }
 
 void monGenDataDiskTable(SMonInfo *pMonitor){

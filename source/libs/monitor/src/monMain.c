@@ -565,12 +565,13 @@ void monSendReport() {
   monGenDiskJson(pMonitor);
   monGenLogJson(pMonitor);
 
-  monGenClusterInfoTable(pMonitor);
-  monGenVgroupInfoTable(pMonitor);
+
+  //monGenClusterInfoTable(pMonitor);
+  //monGenVgroupInfoTable(pMonitor);
   monGenDnodeInfoTable(pMonitor);
-  monGenDataDiskTable(pMonitor);
-  monGenLogDiskTable(pMonitor);
-  monGenMnodeRoleTable(pMonitor);
+  //monGenDataDiskTable(pMonitor);
+  //monGenLogDiskTable(pMonitor);
+  //monGenMnodeRoleTable(pMonitor);
   monGenVnodeRoleTable(pMonitor);
 
   char *pCont = tjsonToString(pMonitor->pJson);
@@ -593,7 +594,7 @@ void monSendPromReport() {
   char* promStr = NULL;
   char *pCont = (char *)taos_collector_registry_bridge(TAOS_COLLECTOR_REGISTRY_DEFAULT, ts, "%" PRId64, &promStr);
   uInfoL("report cont:\n%s\n", pCont);
-  uInfoL("report cont prom:\n%s\n", promStr);
+  //uInfoL("report cont prom:\n%s\n", promStr);
   if (pCont != NULL) {
     EHttpCompFlag flag = tsMonitor.cfg.comp ? HTTP_GZIP : HTTP_FLAT;
     if (taosSendHttpReport(tsMonitor.cfg.server, tsMonFwUri, tsMonitor.cfg.port, pCont, strlen(pCont), flag) != 0) {
