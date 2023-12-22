@@ -97,7 +97,7 @@ void mndDropConsumerFromSdb(SMnode *pMnode, int64_t consumerId, SRpcHandleInfo* 
 
 bool mndRebTryStart() {
   int32_t old = atomic_val_compare_exchange_32(&mqRebInExecCnt, 0, 1);
-  mDebug("tq timer, rebalance counter old val:%d", old);
+  mInfo("tq timer, rebalance counter old val:%d", old);
   return old == 0;
 }
 
@@ -119,7 +119,7 @@ void mndRebCntDec() {
     int32_t newVal = val - 1;
     int32_t oldVal = atomic_val_compare_exchange_32(&mqRebInExecCnt, val, newVal);
     if (oldVal == val) {
-      mDebug("rebalance trans end, rebalance counter:%d", newVal);
+      mInfo("rebalance trans end, rebalance counter:%d", newVal);
       break;
     }
   }
@@ -284,7 +284,7 @@ static int32_t mndProcessMqTimerMsg(SRpcMsg *pMsg) {
   SMqConsumerObj *pConsumer;
   void           *pIter = NULL;
 
-  mDebug("start to process mq timer");
+  mInfo("start to process mq timer");
 
   // rebalance cannot be parallel
   if (!mndRebTryStart()) {
@@ -407,7 +407,7 @@ static int32_t mndProcessMqTimerMsg(SRpcMsg *pMsg) {
   } else {
     taosHashCleanup(pRebMsg->rebSubHash);
     rpcFreeCont(pRebMsg);
-    mDebug("mq timer finished, no need to re-balance");
+    mInfo("mq timer finished, no need to re-balance");
     mndRebEnd();
   }
   return 0;
