@@ -13,7 +13,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 #define _DEFAULT_SOURCE
-#include "tarray.h"
 #include "monInt.h"
 #include "taoserror.h"
 #include "thttp.h"
@@ -22,8 +21,8 @@
 #include "tglobal.h"
 
 SMonitor tsMonitor = {0};
-static char* tsMonUri = "/report";
-static char* tsMonFwUri = "/td_metric";
+char* tsMonUri = "/report";
+char* tsMonFwUri = "/td_metric";
 
 void monRecordLog(int64_t ts, ELogLevel level, const char *content) {
   taosThreadMutexLock(&tsMonitor.lock);
@@ -112,10 +111,6 @@ int32_t monInit(const SMonCfg *pCfg) {
   tsMonitor.lastTime = taosGetTimestampMs();
   taosThreadMutexInit(&tsMonitor.lock, NULL);
 
-  taos_collector_registry_default_init();
-
-  monInitNewMonitor();
-
   return 0;
 }
 
@@ -129,13 +124,9 @@ void monCleanup() {
   tFreeSMonQmInfo(&tsMonitor.qmInfo);
   tFreeSMonBmInfo(&tsMonitor.bmInfo);
   taosThreadMutexDestroy(&tsMonitor.lock);
-
-  taosHashCleanup(tsMonitor.metrics);
-  taos_collector_registry_destroy(TAOS_COLLECTOR_REGISTRY_DEFAULT);
-  TAOS_COLLECTOR_REGISTRY_DEFAULT = NULL;
 }
 
-static void monCleanupMonitorInfo(SMonInfo *pMonitor) {
+void monCleanupMonitorInfo(SMonInfo *pMonitor) {
   tsMonitor.lastTime = pMonitor->curTime;
   taosArrayDestroy(pMonitor->log.logs);
   tFreeSMonMmInfo(&pMonitor->mmInfo);
@@ -147,7 +138,7 @@ static void monCleanupMonitorInfo(SMonInfo *pMonitor) {
   taosMemoryFree(pMonitor);
 }
 
-static SMonInfo *monCreateMonitorInfo() {
+SMonInfo *monCreateMonitorInfo() {
   SMonInfo *pMonitor = taosMemoryCalloc(1, sizeof(SMonInfo));
   if (pMonitor == NULL) {
     terrno = TSDB_CODE_OUT_OF_MEMORY;
@@ -565,7 +556,6 @@ void monSendReport() {
   monGenDiskJson(pMonitor);
   monGenLogJson(pMonitor);
 
-
   monGenClusterInfoTable(pMonitor);
   //monGenVgroupInfoTable(pMonitor);
   monGenDnodeInfoTable(pMonitor);
@@ -587,25 +577,7 @@ void monSendReport() {
   monCleanupMonitorInfo(pMonitor);
 }
 
-void monSendPromReport() {
-  char ts[50];
-  sprintf(ts, "%" PRId64, taosGetTimestamp(TSDB_TIME_PRECISION_MILLI));
-
-  char* promStr = NULL;
-  char *pCont = (char *)taos_collector_registry_bridge(TAOS_COLLECTOR_REGISTRY_DEFAULT, ts, "%" PRId64, &promStr);
-  uInfoL("report cont:\n%s\n", pCont);
-  //uInfoL("report cont prom:\n%s\n", promStr);
-  if (pCont != NULL) {
-    EHttpCompFlag flag = tsMonitor.cfg.comp ? HTTP_GZIP : HTTP_FLAT;
-    if (taosSendHttpReport(tsMonitor.cfg.server, tsMonFwUri, tsMonitor.cfg.port, pCont, strlen(pCont), flag) != 0) {
-      uError("failed to send monitor msg");
-    }else{
-      taos_collector_registry_clear_out(TAOS_COLLECTOR_REGISTRY_DEFAULT);
-    }
-    taosMemoryFreeClear(pCont);
-  }
-}
-
+/*
 void monSendContent(char *pCont) {
   if (!tsEnableMonitor || tsMonitorFqdn[0] == 0 || tsMonitorPort == 0) return;
   uInfoL("report cont:\n%s\n", pCont);
@@ -616,3 +588,4 @@ void monSendContent(char *pCont) {
     }
   }
 }
+*/

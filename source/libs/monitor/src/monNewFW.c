@@ -17,8 +17,16 @@
 
 #include "thash.h"
 #include "taos_monitor.h"
+#include "thttp.h"
+#include "ttime.h"
+#include "tglobal.h"
 
 extern SMonitor tsMonitor;
+extern char* tsMonUri;
+extern char* tsMonFwUri;
+
+extern SMonInfo *monCreateMonitorInfo();
+extern void monCleanupMonitorInfo(SMonInfo *pMonitor);
 
 #define CLUSTER_INFO_V2 "cluster_info_v2"
 
@@ -84,6 +92,8 @@ extern SMonitor tsMonitor;
 #define VNODE_ROLE "vnodes_info:role"
 
 void monInitNewMonitor(){
+    taos_collector_registry_default_init();
+
   tsMonitor.metrics = taosHashInit(16, taosGetDefaultHashFunction(TSDB_DATA_TYPE_BINARY), true, HASH_ENTRY_LOCK);
   taos_gauge_t *gauge = NULL;
 
@@ -172,12 +182,21 @@ void monInitNewMonitor(){
   */
 }
 
+void monCleanupNew(){
+  taosHashCleanup(tsMonitor.metrics);
+  taos_collector_registry_destroy(TAOS_COLLECTOR_REGISTRY_DEFAULT);
+  TAOS_COLLECTOR_REGISTRY_DEFAULT = NULL;
+}
+
 void monGenClusterInfoTable(SMonInfo *pMonitor){
   SMonClusterInfo *pInfo = &pMonitor->mmInfo.cluster;
   SMonBasicInfo *pBasicInfo = &pMonitor->dmInfo.basic;
   SMonGrantInfo *pGrantInfo = &pMonitor->mmInfo.grant;
 
-  if(pBasicInfo->cluster_id == 0) return;
+  if(pBasicInfo->cluster_id == 0) {
+    uError("failed to generate dnode info table since cluster_id is 0");
+    return;
+  }
   if (pMonitor->mmInfo.cluster.first_ep_dnode_id == 0) return;
 
   //cluster info
@@ -283,7 +302,10 @@ void monGenVgroupInfoTable(SMonInfo *pMonitor){
 }
 
 void monGenDnodeInfoTable(SMonInfo *pMonitor) {
-  if(pMonitor->dmInfo.basic.cluster_id == 0) return;
+  if(pMonitor->dmInfo.basic.cluster_id == 0) {
+    uError("failed to generate dnode info table since cluster_id is 0");
+    return;
+  }
 
   char cluster_id[TSDB_CLUSTER_ID_LEN];
   snprintf(cluster_id, sizeof(cluster_id), "%" PRId64, pMonitor->dmInfo.basic.cluster_id);
@@ -584,5 +606,26 @@ void monGenVnodeRoleTable(SMonInfo *pMonitor){
       metric = taosHashGet(tsMonitor.metrics, VNODE_ROLE, strlen(VNODE_ROLE));
       taos_gauge_set(*metric, pVnodeDesc->syncState, sample_labels);
     }
+  }
+}
+
+void monSendPromReport() {
+  char ts[50];
+  sprintf(ts, "%" PRId64, taosGetTimestamp(TSDB_TIME_PRECISION_MILLI));
+
+  char* promStr = NULL;
+  char *pCont = (char *)taos_collector_registry_bridge(TAOS_COLLECTOR_REGISTRY_DEFAULT, ts, "%" PRId64, &promStr);
+  if(tsMonitorLogProtocol){
+    uInfoL("report cont:\n%s\n", pCont);
+    uDebugL("report cont prom:\n%s\n", promStr);
+  }
+  if (pCont != NULL) {
+    EHttpCompFlag flag = tsMonitor.cfg.comp ? HTTP_GZIP : HTTP_FLAT;
+    if (taosSendHttpReport(tsMonitor.cfg.server, tsMonFwUri, tsMonitor.cfg.port, pCont, strlen(pCont), flag) != 0) {
+      uError("failed to send monitor msg");
+    }else{
+      taos_collector_registry_clear_out(TAOS_COLLECTOR_REGISTRY_DEFAULT);
+    }
+    taosMemoryFreeClear(pCont);
   }
 }

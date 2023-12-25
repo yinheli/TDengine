@@ -49,7 +49,6 @@ typedef struct {
   SHashObj     *metrics;
 } SMonitor;
 
-void monInitNewMonitor();
 void monGenClusterInfoTable(SMonInfo *pMonitor);
 void monGenVgroupInfoTable(SMonInfo *pMonitor);
 void monGenDnodeInfoTable(SMonInfo *pMonitor);

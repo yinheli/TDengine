@@ -95,6 +95,7 @@ extern char     tsMonitorFqdn[];
 extern uint16_t tsMonitorPort;
 extern int32_t  tsMonitorMaxLogs;
 extern bool     tsMonitorComp;
+extern bool     tsMonitorLogProtocol;
 
 // audit
 extern bool     tsEnableAudit;
