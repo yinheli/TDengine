@@ -20,6 +20,7 @@
 #include <string.h>
 #include <stdint.h>
 #include "osMemory.h"
+#include "tdef.h"
 
 #include "taos_metric_t.h"
 
@@ -74,17 +75,17 @@ void strip(char *s)
     s[len-offset] = '\0';
 }
 
-bool taos_monitor_is_match(const SJson* tags, char** pairs, int32_t count) { //todo
+bool taos_monitor_is_match(const SJson* tags, char** pairs, int32_t count) {
   int32_t size = tjsonGetArraySize(tags);
   if(size != count) return false;
 
   for(int32_t i = 0; i < size; i++){
     SJson* item = tjsonGetArrayItem(tags, i);
 
-    char item_name[50] = {0}; //todo
+    char item_name[MONITOR_TAG_NAME_LEN] = {0};
     tjsonGetStringValue(item, "name", item_name);
 
-    char item_value[50] = {0}; //todo
+    char item_value[MONITOR_TAG_VALUE_LEN] = {0};
     tjsonGetStringValue(item, "value", item_value);
 
     bool isfound = false;

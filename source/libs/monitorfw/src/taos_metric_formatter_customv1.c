@@ -52,6 +52,10 @@ int taos_metric_formatter_load_sample_custom(taos_metric_sample_t *sample, char 
 
   taos_metric_sample_set(sample, 0);
 
+  taosMemoryFreeClear(keyvalues);
+  taosMemoryFreeClear(keyvalue);
+  taosMemoryFreeClear(arr);
+
   return 0;
 }
 
@@ -60,6 +64,7 @@ int taos_metric_formatter_load_metric_custom(taos_metric_t *metric, SJson* pJson
 
   int32_t size = strlen(metric->name);
   char* name = taosMemoryMalloc(size + 1);
+  memset(name, 0, size + 1);
   memcpy(name, metric->name, size);
   char* arr[2] = {0};
   taos_monitor_split_str((char**)&arr, name, ":");
@@ -76,5 +81,6 @@ int taos_metric_formatter_load_metric_custom(taos_metric_t *metric, SJson* pJson
       if (r) return r;
     }
   }
+  taosMemoryFreeClear(name);
   return r;
 }

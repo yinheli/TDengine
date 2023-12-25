@@ -178,6 +178,7 @@ void mndCleanupClientMetrics(SMnode *pMnode) {
   taosArrayDestroy(pMnode->clientMetrics);
   */
 
+  /*
   void *pIter = taosHashIterate(pMnode->clientMetrics, NULL);
   while (pIter) {
     taos_counter_t* metric = (taos_counter_t*)pIter;
@@ -186,6 +187,7 @@ void mndCleanupClientMetrics(SMnode *pMnode) {
 
     pIter = taosHashIterate(pMnode->clientMetrics, pIter);
   }
+  */
 
   taosHashCleanup(pMnode->clientMetrics);
   pMnode->clientMetrics = NULL;

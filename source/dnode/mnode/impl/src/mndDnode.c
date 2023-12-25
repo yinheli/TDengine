@@ -506,7 +506,9 @@ static int32_t mndProcessStatisReq(SRpcMsg *pReq) {
     goto _OVER;
   }
 
-  mInfo("process statis req,\n %s", statisReq.pCont);
+  if(tsMonitorLogProtocol){
+    mInfo("process statis req,\n %s", statisReq.pCont);
+  }
 
   SJson* pJson = tjsonParse(statisReq.pCont);
 
@@ -529,16 +531,16 @@ static int32_t mndProcessStatisReq(SRpcMsg *pReq) {
 
       int32_t tagSize = tjsonGetArraySize(arrayTag);
 
-      char** labels = taosMemoryMalloc(sizeof(char*) * tagSize); //todo
+      char** labels = taosMemoryMalloc(sizeof(char*) * tagSize);
       char** sample_labels = taosMemoryMalloc(sizeof(char*) * tagSize);
 
       for(int32_t j = 0; j < tagSize; j++){
         SJson* item = tjsonGetArrayItem(arrayTag, j);
 
-        *(labels + j) = taosMemoryMalloc(100); //todo
+        *(labels + j) = taosMemoryMalloc(MONITOR_TAG_NAME_LEN); 
         tjsonGetStringValue(item, "name", *(labels + j));
 
-        *(sample_labels + j) = taosMemoryMalloc(100);
+        *(sample_labels + j) = taosMemoryMalloc(MONITOR_TAG_VALUE_LEN);
         tjsonGetStringValue(item, "value", *(sample_labels + j));
       }
 
@@ -548,7 +550,7 @@ static int32_t mndProcessStatisReq(SRpcMsg *pReq) {
       for(int32_t j = 0; j < metricLen; j++){
         SJson *item = tjsonGetArrayItem(metrics, j);
 
-        char name[100] = {0}; //todo
+        char name[MONITOR_METRIC_NAME_LEN] = {0}; 
         tjsonGetStringValue(item, "name", name);
 
         double value = 0;
@@ -558,7 +560,7 @@ static int32_t mndProcessStatisReq(SRpcMsg *pReq) {
         tjsonGetDoubleValue(item, "type", &type);
 
         int32_t metricNameLen = strlen(name) + strlen(tableName) + 2;
-        char* metricName = taosMemoryMalloc(metricNameLen);
+        char* metricName = taosMemoryMalloc(metricNameLen); 
         memset(metricName, 0, metricNameLen);
         sprintf(metricName, "%s:%s", tableName, name);
 
@@ -570,16 +572,19 @@ static int32_t mndProcessStatisReq(SRpcMsg *pReq) {
         if(pmetric == NULL){
           if(type == 0){
             metric = taos_counter_new(metricName, "",  tagSize, (const char**)labels);
+
+            if(taos_collector_registry_register_metric(metric) == 1){
+              taos_counter_destroy(metric);
+            }
           }
           if(type == 1){
             metric = taos_gauge_new(metricName, "",  tagSize, (const char**)labels);
+
+            if(taos_collector_registry_register_metric(metric) == 1){
+              taos_gauge_destroy(metric);
+            }
           }
 
-          if(taos_collector_registry_register_metric(metric) == 1){
-            taos_counter_destroy(metric);
-          }
-          
-          //for v1 protocol
           //taosArrayPush(pMnode->clientMetrics, metric);
           taosHashPut(pMnode->clientMetrics, metricName, metricNameLen - 1, &metric, sizeof(taos_counter_t*));
         }
@@ -593,7 +598,17 @@ static int32_t mndProcessStatisReq(SRpcMsg *pReq) {
         if(type == 1){
           taos_gauge_set(metric, value, (const char**)sample_labels);
         }
+
+        taosMemoryFreeClear(metricName);
       }
+
+      for(int32_t j = 0; j < tagSize; j++){
+        taosMemoryFreeClear(*(labels + j));
+        taosMemoryFreeClear(*(sample_labels + j));
+      }
+
+      taosMemoryFreeClear(sample_labels);
+      taosMemoryFreeClear(labels);
     }
   }
 
@@ -602,6 +617,11 @@ static int32_t mndProcessStatisReq(SRpcMsg *pReq) {
   //monSendContent(pReq->pCont);
 
 _OVER:
+  if(pJson != NULL){
+    tjsonDelete(pJson);
+    pJson = NULL;
+  }
+
   tFreeSStatisReq(&statisReq);
   return code;
 }
