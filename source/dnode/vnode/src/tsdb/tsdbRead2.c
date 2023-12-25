@@ -1360,7 +1360,8 @@ static bool tryCopyDistinctRowFromFileBlock(STsdbReader* pReader, SBlockData* pB
 
 static bool nextRowFromSttBlocks(SSttBlockReader* pSttBlockReader, STableBlockScanInfo* pScanInfo,
                                  SVersionRange* pVerRange) {
-  int32_t step = ASCENDING_TRAVERSE(pSttBlockReader->order) ? 1 : -1;
+  int32_t order = pSttBlockReader->order;
+  int32_t step = ASCENDING_TRAVERSE(order) ? 1 : -1;
 
   while (1) {
     bool hasVal = tMergeTreeNext(&pSttBlockReader->mergeTree);
@@ -1377,8 +1378,12 @@ static bool nextRowFromSttBlocks(SSttBlockReader* pSttBlockReader, STableBlockSc
     pSttBlockReader->currentKey = key;
     pScanInfo->sttKeyInfo.nextProcKey = key;
 
-    if (!hasBeenDropped(pScanInfo->delSkyline, &pScanInfo->sttBlockDelIndex, key, ver, pSttBlockReader->order,
-                        pVerRange)) {
+    if (pScanInfo->delSkyline != NULL && TARRAY_SIZE(pScanInfo->delSkyline) > 0) {
+      if (!hasBeenDropped(pScanInfo->delSkyline, &pScanInfo->sttBlockDelIndex, key, ver, order, pVerRange)) {
+        pScanInfo->sttKeyInfo.status = STT_FILE_HAS_DATA;
+        return true;
+      }
+    } else {
       pScanInfo->sttKeyInfo.status = STT_FILE_HAS_DATA;
       return true;
     }
@@ -2054,9 +2059,12 @@ static bool isValidFileBlockRow(SBlockData* pBlockData, SFileBlockDumpInfo* pDum
     return false;
   }
 
-  if (hasBeenDropped(pBlockScanInfo->delSkyline, &pBlockScanInfo->fileDelIndex, ts, ver, pReader->info.order,
-                     &pReader->info.verRange)) {
-    return false;
+  if (pBlockScanInfo->delSkyline != NULL && TARRAY_SIZE(pBlockScanInfo->delSkyline) > 0) {
+    bool dropped = hasBeenDropped(pBlockScanInfo->delSkyline, &pBlockScanInfo->fileDelIndex, ts, ver,
+                                  pReader->info.order, &pReader->info.verRange);
+    if (dropped) {
+      return false;
+    }
   }
 
   return true;
@@ -3219,7 +3227,7 @@ SVersionRange getQueryVerRange(SVnode* pVnode, SQueryTableDataCond* pCond, int8_
 
 bool hasBeenDropped(const SArray* pDelList, int32_t* index, int64_t key, int64_t ver, int32_t order,
                     SVersionRange* pVerRange) {
-  if (pDelList == NULL || (taosArrayGetSize(pDelList) == 0)) {
+  if (pDelList == NULL || (TARRAY_SIZE(pDelList) == 0)) {
     return false;
   }
 
@@ -3327,16 +3335,22 @@ TSDBROW* getValidMemRow(SIterInfo* pIter, const SArray* pDelList, STsdbReader* p
 
   TSDBROW* pRow = tsdbTbDataIterGet(pIter->iter);
   TSDBKEY  key = TSDBROW_KEY(pRow);
-
+  int32_t  order = pReader->info.order;
   if (outOfTimeWindow(key.ts, &pReader->info.window)) {
     pIter->hasVal = false;
     return NULL;
   }
 
   // it is a valid data version
-  if ((key.version <= pReader->info.verRange.maxVer && key.version >= pReader->info.verRange.minVer) &&
-      (!hasBeenDropped(pDelList, &pIter->index, key.ts, key.version, pReader->info.order, &pReader->info.verRange))) {
-    return pRow;
+  if (key.version <= pReader->info.verRange.maxVer && key.version >= pReader->info.verRange.minVer) {
+    if (pDelList == NULL || TARRAY_SIZE(pDelList) == 0) {
+      return pRow;
+    } else {
+      bool dropped = hasBeenDropped(pDelList, &pIter->index, key.ts, key.version, order, &pReader->info.verRange);
+      if (!dropped) {
+        return pRow;
+      }
+    }
   }
 
   while (1) {
@@ -3353,9 +3367,15 @@ TSDBROW* getValidMemRow(SIterInfo* pIter, const SArray* pDelList, STsdbReader* p
       return NULL;
     }
 
-    if (key.version <= pReader->info.verRange.maxVer && key.version >= pReader->info.verRange.minVer &&
-        (!hasBeenDropped(pDelList, &pIter->index, key.ts, key.version, pReader->info.order, &pReader->info.verRange))) {
-      return pRow;
+    if (key.version <= pReader->info.verRange.maxVer && key.version >= pReader->info.verRange.minVer) {
+      if (pDelList == NULL || TARRAY_SIZE(pDelList) == 0) {
+        return pRow;
+      } else {
+        bool dropped = hasBeenDropped(pDelList, &pIter->index, key.ts, key.version, order, &pReader->info.verRange);
+        if (!dropped) {
+          return pRow;
+        }
+      }
     }
   }
 }
@@ -4184,6 +4204,8 @@ int32_t tsdbReaderSuspend2(STsdbReader* pReader) {
   SReaderStatus*       pStatus = &pReader->status;
   STableBlockScanInfo* pBlockScanInfo = NULL;
 
+  pReader->status.suspendInvoked = true; // record the suspend status
+
   if (pStatus->loadFromFile) {
     SFileDataBlockInfo* pBlockInfo = getCurrentBlockInfo(&pReader->status.blockIter);
     if (pBlockInfo != NULL) {
@@ -4353,7 +4375,7 @@ static int32_t doTsdbNextDataBlockFilesetDelimited(STsdbReader* pReader) {
       return code;
     }
 
-    tsdbTrace("block from file rows: %"PRId64", will process pre-file set buffer: %d. %s", 
+    tsdbTrace("block from file rows: %"PRId64", will process pre-file set buffer: %d. %s",
             pBlock->info.rows, pStatus->bProcMemFirstFileset, pReader->idStr);
     if (pStatus->bProcMemPreFileset) {
       if (pBlock->info.rows > 0) {
@@ -4367,7 +4389,7 @@ static int32_t doTsdbNextDataBlockFilesetDelimited(STsdbReader* pReader) {
         pStatus->bProcMemPreFileset = false;
       }
     }
-    
+
     if (pBlock->info.rows <= 0) {
       resetTableListIndex(&pReader->status);
       int64_t endKey = (ASCENDING_TRAVERSE(pReader->info.order)) ? INT64_MAX : INT64_MIN;
