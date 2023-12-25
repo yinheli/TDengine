@@ -105,9 +105,13 @@ int taos_metric_formatter_load_sample_new(taos_metric_formatter_t *self, taos_me
   taosMemoryFreeClear(keyvalue);
   taosMemoryFreeClear(keyvalues);
 
+  //double old_value = 0;
+  //taos_metric_sample_exchange(sample, 0, &old_value);
+
   SJson* metric = tjsonCreateObject();
   tjsonAddStringToObject(metric, "name", metricName);
   tjsonAddDoubleToObject(metric, "value", sample->r_value);
+  //tjsonAddDoubleToObject(metric, "value", old_value);
   tjsonAddDoubleToObject(metric, "type", metric_type);
 
   tjsonAddItemToArray(metrics, metric);

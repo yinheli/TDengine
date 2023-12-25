@@ -111,3 +111,15 @@ int taos_metric_sample_set(taos_metric_sample_t *self, double r_value) {
   atomic_store_64(&self->r_value, r_value);
   return 0;
 }
+
+int taos_metric_sample_exchange(taos_metric_sample_t *self, double r_value, double* old_value) {
+  if (self->type != TAOS_GAUGE && self->type != TAOS_COUNTER) {
+    TAOS_LOG(TAOS_METRIC_INCORRECT_TYPE);
+    return 1;
+  }
+  /*
+  atomic_store(&self->r_value, r_value);
+  */
+  *old_value = atomic_exchange_64(&self->r_value, r_value);
+  return 0;
+}

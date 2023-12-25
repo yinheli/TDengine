@@ -97,6 +97,7 @@ void monInitNewMonitor(){
   tsMonitor.metrics = taosHashInit(16, taosGetDefaultHashFunction(TSDB_DATA_TYPE_BINARY), true, HASH_ENTRY_LOCK);
   taos_gauge_t *gauge = NULL;
 
+/*
   int32_t label_count =1;
   const char *sample_labels[] = {"cluster_id"};
   char *metric[] = {MASTER_UPTIME, DBS_TOTAL, TBS_TOTAL, STBS_TOTAL, VGROUPS_TOTAL,
@@ -110,7 +111,7 @@ void monInitNewMonitor(){
     }
     taosHashPut(tsMonitor.metrics, metric[i], strlen(metric[i]), &gauge, sizeof(taos_gauge_t *));
   } 
-/*
+
   int32_t vgroup_label_count = 3;
   const char *vgroup_sample_labels[] = {"cluster_id", "vgroup_id", "database_name"};
   char *vgroup_metrics[] = {TABLES_NUM, STATUS};
@@ -121,7 +122,7 @@ void monInitNewMonitor(){
     }
     taosHashPut(tsMonitor.metrics, vgroup_metrics[i], strlen(vgroup_metrics[i]), &gauge, sizeof(taos_gauge_t *));
   }
-*/
+
   int32_t dnodes_label_count = 3;
   const char *dnodes_sample_labels[] = {"cluster_id", "dnode_id", "dnode_ep"};
   char *dnodes_gauges[] = {UPTIME, CPU_ENGINE, CPU_SYSTEM, MEM_ENGINE, MEM_SYSTEM, DISK_ENGINE, DISK_USED, NET_IN,
@@ -135,7 +136,7 @@ void monInitNewMonitor(){
     }
     taosHashPut(tsMonitor.metrics, dnodes_gauges[i], strlen(dnodes_gauges[i]), &gauge, sizeof(taos_gauge_t *));
   }
-/*
+
   int32_t dnodes_data_label_count = 5;
   const char *dnodes_data_sample_labels[] = {"cluster_id", "dnode_id", "dnode_ep", "data_dir_name", "data_dir_level"};
   char *dnodes_data_gauges[] = {DNODE_DATA_AVAIL, DNODE_DATA_USED, DNODE_DATA_TOTAL};

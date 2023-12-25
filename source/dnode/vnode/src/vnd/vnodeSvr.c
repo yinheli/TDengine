@@ -1720,6 +1720,8 @@ _exit:
   const char *vnodes_sample_labels[] = {strClusterId, strDnodeId, tsLocalEp, vgId};
   taos_counter_inc(vnode_insert_counter, vnodes_sample_labels);
 
+  vInfo("insert one");
+
   // clear
   taosArrayDestroy(newTbUids);
   tDestroySubmitReq(pSubmitReq, 0 == pMsg->version ? TSDB_MSG_FLG_CMPT : TSDB_MSG_FLG_DECODE);

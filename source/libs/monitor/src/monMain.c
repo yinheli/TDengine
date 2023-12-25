@@ -556,16 +556,16 @@ void monSendReport() {
   monGenDiskJson(pMonitor);
   monGenLogJson(pMonitor);
 
-  monGenClusterInfoTable(pMonitor);
+  //monGenClusterInfoTable(pMonitor);
   //monGenVgroupInfoTable(pMonitor);
-  monGenDnodeInfoTable(pMonitor);
+  //monGenDnodeInfoTable(pMonitor);
   //monGenDataDiskTable(pMonitor);
   //monGenLogDiskTable(pMonitor);
   //monGenMnodeRoleTable(pMonitor);
   //monGenVnodeRoleTable(pMonitor);
 
   char *pCont = tjsonToString(pMonitor->pJson);
-  uInfoL("report cont:%s\n", pCont);
+  // uInfoL("report cont:%s\n", pCont);
   if (pCont != NULL) {
     EHttpCompFlag flag = tsMonitor.cfg.comp ? HTTP_GZIP : HTTP_FLAT;
     if (taosSendHttpReport(tsMonitor.cfg.server, tsMonUri, tsMonitor.cfg.port, pCont, strlen(pCont), flag) != 0) {
