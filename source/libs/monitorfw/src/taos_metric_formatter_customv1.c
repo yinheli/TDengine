@@ -50,7 +50,7 @@ int taos_metric_formatter_load_sample_custom(taos_metric_sample_t *sample, char 
 
   tjsonAddDoubleToObject(pJson, metricName, sample->r_value);
 
-  taos_metric_sample_set(sample, 0);
+  //taos_metric_sample_set(sample, 0);
 
   taosMemoryFreeClear(keyvalues);
   taosMemoryFreeClear(keyvalue);

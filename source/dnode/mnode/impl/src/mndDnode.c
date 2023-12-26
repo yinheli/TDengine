@@ -591,7 +591,7 @@ static int32_t mndProcessStatisReq(SRpcMsg *pReq) {
         else{
           metric = *pmetric;
         }
-        
+
         if(type == 0){
           taos_counter_add(metric, value, (const char**)sample_labels);
         }
