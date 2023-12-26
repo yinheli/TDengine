@@ -21,6 +21,8 @@
 #ifndef TAOS_METRIC_SAMPLE_H
 #define TAOS_METRIC_SAMPLE_H
 
+#include <stdint.h>
+
 struct taos_metric_sample;
 /**
  * @brief Contains the specific metric and value given the name and label set
@@ -56,6 +58,6 @@ int taos_metric_sample_sub(taos_metric_sample_t *self, double r_value);
  */
 int taos_metric_sample_set(taos_metric_sample_t *self, double r_value);
 
-int taos_metric_sample_exchange(taos_metric_sample_t *self, double r_value, double* old_value);
+int taos_metric_sample_exchange(taos_metric_sample_t *self, int64_t r_value, int64_t* old_value);
 
 #endif  // TAOS_METRIC_SAMPLE_H

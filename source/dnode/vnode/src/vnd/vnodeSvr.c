@@ -43,9 +43,11 @@ static int32_t vnodeProcessCompactVnodeReq(SVnode *pVnode, int64_t ver, void *pR
 static int32_t vnodeProcessConfigChangeReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp);
 
 #define DNODE_INSERT "dnodes_info:req_insert"
+#define DNODE_INSERT_BATCH "dnodes_info:req_insert_batch"
 #define VNODE_INSERT "vnodes_insert_req:req_insert"
 
 taos_counter_t *insert_counter = NULL;
+taos_counter_t *insert_counter_batch = NULL;
 taos_counter_t *vnode_insert_counter = NULL;
 char strClusterId[TSDB_CLUSTER_ID_LEN] = {0};
 char strDnodeId[50] = {0};
@@ -1699,6 +1701,24 @@ _exit:
     snprintf(strDnodeId, sizeof(strDnodeId), "%d", dnodeId);
   }
 
+  if(insert_counter_batch == NULL){
+    int32_t label_count =3;
+    const char *sample_labels[] = {"cluster_id", "dnode_id", "dnode_ep"};
+    taos_counter_t *counter = taos_counter_new(DNODE_INSERT_BATCH, "counter for batch insert sql",  label_count, sample_labels);
+    if(taos_collector_registry_register_metric(counter) == 1){
+      taos_counter_destroy(counter);
+    }
+    else{
+      atomic_store_ptr(&insert_counter_batch, counter);
+    }
+
+    int64_t clusterId = pVnode->config.syncCfg.nodeInfo[0].clusterId;
+    snprintf(strClusterId, sizeof(strClusterId), "%" PRId64, clusterId);
+
+    int32_t dnodeId = pVnode->config.syncCfg.nodeInfo[0].nodeId;
+    snprintf(strDnodeId, sizeof(strDnodeId), "%d", dnodeId);
+  }
+
   if(vnode_insert_counter == NULL){
     int32_t label_count =4;
     const char *sample_labels[] = {"cluster_id", "dnode_id", "dnode_ep", "vgroup_id"};
@@ -1712,15 +1732,14 @@ _exit:
   }
 
   const char *sample_labels[] = {strClusterId, strDnodeId, tsLocalEp};
-  taos_counter_inc(insert_counter, sample_labels);
+  taos_counter_add(insert_counter, pSubmitRsp->affectedRows, sample_labels);
+  taos_counter_inc(insert_counter_batch, sample_labels);
 
   char vgId[50];
   sprintf(vgId, "%"PRId32, TD_VID(pVnode));
 
   const char *vnodes_sample_labels[] = {strClusterId, strDnodeId, tsLocalEp, vgId};
   taos_counter_inc(vnode_insert_counter, vnodes_sample_labels);
-
-  vInfo("insert one");
 
   // clear
   taosArrayDestroy(newTbUids);
