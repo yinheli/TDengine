@@ -273,9 +273,20 @@ typedef struct STableScanInfo {
   bool            filesetDelimited;
 } STableScanInfo;
 
+typedef struct STmsExtRowsBuf {
+  SDiskbasedBuf* pBuf;
+  int64_t maxTs;
+  int64_t minTs;
+} STmsExtRowsBuf;
+
 typedef struct STmsSortRowIdInfo {
-  SDiskbasedBuf* pExtSrcRowsBuf;
   int32_t srcTsSlotId;
+  SArray* aExtSrcRowsBufs; //array of STmsExtRowsBuf
+  int32_t currBufIdx;
+
+  int32_t maxPages;
+  int32_t pageSize;
+  int32_t memSize;
 } STmsSortRowIdInfo;
 
 typedef struct STableMergeScanInfo {

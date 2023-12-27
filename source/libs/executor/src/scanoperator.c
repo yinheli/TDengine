@@ -3304,7 +3304,9 @@ static int32_t blockRowToBuf(SSDataBlock* pBlock, int32_t rowIdx, char* buf) {
 }
 
 static int32_t saveBlockRowToExtRowsBuf(STableMergeScanInfo* pInfo, SSDataBlock* pBlock, int32_t rowIdx, int32_t* pPageId, int32_t* pOffset, int32_t* pLength) {
-  SDiskbasedBuf* pResultBuf = pInfo->sortRowIdInfo.pExtSrcRowsBuf;
+  STmsSortRowIdInfo* pSortInfo = &pInfo->sortRowIdInfo;
+
+  SDiskbasedBuf* pResultBuf = ((STmsExtRowsBuf*)taosArrayGet(pSortInfo->aExtSrcRowsBufs, pSortInfo->currBufIdx))->pBuf;
   int32_t rowBytes = blockDataGetRowSize(pBlock) + taosArrayGetSize(pBlock->pDataBlock) + sizeof(int32_t);
   int32_t pageId = -1;
   SFilePage* pFilePage = NULL;
@@ -3320,6 +3322,13 @@ static int32_t saveBlockRowToExtRowsBuf(STableMergeScanInfo* pInfo, SSDataBlock*
   pFilePage->num += (*pLength);
   setBufPageDirty(pFilePage, true);
   releaseBufPage(pResultBuf, pFilePage);
+  if (taosArrayGetSize(getDataBufPagesIdList(pResultBuf)) > pSortInfo->maxPages) {
+    STmsExtRowsBuf buf = {0};
+    createDiskbasedBuf(&buf.pBuf, pSortInfo->pageSize, pSortInfo->memSize, "tms-ext-rows-buf", tsTempDir);
+    dBufSetPrintInfo(buf.pBuf);
+    taosArrayPush(pSortInfo->aExtSrcRowsBufs, &buf);
+    ++pSortInfo->currBufIdx;
+  }
   return 0;
 }
 
@@ -3334,14 +3343,15 @@ static int32_t fillSortInputBlock(STableMergeScanInfo* pInfo, SSDataBlock* pSrcB
   SColumnInfoData* tsCol = taosArrayGet(pSortInputBlk->pDataBlock, 0);
   SColumnInfoData* pSrcTsCol = taosArrayGet(pSrcBlock->pDataBlock, pSortInfo->srcTsSlotId);
   colDataAssign(tsCol, pSrcTsCol, nRows, &pSortInputBlk->info);
-
-  SColumnInfoData* pageIdCol = taosArrayGet(pSortInputBlk->pDataBlock, 1);
-  SColumnInfoData* offsetCol = taosArrayGet(pSortInputBlk->pDataBlock, 2);
+  SColumnInfoData* pageBufIdCol = taosArrayGet(pSortInputBlk->pDataBlock, 1);
+  SColumnInfoData* pageIdCol = taosArrayGet(pSortInputBlk->pDataBlock, 2);
+  SColumnInfoData* offsetCol = taosArrayGet(pSortInputBlk->pDataBlock, 3);
 
   for (int32_t i = 0; i < pSrcBlock->info.rows; ++i) {
     int32_t pageId = -1;
     int32_t offset = -1;
     int32_t length = -1;
+    colDataSetInt32(pageBufIdCol, i, &pSortInfo->currBufIdx);
     saveBlockRowToExtRowsBuf(pInfo, pSrcBlock, i, &pageId, &offset, &length);
     colDataSetInt32(pageIdCol, i, &pageId);
     colDataSetInt32(offsetCol, i, &offset);
@@ -3354,10 +3364,11 @@ static int32_t fillSortInputBlock(STableMergeScanInfo* pInfo, SSDataBlock* pSrcB
 
 static void appendOneRowIdRowToDataBlock(STableMergeScanInfo* pInfo, SSDataBlock* pBlock, STupleHandle* pTupleHandle) {
   STmsSortRowIdInfo* pSortInfo = &pInfo->sortRowIdInfo;
-
-  int32_t pageId = *(int32_t*)tsortGetValue(pTupleHandle, 1);
-  int32_t offset = *(int32_t*)tsortGetValue(pTupleHandle, 2);
-  void* page = getBufPage(pInfo->sortRowIdInfo.pExtSrcRowsBuf, pageId);
+  int32_t pageBufId = *(int32_t*)tsortGetValue(pTupleHandle, 1);
+  int32_t pageId = *(int32_t*)tsortGetValue(pTupleHandle, 2);
+  int32_t offset = *(int32_t*)tsortGetValue(pTupleHandle, 3);
+  SDiskbasedBuf* pExtRowsBuf = ((STmsExtRowsBuf*)taosArrayGet(pSortInfo->aExtSrcRowsBufs, pageBufId))->pBuf;
+  void* page = getBufPage(pExtRowsBuf, pageId);
 
   int32_t numOfCols = taosArrayGetSize(pBlock->pDataBlock);
   char* buf = (char*)page + offset;
@@ -3596,21 +3607,30 @@ void tableMergeScanTsdbNotifyCb(ETsdReaderNotifyType type, STsdReaderNotifyInfo*
 
 int32_t startRowIdSort(STableMergeScanInfo *pInfo) {
   STmsSortRowIdInfo* pSort = &pInfo->sortRowIdInfo;
-  int32_t pageSize = getProperSortPageSize(blockDataGetRowSize(pInfo->pResBlock),
-                                                      taosArrayGetSize(pInfo->pResBlock->pDataBlock));
-  pageSize *= 2;
-  int numOfTables = pInfo->tableEndIndex - pInfo->tableStartIndex + 1;                                                       
-  int32_t memSize = TMIN(pageSize * numOfTables, 512 * 1024 * 1024);
-  int32_t code = createDiskbasedBuf(&pSort->pExtSrcRowsBuf, pageSize, memSize, "tms-ext-src-block", tsTempDir);
-  dBufSetPrintInfo(pSort->pExtSrcRowsBuf);
-  return code;
+  int32_t numOfCols = taosArrayGetSize(pInfo->pResBlock->pDataBlock);
+  int32_t rowBytes = blockDataGetRowSize(pInfo->pResBlock) + numOfCols + sizeof(int32_t);
+  int32_t numOfTables = pInfo->tableEndIndex - pInfo->tableStartIndex + 1;
+  pSort->memSize = 512 * 1024 * 1024;
+  pSort->pageSize = TMAX(pSort->memSize/numOfTables, rowBytes);
+  pSort->maxPages = 4 * 1024 * 1024;
+  pSort->currBufIdx = 0;
+  pSort->aExtSrcRowsBufs = taosArrayInit(128, sizeof(STmsExtRowsBuf));
+  STmsExtRowsBuf buf = {0};
+  createDiskbasedBuf(&buf.pBuf, pSort->pageSize, pSort->memSize, "tms-ext-src-block", tsTempDir);
+  dBufSetPrintInfo(buf.pBuf);
+  taosArrayPush(pSort->aExtSrcRowsBufs, &buf);
+
+  return 0;
 }
 
 int32_t stopRowIdSort(STableMergeScanInfo *pInfo) {
   STmsSortRowIdInfo* pSort = &pInfo->sortRowIdInfo;
-
-  destroyDiskbasedBuf(pSort->pExtSrcRowsBuf);
-  pSort->pExtSrcRowsBuf = NULL;
+  for (int32_t i = 0; i < taosArrayGetSize(pSort->aExtSrcRowsBufs); ++i) {
+    STmsExtRowsBuf* buf = (STmsExtRowsBuf*)taosArrayGet(pSort->aExtSrcRowsBufs, i);
+    destroyDiskbasedBuf(buf->pBuf);
+  }
+  taosArrayDestroy(pSort->aExtSrcRowsBufs);
+  pSort->aExtSrcRowsBufs = NULL;
   return 0;
 }
 
@@ -3846,10 +3866,14 @@ SSDataBlock* doTableMergeScan(SOperatorInfo* pOperator) {
 void destroyTableMergeScanOperatorInfo(void* param) {
   STableMergeScanInfo* pTableScanInfo = (STableMergeScanInfo*)param;
   cleanupQueryTableDataCond(&pTableScanInfo->base.cond);
-
-  if (pTableScanInfo->sortRowIdInfo.pExtSrcRowsBuf != NULL) {
-    destroyDiskbasedBuf(pTableScanInfo->sortRowIdInfo.pExtSrcRowsBuf);
-    pTableScanInfo->sortRowIdInfo.pExtSrcRowsBuf = NULL;
+  STmsSortRowIdInfo* pSort = &pTableScanInfo->sortRowIdInfo;
+  if (pSort->aExtSrcRowsBufs != NULL) {
+    for (int32_t i = 0; i < taosArrayGetSize(pSort->aExtSrcRowsBufs); ++i) {
+      STmsExtRowsBuf* buf = (STmsExtRowsBuf*)taosArrayGet(pSort->aExtSrcRowsBufs, i);
+      destroyDiskbasedBuf(buf->pBuf);
+    }
+    taosArrayDestroy(pSort->aExtSrcRowsBufs);
+    pSort->aExtSrcRowsBufs = NULL;
   }
 
   int32_t numOfTable = taosArrayGetSize(pTableScanInfo->sortSourceParams);
@@ -3899,9 +3923,11 @@ static void initRowIdSortputBlock(STableMergeScanInfo* pInfo) {
   SSDataBlock* pSortInput = createDataBlock();
   SColumnInfoData tsCol = createColumnInfoData(TSDB_DATA_TYPE_TIMESTAMP, 8, 1);
   blockDataAppendColInfo(pSortInput, &tsCol);
-  SColumnInfoData pageIdCol = createColumnInfoData(TSDB_DATA_TYPE_INT, 4, 2);
+  SColumnInfoData pageBufIdCol = createColumnInfoData(TSDB_DATA_TYPE_INT, 4, 2);
+  blockDataAppendColInfo(pSortInput, &pageBufIdCol);
+  SColumnInfoData pageIdCol = createColumnInfoData(TSDB_DATA_TYPE_INT, 4, 3);
   blockDataAppendColInfo(pSortInput, &pageIdCol);
-  SColumnInfoData  offsetCol = createColumnInfoData(TSDB_DATA_TYPE_INT, 4, 3);
+  SColumnInfoData  offsetCol = createColumnInfoData(TSDB_DATA_TYPE_INT, 4, 4);
   blockDataAppendColInfo(pSortInput, &offsetCol);
   pInfo->pSortInputBlock = pSortInput;
 
