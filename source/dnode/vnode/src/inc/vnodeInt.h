@@ -432,8 +432,8 @@ typedef struct SVCommitSched {
 
 typedef struct SVMonitorObj{
   char strClusterId[TSDB_CLUSTER_ID_LEN];
-  char strDnodeId[50];
-  char vgId[50];
+  char strDnodeId[TSDB_DNODE_ID_LEN];
+  char vgId[TSDB_VGROUP_ID_LEN];
   taos_counter_t *insert_counter;
 }SVMonitorObj;
 

@@ -197,6 +197,8 @@ typedef enum ELogicConditionType {
 // ACCOUNT is a 32 bit positive integer
 // this is the length of its string representation, including the terminator zero
 #define TSDB_ACCT_ID_LEN 11
+#define TSDB_DNODE_ID_LEN 11
+#define TSDB_VGROUP_ID_LEN 11
 
 #define TSDB_MAX_COLUMNS 4096
 #define TSDB_MIN_COLUMNS 2  // PRIMARY COLUMN(timestamp) + other columns

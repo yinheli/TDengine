@@ -478,7 +478,7 @@ SVnode *vnodeOpen(const char *path, int32_t diskPrimary, STfs *pTfs, SMsgCb msgC
 
   snprintf(pVnode->monitor.strClusterId, sizeof(pVnode->monitor.strClusterId), "%" PRId64, 
           pVnode->config.syncCfg.nodeInfo[0].clusterId);
-  snprintf(pVnode->monitor.strDnodeId, sizeof(pVnode->monitor.strDnodeId), "%d", 
+  snprintf(pVnode->monitor.strDnodeId, sizeof(pVnode->monitor.strDnodeId), "%"PRId32, 
             pVnode->config.syncCfg.nodeInfo[0].nodeId);
   sprintf(pVnode->monitor.vgId, "%"PRId32, pVnode->config.vgId);
 
