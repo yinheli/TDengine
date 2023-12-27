@@ -3397,7 +3397,7 @@ static void appendOneRowIdRowToDataBlock(STableMergeScanInfo* pInfo, SSDataBlock
     qError("table merge scan row buf deserialization. length error %d != %d ", *(int32_t*)pStart, (int32_t)(pStart-buf));
   };
 
-  releaseBufPage(pInfo->sortRowIdInfo.pExtSrcRowsBuf, page);
+  releaseBufPage(pExtRowsBuf, page);
 
   pBlock->info.dataLoad = 1;
   pBlock->info.scanFlag = ((SDataBlockInfo*)tsortGetBlockInfo(pTupleHandle))->scanFlag;
