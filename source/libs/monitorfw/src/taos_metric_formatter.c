@@ -13,11 +13,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define ALLOW_FORBID_FUNC
-
 #include <stdio.h>
-#include <stdint.h>
-#include "osMemory.h"
 
 // Public
 #include "taos_alloc.h"
@@ -31,9 +27,7 @@
 #include "taos_metric_sample_t.h"
 #include "taos_metric_t.h"
 #include "taos_string_builder_i.h"
-#include "tjson.h"
-#include "taos_monitor_util_i.h"
-#include "taos_metric_formatter_customv2_i.h"
+
 
 taos_metric_formatter_t *taos_metric_formatter_new() {
   taos_metric_formatter_t *self = (taos_metric_formatter_t *)taos_malloc(sizeof(taos_metric_formatter_t));
@@ -238,7 +232,7 @@ int taos_metric_formatter_load_metric(taos_metric_formatter_t *self, taos_metric
   return taos_string_builder_add_char(self->string_builder, '\n');
 }
 
-int taos_metric_formatter_load_metrics(taos_metric_formatter_t *self, taos_map_t *collectors, char *ts, char *format, SJson* tableArray) {
+int taos_metric_formatter_load_metrics(taos_metric_formatter_t *self, taos_map_t *collectors, char *ts, char *format) {
   TAOS_ASSERT(self != NULL);
   int r = 0;
   for (taos_linked_list_node_t *current_node = collectors->keys->head; current_node != NULL;
@@ -250,30 +244,14 @@ int taos_metric_formatter_load_metrics(taos_metric_formatter_t *self, taos_map_t
     taos_map_t *metrics = collector->collect_fn(collector);
     if (metrics == NULL) return 1;
 
-    //if(strcmp(collector->name, "custom") != 0 ){
-      
-      for (taos_linked_list_node_t *current_node = metrics->keys->head; current_node != NULL;
-          current_node = current_node->next) {
-        const char *metric_name = (const char *)current_node->item;
-        taos_metric_t *metric = (taos_metric_t *)taos_map_get(metrics, metric_name);
-        if (metric == NULL) return 1;
-        r = taos_metric_formatter_load_metric_new(self, metric, ts, format, tableArray);
-        if (r) return r;
-      }
-      
-    //}
-    //else{
-      
-      for (taos_linked_list_node_t *current_node = metrics->keys->head; current_node != NULL;
-          current_node = current_node->next) {
-        const char *metric_name = (const char *)current_node->item;
-        taos_metric_t *metric = (taos_metric_t *)taos_map_get(metrics, metric_name);
-        if (metric == NULL) return 1;
-        r = taos_metric_formatter_load_metric(self, metric, ts, format);
-        if (r) return r;
-      }
-      
-    //}
+    for (taos_linked_list_node_t *current_node = metrics->keys->head; current_node != NULL;
+         current_node = current_node->next) {
+      const char *metric_name = (const char *)current_node->item;
+      taos_metric_t *metric = (taos_metric_t *)taos_map_get(metrics, metric_name);
+      if (metric == NULL) return 1;
+      r = taos_metric_formatter_load_metric(self, metric, ts, format);
+      if (r) return r;
+    }
   }
   return r;
 }

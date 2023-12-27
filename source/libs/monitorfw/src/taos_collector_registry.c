@@ -33,6 +33,7 @@
 #include "taos_metric_i.h"
 #include "taos_metric_t.h"
 #include "taos_string_builder_i.h"
+#include "taos_metric_formatter_customv2_i.h"
 
 #define ALLOW_FORBID_FUNC
 #include "tjson.h"
@@ -53,7 +54,7 @@ taos_collector_registry_t *taos_collector_registry_new(const char *name) {
 
   self->metric_formatter = taos_metric_formatter_new();
   self->string_builder = taos_string_builder_new();
-  self->out = taos_string_builder_new();
+  self->string_builder_batch = taos_string_builder_new();
   self->lock = (pthread_rwlock_t *)taos_malloc(sizeof(pthread_rwlock_t));
   r = pthread_rwlock_init(self->lock, NULL);
   if (r) {
@@ -91,8 +92,8 @@ int taos_collector_registry_destroy(taos_collector_registry_t *self) {
   self->string_builder = NULL;
   if (r) ret = r;
 
-  r = taos_string_builder_destroy(self->out);
-  self->out = NULL;
+  r = taos_string_builder_destroy(self->string_builder_batch);
+  self->string_builder_batch = NULL;
   if (r) ret = r;
 
   r = pthread_rwlock_destroy(self->lock);
@@ -190,8 +191,26 @@ int taos_collector_registry_validate_metric_name(taos_collector_registry_t *self
   return 0;
 }
 
-const char *taos_collector_registry_bridge(taos_collector_registry_t *self, char *ts, char *format, char** prom_str) {
+const char *taos_collector_registry_bridge(taos_collector_registry_t *self, char *ts, char *format) {
   taos_metric_formatter_clear(self->metric_formatter);
+  taos_metric_formatter_load_metrics(self->metric_formatter, self->collectors, ts, format);
+  char *out = taos_metric_formatter_dump(self->metric_formatter);
+
+  int r = 0;
+  r = taos_string_builder_add_str(self->string_builder_batch, out);
+  if (r) return NULL;
+  taos_free(out);
+
+  return taos_string_builder_str(self->string_builder_batch);
+}
+
+int taos_collector_registry_clear_batch(taos_collector_registry_t *self){
+  return taos_string_builder_clear(self->string_builder_batch);
+}
+
+const char *taos_collector_registry_bridge_new(taos_collector_registry_t *self, char *ts, char *format, char** prom_str) {
+  taos_metric_formatter_clear(self->metric_formatter);
+  
   SJson* pJson = tjsonCreateArray();
   SJson* item = tjsonCreateObject();
   tjsonAddItemToArray(pJson, item);
@@ -199,24 +218,48 @@ const char *taos_collector_registry_bridge(taos_collector_registry_t *self, char
   tjsonAddDoubleToObject(item, "protocol", 2);
   SJson* array = tjsonCreateArray();
   tjsonAddItemToObject(item, "tables", array);
-  taos_metric_formatter_load_metrics(self->metric_formatter, self->collectors, ts, format, array);
-  char *out = taos_metric_formatter_dump(self->metric_formatter);
 
+  taos_metric_formatter_load_metrics_new(self->metric_formatter, self->collectors, ts, format, array);
+
+  //caller free this
+  //generate prom protocol for debug
+  *prom_str = taos_metric_formatter_dump(self->metric_formatter);
+
+  //add this result to batch cache, format in batch cache is {},{}
   int r = 0;
-  r = taos_string_builder_add_str(self->out, out);
-  if (r) return NULL;
-  taos_free(out);
-
-  //return taos_string_builder_str(self->out);
-  if(prom_str != NULL){
-    *prom_str = taos_string_builder_str(self->out);
+  char* old_str = taos_string_builder_str(self->string_builder_batch);
+  if(old_str[0] != '\0'){
+    r = taos_string_builder_add_str(self->string_builder_batch, ",");
+    if (r) return NULL;
   }
+  char * item_str = tjsonToString(item);
+  r = taos_string_builder_add_str(self->string_builder_batch, item_str);
+  taos_free(item_str);
+  if (r) return NULL;
 
-  char * str = tjsonToString(pJson);
   tjsonDelete(pJson);
-  return str;
-}
+  
+  //generate final array format result, ie, add [] to str in batch cache
+  taos_string_builder_t* tmp_builder = taos_string_builder_new();
 
-int taos_collector_registry_clear_out(taos_collector_registry_t *self){
-  return taos_string_builder_clear(self->out);
+  r = taos_string_builder_add_str(tmp_builder, "[");
+  if (r) return NULL;
+
+  r = taos_string_builder_add_str(tmp_builder, taos_string_builder_str(self->string_builder_batch));
+  if (r) return NULL;
+
+  r = taos_string_builder_add_str(tmp_builder, "]");
+  if (r) return NULL;
+
+  //caller free this
+  char *data = taos_string_builder_dump(tmp_builder);
+  if (data == NULL) return NULL;
+  r = taos_string_builder_clear(tmp_builder);
+  if (r) return NULL;
+
+  r = taos_string_builder_destroy(tmp_builder);
+  tmp_builder = NULL;
+  if (r) return NULL;
+
+  return data;
 }

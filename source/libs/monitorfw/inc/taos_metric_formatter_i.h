@@ -20,9 +20,6 @@
 #include "taos_metric_formatter_t.h"
 #include "taos_metric_t.h"
 
-#define ALLOW_FORBID_FUNC
-#include "tjson.h"
-
 /**
  * @brief API PRIVATE taos_metric_formatter constructor
  */
@@ -70,7 +67,7 @@ int taos_metric_formatter_load_metric(taos_metric_formatter_t *self, taos_metric
 /**
  * @brief API PRIVATE Loads the given metrics
  */
-int taos_metric_formatter_load_metrics(taos_metric_formatter_t *self, taos_map_t *collectors, char *ts, char *format, SJson* tableArray);
+int taos_metric_formatter_load_metrics(taos_metric_formatter_t *self, taos_map_t *collectors, char *ts, char *format);
 
 /**
  * @brief API PRIVATE Clear the underlying string_builder

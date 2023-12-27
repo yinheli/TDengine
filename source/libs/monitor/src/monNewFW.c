@@ -615,7 +615,7 @@ void monSendPromReport() {
   sprintf(ts, "%" PRId64, taosGetTimestamp(TSDB_TIME_PRECISION_MILLI));
 
   char* promStr = NULL;
-  char *pCont = (char *)taos_collector_registry_bridge(TAOS_COLLECTOR_REGISTRY_DEFAULT, ts, "%" PRId64, &promStr);
+  char* pCont = (char *)taos_collector_registry_bridge_new(TAOS_COLLECTOR_REGISTRY_DEFAULT, ts, "%" PRId64, &promStr);
   if(tsMonitorLogProtocol){
     uInfoL("report cont:\n%s\n", pCont);
     uDebugL("report cont prom:\n%s\n", promStr);
@@ -625,8 +625,11 @@ void monSendPromReport() {
     if (taosSendHttpReport(tsMonitor.cfg.server, tsMonFwUri, tsMonitor.cfg.port, pCont, strlen(pCont), flag) != 0) {
       uError("failed to send monitor msg");
     }else{
-      taos_collector_registry_clear_out(TAOS_COLLECTOR_REGISTRY_DEFAULT);
+      taos_collector_registry_clear_batch(TAOS_COLLECTOR_REGISTRY_DEFAULT);
     }
     taosMemoryFreeClear(pCont);
+  }
+  if(promStr != NULL){
+    taosMemoryFreeClear(promStr);
   }
 }

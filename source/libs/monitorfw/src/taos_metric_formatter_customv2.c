@@ -22,6 +22,7 @@
 #include "taos_monitor_util_i.h"
 #include "taos_assert.h"
 #include "tdef.h"
+#include "taos_collector_t.h"
 
 int taos_metric_formatter_load_sample_new(taos_metric_formatter_t *self, taos_metric_sample_t *sample, 
                                       char *ts, char *format, char *metricName, int32_t metric_type,
@@ -182,5 +183,47 @@ int taos_metric_formatter_load_metric_new(taos_metric_formatter_t *self, taos_me
     }
   }
   taosMemoryFreeClear(name);
+  return r;
+}
+
+int taos_metric_formatter_load_metrics_new(taos_metric_formatter_t *self, taos_map_t *collectors, char *ts, 
+                                            char *format, SJson* tableArray) {
+  TAOS_ASSERT(self != NULL);
+  int r = 0;
+
+  for (taos_linked_list_node_t *current_node = collectors->keys->head; current_node != NULL;
+       current_node = current_node->next) {
+    const char *collector_name = (const char *)current_node->item;
+    taos_collector_t *collector = (taos_collector_t *)taos_map_get(collectors, collector_name);
+    if (collector == NULL) return 1;
+
+    taos_map_t *metrics = collector->collect_fn(collector);
+    if (metrics == NULL) return 1;
+
+    //if(strcmp(collector->name, "custom") != 0 ){
+      
+      for (taos_linked_list_node_t *current_node = metrics->keys->head; current_node != NULL;
+          current_node = current_node->next) {
+        const char *metric_name = (const char *)current_node->item;
+        taos_metric_t *metric = (taos_metric_t *)taos_map_get(metrics, metric_name);
+        if (metric == NULL) return 1;
+        r = taos_metric_formatter_load_metric_new(self, metric, ts, format, tableArray);
+        if (r) return r;
+      }
+      
+    //}
+    //else{
+      
+      for (taos_linked_list_node_t *current_node = metrics->keys->head; current_node != NULL;
+          current_node = current_node->next) {
+        const char *metric_name = (const char *)current_node->item;
+        taos_metric_t *metric = (taos_metric_t *)taos_map_get(metrics, metric_name);
+        if (metric == NULL) return 1;
+        r = taos_metric_formatter_load_metric(self, metric, ts, format);
+        if (r) return r;
+      }
+      
+    //}
+  }
   return r;
 }
