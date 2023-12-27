@@ -29,7 +29,8 @@ static int32_t vnodeProcessDropStbReq(SVnode *pVnode, int64_t ver, void *pReq, i
 static int32_t vnodeProcessCreateTbReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp);
 static int32_t vnodeProcessAlterTbReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp);
 static int32_t vnodeProcessDropTbReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp);
-static int32_t vnodeProcessSubmitReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp);
+static int32_t vnodeProcessSubmitReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp, 
+                                    SRpcMsg *pOriginalMsg);
 static int32_t vnodeProcessCreateTSmaReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp);
 static int32_t vnodeProcessAlterConfirmReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp);
 static int32_t vnodeProcessAlterConfigReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp);
@@ -535,7 +536,7 @@ int32_t vnodeProcessWriteMsg(SVnode *pVnode, SRpcMsg *pMsg, int64_t ver, SRpcMsg
       break;
     /* TSDB */
     case TDMT_VND_SUBMIT:
-      if (vnodeProcessSubmitReq(pVnode, ver, pMsg->pCont, pMsg->contLen, pRsp) < 0) goto _err;
+      if (vnodeProcessSubmitReq(pVnode, ver, pMsg->pCont, pMsg->contLen, pRsp, pMsg) < 0) goto _err;
       break;
     case TDMT_VND_DELETE:
       if (vnodeProcessDeleteReq(pVnode, ver, pReq, len, pRsp) < 0) goto _err;
@@ -1456,7 +1457,8 @@ static int32_t vnodeRebuildSubmitReqMsg(SSubmitReq2 *pSubmitReq, void **ppMsg) {
   return code;
 }
 
-static int32_t vnodeProcessSubmitReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp) {
+static int32_t vnodeProcessSubmitReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp, 
+                                    SRpcMsg *pOriginalMsg) {
   int32_t code = 0;
   terrno = 0;
 
@@ -1682,7 +1684,7 @@ _exit:
   if(insert_counter == NULL){
     int32_t label_count =6;
     const char *sample_labels[] = {"sql_type", "cluster_id", "dnode_id", "dnode_ep",
-                                  "vgroup_id", "user_id"};
+                                  "vgroup_id", "username"};
     taos_counter_t *counter = taos_counter_new(INSERT_COUNT, "counter for insert sql",  label_count, sample_labels);
     if(taos_collector_registry_register_metric(counter) == 1){
       taos_counter_destroy(counter);
@@ -1701,10 +1703,11 @@ _exit:
   char vgId[50];
   sprintf(vgId, "%"PRId32, TD_VID(pVnode));
 
-  const char *sample_labels[] = {"insert", strClusterId, strDnodeId, tsLocalEp, vgId, ""};
+  const char *sample_labels[] = {"insert", strClusterId, strDnodeId, tsLocalEp, vgId, pOriginalMsg->info.conn.user};
   taos_counter_inc(insert_counter, sample_labels);
 
-  const char *batch_sample_labels[] = {"insert_batch", strClusterId, strDnodeId, tsLocalEp, vgId, ""};
+  const char *batch_sample_labels[] = {"insert_batch", strClusterId, strDnodeId, 
+                                        tsLocalEp, vgId, pOriginalMsg->info.conn.user};
   taos_counter_add(insert_counter, pSubmitRsp->affectedRows, batch_sample_labels);
 
   // clear
