@@ -2581,6 +2581,8 @@ const SBuiltinFuncDefinition funcMgtBuiltins[] = {
     .invertFunc   = avgInvertFunction,
 #endif
     .combineFunc  = avgCombine,
+    .pPartialFunc = "_avg_state_merge",
+    .pMergeFunc = "_avg_merge",
   },
   {
     .name = "percentile",
