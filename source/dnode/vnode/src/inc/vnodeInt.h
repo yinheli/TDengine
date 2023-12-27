@@ -47,6 +47,8 @@
 
 #include "vnode.h"
 
+#include "taos_monitor.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -97,6 +99,8 @@ typedef struct SQueryNode         SQueryNode;
 
 #define VND_INFO_FNAME     "vnode.json"
 #define VND_INFO_FNAME_TMP "vnode_tmp.json"
+
+#define INSERT_COUNT "taoscd_sql_req:count"
 
 // vnd.h
 typedef int32_t (*_query_reseek_func_t)(void* pQHandle);
@@ -426,6 +430,13 @@ typedef struct SVCommitSched {
   int64_t maxWaitMs;
 } SVCommitSched;
 
+typedef struct SVMonitorObj{
+  char strClusterId[TSDB_CLUSTER_ID_LEN];
+  char strDnodeId[50];
+  char vgId[50];
+  taos_counter_t *insert_counter;
+}SVMonitorObj;
+
 struct SVnode {
   char*     path;
   SVnodeCfg config;
@@ -461,6 +472,7 @@ struct SVnode {
   int32_t       blockSec;
   int64_t       blockSeq;
   SQHandle*     pQuery;
+  SVMonitorObj  monitor;
 };
 
 #define TD_VID(PVNODE) ((PVNODE)->config.vgId)

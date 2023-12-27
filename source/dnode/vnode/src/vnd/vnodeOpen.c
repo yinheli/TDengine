@@ -476,6 +476,25 @@ SVnode *vnodeOpen(const char *path, int32_t diskPrimary, STfs *pTfs, SMsgCb msgC
     vnodeRollback(pVnode);
   }
 
+  snprintf(pVnode->monitor.strClusterId, sizeof(pVnode->monitor.strClusterId), "%" PRId64, 
+          pVnode->config.syncCfg.nodeInfo[0].clusterId);
+  snprintf(pVnode->monitor.strDnodeId, sizeof(pVnode->monitor.strDnodeId), "%d", 
+            pVnode->config.syncCfg.nodeInfo[0].nodeId);
+  sprintf(pVnode->monitor.vgId, "%"PRId32, pVnode->config.vgId);
+
+  if(pVnode->monitor.insert_counter == NULL){
+    int32_t label_count =6;
+    const char *sample_labels[] = {"sql_type", "cluster_id", "dnode_id", "dnode_ep",
+                                  "vgroup_id", "username"};
+    taos_counter_t *counter = taos_counter_new(INSERT_COUNT, "counter for insert sql",  label_count, sample_labels);
+    if(taos_collector_registry_register_metric(counter) == 1){
+      taos_counter_destroy(counter);
+    }
+    else{
+      atomic_store_ptr(&(pVnode->monitor.insert_counter), counter);
+    }
+  }
+
   return pVnode;
 
 _err:

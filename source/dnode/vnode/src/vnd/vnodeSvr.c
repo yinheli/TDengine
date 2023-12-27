@@ -21,7 +21,6 @@
 #include "vndCos.h"
 #include "vnode.h"
 #include "vnodeInt.h"
-#include "taos_monitor.h"
 
 static int32_t vnodeProcessCreateStbReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp);
 static int32_t vnodeProcessAlterStbReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp);
@@ -42,12 +41,6 @@ static int32_t vnodeProcessCreateIndexReq(SVnode *pVnode, int64_t ver, void *pRe
 static int32_t vnodeProcessDropIndexReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp);
 static int32_t vnodeProcessCompactVnodeReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp);
 static int32_t vnodeProcessConfigChangeReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp);
-
-#define INSERT_COUNT "taoscd_sql_req:count"
-
-taos_counter_t *insert_counter = NULL;
-char strClusterId[TSDB_CLUSTER_ID_LEN] = {0};
-char strDnodeId[50] = {0};
 
 static int32_t vnodePreprocessCreateTableReq(SVnode *pVnode, SDecoder *pCoder, int64_t btime, int64_t *pUid) {
   int32_t code = 0;
@@ -1681,34 +1674,13 @@ _exit:
     tdProcessRSmaSubmit(pVnode->pSma, ver, pSubmitReq, pReq, len, STREAM_INPUT__DATA_SUBMIT);
   }
 
-  if(insert_counter == NULL){
-    int32_t label_count =6;
-    const char *sample_labels[] = {"sql_type", "cluster_id", "dnode_id", "dnode_ep",
-                                  "vgroup_id", "username"};
-    taos_counter_t *counter = taos_counter_new(INSERT_COUNT, "counter for insert sql",  label_count, sample_labels);
-    if(taos_collector_registry_register_metric(counter) == 1){
-      taos_counter_destroy(counter);
-    }
-    else{
-      atomic_store_ptr(&insert_counter, counter);
-    }
+  const char *sample_labels[] = {"insert", pVnode->monitor.strClusterId, pVnode->monitor.strDnodeId, 
+                                tsLocalEp, pVnode->monitor.vgId, pOriginalMsg->info.conn.user};
+  taos_counter_inc(pVnode->monitor.insert_counter, sample_labels);
 
-    int64_t clusterId = pVnode->config.syncCfg.nodeInfo[0].clusterId;
-    snprintf(strClusterId, sizeof(strClusterId), "%" PRId64, clusterId);
-
-    int32_t dnodeId = pVnode->config.syncCfg.nodeInfo[0].nodeId;
-    snprintf(strDnodeId, sizeof(strDnodeId), "%d", dnodeId);
-  }
-
-  char vgId[50];
-  sprintf(vgId, "%"PRId32, TD_VID(pVnode));
-
-  const char *sample_labels[] = {"insert", strClusterId, strDnodeId, tsLocalEp, vgId, pOriginalMsg->info.conn.user};
-  taos_counter_inc(insert_counter, sample_labels);
-
-  const char *batch_sample_labels[] = {"insert_batch", strClusterId, strDnodeId, 
-                                        tsLocalEp, vgId, pOriginalMsg->info.conn.user};
-  taos_counter_add(insert_counter, pSubmitRsp->affectedRows, batch_sample_labels);
+  const char *batch_sample_labels[] = {"insert_batch", pVnode->monitor.strClusterId, pVnode->monitor.strDnodeId,
+                                        tsLocalEp, pVnode->monitor.vgId, pOriginalMsg->info.conn.user};
+  taos_counter_add(pVnode->monitor.insert_counter, pSubmitRsp->affectedRows, batch_sample_labels);
 
   // clear
   taosArrayDestroy(newTbUids);
