@@ -192,11 +192,13 @@ int taos_collector_registry_validate_metric_name(taos_collector_registry_t *self
 
 const char *taos_collector_registry_bridge(taos_collector_registry_t *self, char *ts, char *format, char** prom_str) {
   taos_metric_formatter_clear(self->metric_formatter);
-  SJson* pJson = tjsonCreateObject();
-  tjsonAddStringToObject(pJson, "ts", ts);
-  tjsonAddDoubleToObject(pJson, "protocol", 2);
+  SJson* pJson = tjsonCreateArray();
+  SJson* item = tjsonCreateObject();
+  tjsonAddItemToArray(pJson, item);
+  tjsonAddStringToObject(item, "ts", ts);
+  tjsonAddDoubleToObject(item, "protocol", 2);
   SJson* array = tjsonCreateArray();
-  tjsonAddItemToObject(pJson, "tables", array);
+  tjsonAddItemToObject(item, "tables", array);
   taos_metric_formatter_load_metrics(self->metric_formatter, self->collectors, ts, format, array);
   char *out = taos_metric_formatter_dump(self->metric_formatter);
 
