@@ -33,7 +33,7 @@
 #include "taos_metric_i.h"
 #include "taos_metric_t.h"
 #include "taos_string_builder_i.h"
-#include "taos_metric_formatter_customv2_i.h"
+#include "taos_metric_formatter_custom_i.h"
 
 #define ALLOW_FORBID_FUNC
 #include "tjson.h"

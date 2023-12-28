@@ -569,10 +569,6 @@ static int32_t mndProcessStatisReq(SRpcMsg *pReq) {
           memset(metricName, 0, metricNameLen);
           sprintf(metricName, "%s:%s", tableName, name);
 
-          //taos_metric_t** pmetric = taosHashGet(pMnode->clientMetrics, metricName, metricNameLen - 1); 
-          //taos_counter_t* metric = taosArrayGet(pMnode->clientMetrics, j);
-
-          
           taos_metric_t* metric = taos_collector_registry_get_metric(metricName);
           if(metric == NULL){
             if(type == 0){
@@ -603,9 +599,6 @@ static int32_t mndProcessStatisReq(SRpcMsg *pReq) {
             mTrace("get metric from registry:%p", metric);
           }
           
-          //taosArrayPush(pMnode->clientMetrics, metric);
-          taosHashPut(pMnode->clientMetrics, metricName, metricNameLen - 1, &metric, sizeof(taos_counter_t*));
-
           if(type == 0){
             taos_counter_add(metric, value, (const char**)sample_labels);
           }

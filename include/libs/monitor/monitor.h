@@ -121,7 +121,6 @@ typedef struct {
   int32_t streams_total;
   SArray *dnodes;  // array of SMonDnodeDesc
   SArray *mnodes;  // array of SMonMnodeDesc
-  SHashObj *monitor_client_metrics;
 } SMonClusterInfo;
 
 typedef struct {

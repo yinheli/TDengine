@@ -127,7 +127,6 @@ limitations under the License.
 #include "taos_metric.h"
 #include "taos_metric_sample.h"
 #include "taos_monitor_util.h"
-#include "taos_metric_fomatter_customv1.h"
 #include "taos_gauge.h"
 
 #endif //  TAOS_INCLUDED

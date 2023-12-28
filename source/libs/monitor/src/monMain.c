@@ -216,29 +216,6 @@ static void monGenClusterJson(SMonInfo *pMonitor) {
   tjsonAddDoubleToObject(pJson, "topics_total", pInfo->topics_toal);
   tjsonAddDoubleToObject(pJson, "streams_total", pInfo->streams_total);
 
-/*
-  int32_t monSize = taosArrayGetSize(pInfo->clientMetrics);
-  for(int32_t i = 0; i < monSize; i++){
-    taos_counter_t* metric = taosArrayGet(pInfo->clientMetrics, i);
-
-    char* arr[2] = {0};
-    taos_monitor_split_str_metric((char**)&arr, metric, ":");
-
-    if(strcmp(arr[0], "cluster_info") != 0) continue;
-
-    taos_metric_formatter_load_metric_custom(metric, pJson);
-  }
-  */
-
-  void *pIter = taosHashIterate(pInfo->monitor_client_metrics, NULL);
-  while (pIter) {
-    taos_counter_t** metric = (taos_counter_t**)pIter;
-
-    taos_metric_formatter_load_metric_custom(*metric, pJson);
-
-    pIter = taosHashIterate(pInfo->monitor_client_metrics, pIter);
-  }
-
   SJson *pDnodesJson = tjsonAddArrayToObject(pJson, "dnodes");
   if (pDnodesJson == NULL) return;
 
