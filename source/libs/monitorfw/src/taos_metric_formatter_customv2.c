@@ -110,7 +110,7 @@ int taos_metric_formatter_load_sample_new(taos_metric_formatter_t *self, taos_me
   tjsonAddStringToObject(metric, "name", metricName);
   
   double old_value = 0;
-//#define USE_EXCHANGE
+#define USE_EXCHANGE
 #ifdef USE_EXCHANGE
   taos_metric_sample_exchange(sample, 0, &old_value);
 #else
