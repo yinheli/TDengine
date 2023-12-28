@@ -123,6 +123,19 @@ int taos_collector_registry_register_metric(taos_metric_t *metric) {
   return taos_collector_add_metric(default_collector, metric);
 }
 
+taos_metric_t *taos_collector_registry_get_metric(char* metric_name){
+  TAOS_ASSERT(metric != NULL);
+
+  taos_collector_t *default_collector =
+      (taos_collector_t *)taos_map_get(TAOS_COLLECTOR_REGISTRY_DEFAULT->collectors, "default");
+
+  if (default_collector == NULL) {
+    return NULL;
+  }
+
+  return taos_collector_get_metric(default_collector, metric_name);
+}
+
 taos_metric_t *taos_collector_registry_must_register_metric(taos_metric_t *metric) {
   int err = taos_collector_registry_register_metric(metric);
   if (err != 0) {
@@ -223,7 +236,9 @@ const char *taos_collector_registry_bridge_new(taos_collector_registry_t *self, 
 
   //caller free this
   //generate prom protocol for debug
-  *prom_str = taos_metric_formatter_dump(self->metric_formatter);
+  if(prom_str != NULL){
+    *prom_str = taos_metric_formatter_dump(self->metric_formatter);
+  }
 
   //add this result to batch cache, format in batch cache is {},{}
   int r = 0;

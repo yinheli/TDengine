@@ -1674,13 +1674,13 @@ _exit:
     tdProcessRSmaSubmit(pVnode->pSma, ver, pSubmitReq, pReq, len, STREAM_INPUT__DATA_SUBMIT);
   }
 
-  const char *sample_labels[] = {"insert", pVnode->monitor.strClusterId, pVnode->monitor.strDnodeId, 
-                                tsLocalEp, pVnode->monitor.vgId, pOriginalMsg->info.conn.user};
-  taos_counter_inc(pVnode->monitor.insert_counter, sample_labels);
-
-  const char *batch_sample_labels[] = {"insert_batch", pVnode->monitor.strClusterId, pVnode->monitor.strDnodeId,
+  const char *sample_labels[] = {"insert", pVnode->monitor.strClusterId, pVnode->monitor.strDnodeId,
                                         tsLocalEp, pVnode->monitor.vgId, pOriginalMsg->info.conn.user};
-  taos_counter_add(pVnode->monitor.insert_counter, pSubmitRsp->affectedRows, batch_sample_labels);
+  taos_counter_add(pVnode->monitor.insert_counter, pSubmitRsp->affectedRows, sample_labels);
+
+  const char *batch_sample_labels[] = {"insert_batch", pVnode->monitor.strClusterId, pVnode->monitor.strDnodeId, 
+                                tsLocalEp, pVnode->monitor.vgId, pOriginalMsg->info.conn.user};
+  taos_counter_inc(pVnode->monitor.insert_counter, batch_sample_labels);
 
   // clear
   taosArrayDestroy(newTbUids);

@@ -487,12 +487,14 @@ SVnode *vnodeOpen(const char *path, int32_t diskPrimary, STfs *pTfs, SMsgCb msgC
     const char *sample_labels[] = {"sql_type", "cluster_id", "dnode_id", "dnode_ep",
                                   "vgroup_id", "username"};
     taos_counter_t *counter = taos_counter_new(INSERT_COUNT, "counter for insert sql",  label_count, sample_labels);
+    vInfo("vgId:%d, new metric:%p",TD_VID(pVnode), counter);
     if(taos_collector_registry_register_metric(counter) == 1){
       taos_counter_destroy(counter);
+      counter = taos_collector_registry_get_metric(INSERT_COUNT);
+      vInfo("vgId:%d, get metric from registry:%p",TD_VID(pVnode), counter);
     }
-    else{
-      atomic_store_ptr(&(pVnode->monitor.insert_counter), counter);
-    }
+    pVnode->monitor.insert_counter = counter;
+    vInfo("vgId:%d, succeed to set metric:%p",TD_VID(pVnode), counter);
   }
 
   return pVnode;

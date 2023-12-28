@@ -106,18 +106,21 @@ int taos_metric_formatter_load_sample_new(taos_metric_formatter_t *self, taos_me
   taosMemoryFreeClear(keyvalue);
   taosMemoryFreeClear(keyvalues);
 
-  int64_t old_value = 0;
-  taos_metric_sample_exchange(sample, 0, &old_value);
-
   SJson* metric = tjsonCreateObject();
   tjsonAddStringToObject(metric, "name", metricName);
-  //tjsonAddDoubleToObject(metric, "value", sample->r_value);
+  
+  double old_value = 0;
+//#define USE_EXCHANGE
+#ifdef USE_EXCHANGE
+  taos_metric_sample_exchange(sample, 0, &old_value);
+#else
+  old_value = sample->r_value;
+  taos_metric_sample_set(sample, 0);
+#endif
+
   tjsonAddDoubleToObject(metric, "value", old_value);
   tjsonAddDoubleToObject(metric, "type", metric_type);
-
   tjsonAddItemToArray(metrics, metric);
-
-  //taos_metric_sample_set(sample, 0);
 
   return 0;
 }
