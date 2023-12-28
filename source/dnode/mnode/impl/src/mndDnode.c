@@ -569,33 +569,42 @@ static int32_t mndProcessStatisReq(SRpcMsg *pReq) {
           memset(metricName, 0, metricNameLen);
           sprintf(metricName, "%s:%s", tableName, name);
 
-          taos_counter_t** pmetric = taosHashGet(pMnode->clientMetrics, metricName, metricNameLen - 1); 
+          //taos_metric_t** pmetric = taosHashGet(pMnode->clientMetrics, metricName, metricNameLen - 1); 
           //taos_counter_t* metric = taosArrayGet(pMnode->clientMetrics, j);
 
-          taos_counter_t* metric = NULL;
-
-          if(pmetric == NULL){
+          
+          taos_metric_t* metric = taos_collector_registry_get_metric(metricName);
+          if(metric == NULL){
             if(type == 0){
               metric = taos_counter_new(metricName, "",  tagSize, (const char**)labels);
-
-              if(taos_collector_registry_register_metric(metric) == 1){
-                taos_counter_destroy(metric);
-              }
             }
             if(type == 1){
               metric = taos_gauge_new(metricName, "",  tagSize, (const char**)labels);
+            }
+            mTrace("fail to get metric from registry, new one metric:%p", metric);
 
-              if(taos_collector_registry_register_metric(metric) == 1){
+            if(taos_collector_registry_register_metric(metric) == 1){
+              if(type == 0){
+                taos_counter_destroy(metric);
+              }
+              if(type == 1){
                 taos_gauge_destroy(metric);
               }
-            }
 
-            //taosArrayPush(pMnode->clientMetrics, metric);
-            taosHashPut(pMnode->clientMetrics, metricName, metricNameLen - 1, &metric, sizeof(taos_counter_t*));
+              metric = taos_collector_registry_get_metric(metricName);
+
+              mTrace("fail to register metric, get metric from registry:%p", metric);
+            }
+            else{
+              mTrace("succeed to register metric:%p", metric);
+            }
           }
           else{
-            metric = *pmetric;
+            mTrace("get metric from registry:%p", metric);
           }
+          
+          //taosArrayPush(pMnode->clientMetrics, metric);
+          taosHashPut(pMnode->clientMetrics, metricName, metricNameLen - 1, &metric, sizeof(taos_counter_t*));
 
           if(type == 0){
             taos_counter_add(metric, value, (const char**)sample_labels);
