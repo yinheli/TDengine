@@ -12,12 +12,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#define _DEFAULT_SOURCE
 
-#include "tarray.h"
+#define _DEFAULT_SOURCE
 #include "mndInt.h"
 #include "systable.h"
-#include "taos_monitor.h"
 
 // connection/application/
 int32_t mndInitPerfsTableSchema(const SSysDbTableSchema *pSrc, int32_t colNum, SSchema **pDst) {

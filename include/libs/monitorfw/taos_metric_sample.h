@@ -21,8 +21,6 @@
 #ifndef TAOS_METRIC_SAMPLE_H
 #define TAOS_METRIC_SAMPLE_H
 
-#include <stdint.h>
-
 struct taos_metric_sample;
 /**
  * @brief Contains the specific metric and value given the name and label set
