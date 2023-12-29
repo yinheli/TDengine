@@ -60,7 +60,6 @@ static int32_t dmInitMonitor() {
     if (terrno != 0) code = terrno;
     goto _exit;
   }
-  monInitMonitorFW();
 
 _exit:
   if (code) terrno = code;
@@ -176,7 +175,6 @@ void dmCleanup() {
   if (dmCheckRepeatCleanup(pDnode) != 0) return;
   dmCleanupDnode(pDnode);
   monCleanup();
-  monCleanupNew();
   syncCleanUp();
   walCleanUp();
   udfcClose();

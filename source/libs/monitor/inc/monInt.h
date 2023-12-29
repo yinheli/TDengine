@@ -57,6 +57,10 @@ void monGenLogDiskTable(SMonInfo *pMonitor);
 void monGenMnodeRoleTable(SMonInfo *pMonitor);
 void monGenVnodeRoleTable(SMonInfo *pMonitor);
 
+void monSendPromReport();
+void monInitMonitorFW();
+void monCleanupMonitorFW();
+
 #ifdef __cplusplus
 }
 #endif

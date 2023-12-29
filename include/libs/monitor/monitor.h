@@ -224,9 +224,6 @@ void    monSetQmInfo(SMonQmInfo *pInfo);
 void    monSetSmInfo(SMonSmInfo *pInfo);
 void    monSetBmInfo(SMonBmInfo *pInfo);
 void    monSendReport();
-void    monSendPromReport();
-void    monInitMonitorFW();
-void    monCleanupNew();
 
 void tFreeSMonMmInfo(SMonMmInfo *pInfo);
 void tFreeSMonVmInfo(SMonVmInfo *pInfo);

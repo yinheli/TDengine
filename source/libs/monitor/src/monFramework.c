@@ -25,9 +25,6 @@ extern SMonitor tsMonitor;
 extern char* tsMonUri;
 extern char* tsMonFwUri;
 
-extern SMonInfo *monCreateMonitorInfo();
-extern void monCleanupMonitorInfo(SMonInfo *pMonitor);
-
 #define CLUSTER_TABLE "taosd_cluster_info"
 
 #define MASTER_UPTIME  CLUSTER_TABLE":master_uptime"
@@ -95,7 +92,7 @@ extern void monCleanupMonitorInfo(SMonInfo *pMonitor);
 #define VNODE_ROLE "taosd_vnodes_info:role"
 
 void monInitMonitorFW(){
-    taos_collector_registry_default_init();
+  taos_collector_registry_default_init();
 
   tsMonitor.metrics = taosHashInit(16, taosGetDefaultHashFunction(TSDB_DATA_TYPE_BINARY), true, HASH_ENTRY_LOCK);
   taos_gauge_t *gauge = NULL;
@@ -186,7 +183,7 @@ void monInitMonitorFW(){
   */
 }
 
-void monCleanupNew(){
+void monCleanupMonitorFW(){
   taosHashCleanup(tsMonitor.metrics);
   taos_collector_registry_destroy(TAOS_COLLECTOR_REGISTRY_DEFAULT);
   TAOS_COLLECTOR_REGISTRY_DEFAULT = NULL;
@@ -427,9 +424,9 @@ void monGenDnodeInfoTable(SMonInfo *pMonitor) {
   taos_gauge_set(*metric, pInfo->has_snode, sample_labels);
 
   //dnodes status
+
   //char cluster_id[TSDB_CLUSTER_ID_LEN] = {0};
   //snprintf(cluster_id, sizeof(cluster_id), "%" PRId64, pMonitor->dmInfo.basic.cluster_id);
-  //taos_gauge_t **metric = NULL;
 
   for (int32_t i = 0; i < taosArrayGetSize(pClusterInfo->dnodes); ++i) {
     SMonDnodeDesc *pDnodeDesc = taosArrayGet(pClusterInfo->dnodes, i);

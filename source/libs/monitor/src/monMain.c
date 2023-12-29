@@ -12,6 +12,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 #define _DEFAULT_SOURCE
 #include "monInt.h"
 #include "taoserror.h"
@@ -111,6 +112,8 @@ int32_t monInit(const SMonCfg *pCfg) {
   tsMonitor.lastTime = taosGetTimestampMs();
   taosThreadMutexInit(&tsMonitor.lock, NULL);
 
+  monInitMonitorFW();
+
   return 0;
 }
 
@@ -124,9 +127,11 @@ void monCleanup() {
   tFreeSMonQmInfo(&tsMonitor.qmInfo);
   tFreeSMonBmInfo(&tsMonitor.bmInfo);
   taosThreadMutexDestroy(&tsMonitor.lock);
+
+  monCleanupMonitorFW();
 }
 
-void monCleanupMonitorInfo(SMonInfo *pMonitor) {
+static void monCleanupMonitorInfo(SMonInfo *pMonitor) {
   tsMonitor.lastTime = pMonitor->curTime;
   taosArrayDestroy(pMonitor->log.logs);
   tFreeSMonMmInfo(&pMonitor->mmInfo);
@@ -138,7 +143,7 @@ void monCleanupMonitorInfo(SMonInfo *pMonitor) {
   taosMemoryFree(pMonitor);
 }
 
-SMonInfo *monCreateMonitorInfo() {
+static SMonInfo *monCreateMonitorInfo() {
   SMonInfo *pMonitor = taosMemoryCalloc(1, sizeof(SMonInfo));
   if (pMonitor == NULL) {
     terrno = TSDB_CODE_OUT_OF_MEMORY;
@@ -520,6 +525,18 @@ static void monGenLogJson(SMonInfo *pMonitor) {
   if (tjsonAddItemToArray(pSummaryJson, pLogTrace) != 0) tjsonDelete(pLogTrace);
 }
 
+void monSendReportV1(SMonInfo *pMonitor){
+  char *pCont = tjsonToString(pMonitor->pJson);
+  // uInfoL("report cont:%s\n", pCont);
+  if (pCont != NULL) {
+    EHttpCompFlag flag = tsMonitor.cfg.comp ? HTTP_GZIP : HTTP_FLAT;
+    if (taosSendHttpReport(tsMonitor.cfg.server, tsMonUri, tsMonitor.cfg.port, pCont, strlen(pCont), flag) != 0) {
+      uError("failed to send monitor msg");
+    }
+    taosMemoryFree(pCont);
+  }
+}
+
 void monSendReport() {
   SMonInfo *pMonitor = monCreateMonitorInfo();
   if (pMonitor == NULL) return;
@@ -541,15 +558,10 @@ void monSendReport() {
   //monGenMnodeRoleTable(pMonitor);
   //monGenVnodeRoleTable(pMonitor);
 
-  char *pCont = tjsonToString(pMonitor->pJson);
-  // uInfoL("report cont:%s\n", pCont);
-  if (pCont != NULL) {
-    EHttpCompFlag flag = tsMonitor.cfg.comp ? HTTP_GZIP : HTTP_FLAT;
-    if (taosSendHttpReport(tsMonitor.cfg.server, tsMonUri, tsMonitor.cfg.port, pCont, strlen(pCont), flag) != 0) {
-      uError("failed to send monitor msg");
-    }
-    taosMemoryFree(pCont);
-  }
+  monSendReportV1(pMonitor);
+
+  monSendPromReport();
 
   monCleanupMonitorInfo(pMonitor);
 }
+
