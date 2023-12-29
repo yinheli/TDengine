@@ -12,9 +12,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
 #define _DEFAULT_SOURCE
-#include "thash.h"
-#include "tarray.h"
 #include "mndAcct.h"
 #include "mndCluster.h"
 #include "mndConsumer.h"
@@ -43,7 +42,6 @@
 #include "mndUser.h"
 #include "mndVgroup.h"
 #include "mndView.h"
-#include "taos_monitor.h"
 
 static inline int32_t mndAcquireRpc(SMnode *pMnode) {
   int32_t code = 0;

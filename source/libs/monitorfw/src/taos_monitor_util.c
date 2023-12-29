@@ -52,7 +52,7 @@ const char* taos_monitor_get_metric_name(taos_metric_t* metric){
   return metric->name;
 }
 
-int countOccurrences(char *str, char *toSearch) {
+int taos_monitor_count_occurrences(char *str, char *toSearch) {
     int count = 0;
     char *ptr = str;
     while ((ptr = strstr(ptr, toSearch)) != NULL) {
@@ -62,7 +62,7 @@ int countOccurrences(char *str, char *toSearch) {
     return count;
 }
 
-void strip(char *s)
+void taos_monitor_strip(char *s)
 {
     size_t i;
     size_t len = strlen(s);

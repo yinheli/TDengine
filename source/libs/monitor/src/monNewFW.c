@@ -94,7 +94,7 @@ extern void monCleanupMonitorInfo(SMonInfo *pMonitor);
 #define MNODE_ROLE "taosd_mnodes_info:role"
 #define VNODE_ROLE "taosd_vnodes_info:role"
 
-void monInitNewMonitor(){
+void monInitMonitorFW(){
     taos_collector_registry_default_init();
 
   tsMonitor.metrics = taosHashInit(16, taosGetDefaultHashFunction(TSDB_DATA_TYPE_BINARY), true, HASH_ENTRY_LOCK);

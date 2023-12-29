@@ -225,8 +225,7 @@ void    monSetSmInfo(SMonSmInfo *pInfo);
 void    monSetBmInfo(SMonBmInfo *pInfo);
 void    monSendReport();
 void    monSendPromReport();
-//void    monSendContent(char *pCont);
-void    monInitNewMonitor();
+void    monInitMonitorFW();
 void    monCleanupNew();
 
 void tFreeSMonMmInfo(SMonMmInfo *pInfo);

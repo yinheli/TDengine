@@ -41,7 +41,7 @@ int taos_metric_formatter_load_sample_new(taos_metric_formatter_t *self, taos_me
   memset(keyvalues, 0, len);
   memcpy(keyvalues, start + 1, len - 1);
 
-  int32_t count = countOccurrences(keyvalues, ",");
+  int32_t count = taos_monitor_count_occurrences(keyvalues, ",");
 
   char** keyvalue = taosMemoryMalloc(sizeof(char*) * (count + 1));
   memset(keyvalue, 0, sizeof(char*) * (count + 1));
@@ -57,7 +57,7 @@ int taos_metric_formatter_load_sample_new(taos_metric_formatter_t *self, taos_me
     char** pair = arr + i * 2;
     taos_monitor_split_str(pair, str, "=");
 
-    strip(pair[1]);
+    taos_monitor_strip(pair[1]);
   }
 
   int32_t table_size = tjsonGetArraySize(arrayMetricGroups);

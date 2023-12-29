@@ -12,10 +12,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-#define _DEFAULT_SOURCE
 
-#include "tarray.h"
-#include "thash.h"
+#define _DEFAULT_SOURCE
 #include "tjson.h"
 #include "mndDnode.h"
 #include "audit.h"
@@ -622,8 +620,6 @@ static int32_t mndProcessStatisReq(SRpcMsg *pReq) {
   }
 
   code = 0;
-
-  //monSendContent(pReq->pCont);
 
 _OVER:
   if(pJson != NULL){

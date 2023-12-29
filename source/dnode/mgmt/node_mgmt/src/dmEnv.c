@@ -60,7 +60,7 @@ static int32_t dmInitMonitor() {
     if (terrno != 0) code = terrno;
     goto _exit;
   }
-  monInitNewMonitor();
+  monInitMonitorFW();
 
 _exit:
   if (code) terrno = code;
