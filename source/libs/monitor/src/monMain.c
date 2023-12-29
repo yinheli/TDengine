@@ -552,7 +552,8 @@ void monSendReport() {
 
   //monGenClusterInfoTable(pMonitor);
   //monGenVgroupInfoTable(pMonitor);
-  //monGenDnodeInfoTable(pMonitor);
+  monGenDnodeInfoTable(pMonitor);
+  monGenDnodeStatusInfoTable(pMonitor);
   //monGenDataDiskTable(pMonitor);
   //monGenLogDiskTable(pMonitor);
   //monGenMnodeRoleTable(pMonitor);

@@ -52,6 +52,7 @@ typedef struct {
 void monGenClusterInfoTable(SMonInfo *pMonitor);
 void monGenVgroupInfoTable(SMonInfo *pMonitor);
 void monGenDnodeInfoTable(SMonInfo *pMonitor);
+void monGenDnodeStatusInfoTable(SMonInfo *pMonitor);
 void monGenDataDiskTable(SMonInfo *pMonitor);
 void monGenLogDiskTable(SMonInfo *pMonitor);
 void monGenMnodeRoleTable(SMonInfo *pMonitor);

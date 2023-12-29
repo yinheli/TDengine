@@ -70,11 +70,12 @@ extern char* tsMonFwUri;
 #define HAS_MNODE DNODE_TABLE":has_mnode"
 #define HAS_QNODE DNODE_TABLE":has_qnode"
 #define HAS_SNODE DNODE_TABLE":has_snode"
-#define DNODE_STATUS DNODE_TABLE":status"
 #define DNODE_LOG_ERROR DNODE_TABLE":ERROR"
 #define DNODE_LOG_INFO DNODE_TABLE":INFO"
 #define DNODE_LOG_DEBUG DNODE_TABLE":DEBUG"
 #define DNODE_LOG_TRACE DNODE_TABLE":TRACE"
+
+#define DNODE_STATUS "taosd_dnodes_status:status"
 
 #define DATADIR_TABLE "taosd_dnodes_data_dirs"
 
@@ -122,7 +123,7 @@ void monInitMonitorFW(){
     }
     taosHashPut(tsMonitor.metrics, vgroup_metrics[i], strlen(vgroup_metrics[i]), &gauge, sizeof(taos_gauge_t *));
   }
-
+*/
   int32_t dnodes_label_count = 3;
   const char *dnodes_sample_labels[] = {"cluster_id", "dnode_id", "dnode_ep"};
   char *dnodes_gauges[] = {UPTIME, CPU_ENGINE, CPU_SYSTEM, MEM_ENGINE, MEM_SYSTEM, DISK_ENGINE, DISK_USED, NET_IN,
@@ -136,7 +137,7 @@ void monInitMonitorFW(){
     }
     taosHashPut(tsMonitor.metrics, dnodes_gauges[i], strlen(dnodes_gauges[i]), &gauge, sizeof(taos_gauge_t *));
   }
-
+/*
   int32_t dnodes_data_label_count = 5;
   const char *dnodes_data_sample_labels[] = {"cluster_id", "dnode_id", "dnode_ep", "data_dir_name", "data_dir_level"};
   char *dnodes_data_gauges[] = {DNODE_DATA_AVAIL, DNODE_DATA_USED, DNODE_DATA_TOTAL};
@@ -311,7 +312,7 @@ void monGenDnodeInfoTable(SMonInfo *pMonitor) {
   char cluster_id[TSDB_CLUSTER_ID_LEN];
   snprintf(cluster_id, sizeof(cluster_id), "%" PRId64, pMonitor->dmInfo.basic.cluster_id);
 
-  char dnode_id[50];
+  char dnode_id[TSDB_DNODE_ID_LEN];
   snprintf(dnode_id, sizeof(dnode_id), "%d", pMonitor->dmInfo.basic.dnode_id);
 
   const char *sample_labels[] = {cluster_id, dnode_id, pMonitor->dmInfo.basic.dnode_ep};
@@ -423,30 +424,6 @@ void monGenDnodeInfoTable(SMonInfo *pMonitor) {
   metric = taosHashGet(tsMonitor.metrics, HAS_SNODE, strlen(HAS_SNODE));
   taos_gauge_set(*metric, pInfo->has_snode, sample_labels);
 
-  //dnodes status
-
-  //char cluster_id[TSDB_CLUSTER_ID_LEN] = {0};
-  //snprintf(cluster_id, sizeof(cluster_id), "%" PRId64, pMonitor->dmInfo.basic.cluster_id);
-
-  for (int32_t i = 0; i < taosArrayGetSize(pClusterInfo->dnodes); ++i) {
-    SMonDnodeDesc *pDnodeDesc = taosArrayGet(pClusterInfo->dnodes, i);
-
-    if(pMonitor->dmInfo.basic.cluster_id != 0){
-      //char dnode_id[50] = {0};
-      //snprintf(dnode_id, sizeof(dnode_id), "%d", pDnodeDesc->dnode_id);
-
-      //const char *sample_labels[] = {cluster_id, dnode_id, pDnodeDesc->dnode_ep};
-
-      metric = taosHashGet(tsMonitor.metrics, DNODE_STATUS, strlen(DNODE_STATUS));
-
-      int32_t status = 0;
-      if(strcmp(pDnodeDesc->status, "ready") == 0){
-        status = 1;
-      }
-      taos_gauge_set(*metric, status, sample_labels);
-    } 
-  }
-
   //log number
   SMonLogs *logs[6];
   logs[0] = &pMonitor->log;
@@ -480,6 +457,39 @@ void monGenDnodeInfoTable(SMonInfo *pMonitor) {
 
   metric = taosHashGet(tsMonitor.metrics, DNODE_LOG_TRACE, strlen(DNODE_LOG_TRACE));
   taos_gauge_set(*metric, numOfTraceLogs, sample_labels);
+}
+
+void monGenDnodeStatusInfoTable(SMonInfo *pMonitor){
+  if(pMonitor->dmInfo.basic.cluster_id == 0) {
+    uError("failed to generate dnode info table since cluster_id is 0");
+    return;
+  }
+  if (pMonitor->mmInfo.cluster.first_ep_dnode_id == 0) return;
+
+  char cluster_id[TSDB_CLUSTER_ID_LEN];
+  snprintf(cluster_id, sizeof(cluster_id), "%" PRId64, pMonitor->dmInfo.basic.cluster_id);
+
+  taos_gauge_t **metric = NULL;  
+  //dnodes status
+
+  SMonClusterInfo *pClusterInfo = &pMonitor->mmInfo.cluster;
+
+  for (int32_t i = 0; i < taosArrayGetSize(pClusterInfo->dnodes); ++i) {
+    SMonDnodeDesc *pDnodeDesc = taosArrayGet(pClusterInfo->dnodes, i);
+
+    char dnode_id[TSDB_DNODE_ID_LEN] = {0};
+    snprintf(dnode_id, sizeof(dnode_id), "%d", pDnodeDesc->dnode_id);
+
+    const char *sample_labels[] = {cluster_id, dnode_id, pDnodeDesc->dnode_ep};
+
+    metric = taosHashGet(tsMonitor.metrics, DNODE_STATUS, strlen(DNODE_STATUS));
+
+    int32_t status = 0;
+    if(strcmp(pDnodeDesc->status, "ready") == 0){
+      status = 1;
+    }
+    taos_gauge_set(*metric, status, sample_labels);
+  }
 }
 
 void monGenDataDiskTable(SMonInfo *pMonitor){
