@@ -502,14 +502,13 @@ void monGenDataDiskTable(SMonInfo *pMonitor){
   char dnode_id[TSDB_NODE_ID_LEN] = {0};
   snprintf(dnode_id, TSDB_NODE_ID_LEN, "%"PRId32, pMonitor->dmInfo.basic.dnode_id);
 
-
   taos_gauge_t **metric = NULL;
 
   for (int32_t i = 0; i < taosArrayGetSize(pInfo->datadirs); ++i) {
     SMonDiskDesc *pDatadirDesc = taosArrayGet(pInfo->datadirs, i);
 
     char level[LEVEL_LEN] = {0};
-    snprintf(dnode_id, LEVEL_LEN, "%"PRId32, pDatadirDesc->level);
+    snprintf(level, LEVEL_LEN, "%"PRId32, pDatadirDesc->level);
 
     const char *sample_labels[] = {cluster_id, dnode_id, pMonitor->dmInfo.basic.dnode_ep, pDatadirDesc->name, level};
 

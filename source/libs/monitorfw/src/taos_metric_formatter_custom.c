@@ -154,18 +154,10 @@ int taos_metric_formatter_load_metric_new(taos_metric_formatter_t *self, taos_me
       arrayMetricGroups = tjsonGetObjectItem(table, "metric_groups");
       break;
     }
-    /*
-    arrayMetricGroups = tjsonGetObjectItem(table, arr[0]);
-    if(arrayMetricGroups != NULL) {
-      isFound = true;
-      break;
-    }
-    */
   }
 
   if(!isFound){
     table = tjsonCreateObject();
-    tjsonAddItemToArray(tableArray, table);
 
     tjsonAddStringToObject(table, "name", arr[0]);
 
@@ -173,6 +165,7 @@ int taos_metric_formatter_load_metric_new(taos_metric_formatter_t *self, taos_me
     tjsonAddItemToObject(table, "metric_groups", arrayMetricGroups);
   }
   
+  int32_t sample_count = 0;
   for (taos_linked_list_node_t *current_node = metric->samples->keys->head; current_node != NULL;
        current_node = current_node->next) {
     const char *key = (const char *)current_node->item;
@@ -184,7 +177,16 @@ int taos_metric_formatter_load_metric_new(taos_metric_formatter_t *self, taos_me
       r = taos_metric_formatter_load_sample_new(self, sample, ts, format, arr[1], metric->type, arrayMetricGroups);
       if (r) return r;
     }
+    sample_count++;
   }
+
+  if(!isFound && sample_count > 0){
+    tjsonAddItemToArray(tableArray, table);
+  }
+  else{
+    if(table != NULL) tjsonDelete(table);
+  }
+
   taosMemoryFreeClear(name);
   return r;
 }
