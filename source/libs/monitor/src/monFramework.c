@@ -56,10 +56,13 @@ extern char* tsMonFwUri;
 #define UPTIME DNODE_TABLE":uptime"
 #define CPU_ENGINE DNODE_TABLE":cpu_engine"
 #define CPU_SYSTEM DNODE_TABLE":cpu_system"
+#define CPU_CORE DNODE_TABLE":cpu_cores"
 #define MEM_ENGINE DNODE_TABLE":mem_engine"
 #define MEM_SYSTEM DNODE_TABLE":mem_system"
+#define MEM_TOTAL DNODE_TABLE":mem_total"
 #define DISK_ENGINE DNODE_TABLE":disk_engine"
 #define DISK_USED DNODE_TABLE":disk_used"
+#define DISK_TOTAL DNODE_TABLE":disk_total"
 #define NET_IN DNODE_TABLE":net_in"
 #define NET_OUT DNODE_TABLE":net_out"
 #define IO_READ DNODE_TABLE":io_read"
@@ -127,11 +130,12 @@ void monInitMonitorFW(){
 
   int32_t dnodes_label_count = 3;
   const char *dnodes_sample_labels[] = {"cluster_id", "dnode_id", "dnode_ep"};
-  char *dnodes_gauges[] = {UPTIME, CPU_ENGINE, CPU_SYSTEM, MEM_ENGINE, MEM_SYSTEM, DISK_ENGINE, DISK_USED, NET_IN,
-                            NET_OUT, IO_READ, IO_WRITE, IO_READ_DISK, IO_WRITE_DISK, ERRORS,
-                             VNODES_NUM, MASTERS, HAS_MNODE, HAS_QNODE, HAS_SNODE, DNODE_STATUS,
-                             DNODE_LOG_ERROR, DNODE_LOG_INFO, DNODE_LOG_DEBUG, DNODE_LOG_TRACE};
-  for(int32_t i = 0; i < 24; i++){
+  char *dnodes_gauges[] = {UPTIME, CPU_ENGINE, CPU_SYSTEM, CPU_CORE, MEM_ENGINE, MEM_SYSTEM,
+                           MEM_TOTAL, DISK_ENGINE, DISK_USED, DISK_TOTAL, NET_IN,
+                           NET_OUT, IO_READ, IO_WRITE, IO_READ_DISK, IO_WRITE_DISK, ERRORS,
+                           VNODES_NUM, MASTERS, HAS_MNODE, HAS_QNODE, HAS_SNODE, DNODE_STATUS,
+                           DNODE_LOG_ERROR, DNODE_LOG_INFO, DNODE_LOG_DEBUG, DNODE_LOG_TRACE};
+  for(int32_t i = 0; i < 27; i++){
     gauge= taos_gauge_new(dnodes_gauges[i], "",  dnodes_label_count, dnodes_sample_labels);
     if(taos_collector_registry_register_metric(gauge) == 1){
       taos_counter_destroy(gauge);
@@ -375,17 +379,26 @@ void monGenDnodeInfoTable(SMonInfo *pMonitor) {
   metric = taosHashGet(tsMonitor.metrics, CPU_SYSTEM, strlen(CPU_SYSTEM));
   taos_gauge_set(*metric, pSys->cpu_system, sample_labels);
 
+  metric = taosHashGet(tsMonitor.metrics, CPU_CORE, strlen(CPU_CORE));
+  taos_gauge_set(*metric, pSys->cpu_cores, sample_labels);
+
   metric = taosHashGet(tsMonitor.metrics, MEM_ENGINE, strlen(MEM_ENGINE));
   taos_gauge_set(*metric, mem_engine, sample_labels);
 
   metric = taosHashGet(tsMonitor.metrics, MEM_SYSTEM, strlen(MEM_SYSTEM));
   taos_gauge_set(*metric, pSys->mem_system, sample_labels);
 
+  metric = taosHashGet(tsMonitor.metrics, MEM_TOTAL, strlen(MEM_TOTAL));
+  taos_gauge_set(*metric, pSys->mem_total, sample_labels);
+
   metric = taosHashGet(tsMonitor.metrics, DISK_ENGINE, strlen(DISK_ENGINE));
   taos_gauge_set(*metric, pSys->disk_engine, sample_labels);
 
   metric = taosHashGet(tsMonitor.metrics, DISK_USED, strlen(DISK_USED));
   taos_gauge_set(*metric, pSys->disk_used, sample_labels);
+
+  metric = taosHashGet(tsMonitor.metrics, DISK_TOTAL, strlen(DISK_TOTAL));
+  taos_gauge_set(*metric, pSys->disk_total, sample_labels);
 
   metric = taosHashGet(tsMonitor.metrics, NET_IN, strlen(NET_IN));
   taos_gauge_set(*metric, net_in_rate, sample_labels);
