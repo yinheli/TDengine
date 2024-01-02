@@ -3342,14 +3342,18 @@ static void saveExtSrcRowsFp(SSDataBlock* pBlk, void* param) {
       colDataSetInt32(offsetCol, i, &offset);
     } 
   } else {
+    for (int32_t i = 0; i < taosArrayGetSize(pInfo->sortRowIdInfo.aBlocks); ++i) {
+      SSDataBlock* pBlock = taosArrayGetP(pInfo->sortRowIdInfo.aBlocks, i);
+      blockDataDestroy(pBlock);
+    }
     taosArrayClear(pInfo->sortRowIdInfo.aBlocks);
   }
 }
 
 static int32_t fillSortInputBlock(STableMergeScanInfo* pInfo, SSDataBlock* pSrcBlock, SSDataBlock* pSortInputBlk) {
   STmsSortRowIdInfo* pSortInfo = &pInfo->sortRowIdInfo;
-
-  taosArrayPush(pSortInfo->aBlocks, &pSrcBlock);
+  SSDataBlock* pBlk = createOneDataBlock(pSrcBlock, true);
+  taosArrayPush(pSortInfo->aBlocks, &pBlk);
   int32_t currBlockIdx = taosArrayGetSize(pSortInfo->aBlocks) - 1;
 
   int32_t nRows = pSrcBlock->info.rows;
@@ -3630,6 +3634,10 @@ int32_t startRowIdSort(STableMergeScanInfo *pInfo) {
 
 int32_t stopRowIdSort(STableMergeScanInfo *pInfo) {
   STmsSortRowIdInfo* pSort = &pInfo->sortRowIdInfo;
+  for (int32_t i = 0; i < taosArrayGetSize(pSort->aBlocks); ++i) {
+    SSDataBlock* pBlock = taosArrayGetP(pSort->aBlocks, i);
+    blockDataDestroy(pBlock);
+  }  
   taosArrayDestroy(pSort->aBlocks);
   pSort->aBlocks = NULL;
 
@@ -3877,7 +3885,10 @@ void destroyTableMergeScanOperatorInfo(void* param) {
     destroyDiskbasedBuf(pTableScanInfo->sortRowIdInfo.pExtSrcRowsBuf);
     pTableScanInfo->sortRowIdInfo.pExtSrcRowsBuf = NULL;
   }
-
+  for (int32_t i = 0; i < taosArrayGetSize(pTableScanInfo->sortRowIdInfo.aBlocks); ++i) {
+    SSDataBlock* pBlock = taosArrayGetP(pTableScanInfo->sortRowIdInfo.aBlocks, i);
+    blockDataDestroy(pBlock);
+  }  
   taosArrayDestroy(pTableScanInfo->sortRowIdInfo.aBlocks);
 
   int32_t numOfTable = taosArrayGetSize(pTableScanInfo->sortSourceParams);
