@@ -550,14 +550,14 @@ void monGenAndSendReport() {
   monGenDiskJson(pMonitor);
   monGenLogJson(pMonitor);
 
-  //monGenClusterInfoTable(pMonitor);
-  //monGenVgroupInfoTable(pMonitor);
+  monGenClusterInfoTable(pMonitor);
+  monGenVgroupInfoTable(pMonitor);
   monGenDnodeInfoTable(pMonitor);
   monGenDnodeStatusInfoTable(pMonitor);
-  //monGenDataDiskTable(pMonitor);
-  //monGenLogDiskTable(pMonitor);
-  //monGenMnodeRoleTable(pMonitor);
-  //monGenVnodeRoleTable(pMonitor);
+  monGenDataDiskTable(pMonitor);
+  monGenLogDiskTable(pMonitor);
+  monGenMnodeRoleTable(pMonitor);
+  monGenVnodeRoleTable(pMonitor);
 
   monSendReport(pMonitor);
 

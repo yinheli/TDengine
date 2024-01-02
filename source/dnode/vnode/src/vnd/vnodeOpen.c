@@ -477,7 +477,7 @@ SVnode *vnodeOpen(const char *path, int32_t diskPrimary, STfs *pTfs, SMsgCb msgC
   }
 
   snprintf(pVnode->monitor.strClusterId, TSDB_CLUSTER_ID_LEN, "%"PRId64, pVnode->config.syncCfg.nodeInfo[0].clusterId);
-  snprintf(pVnode->monitor.strDnodeId, TSDB_DNODE_ID_LEN, "%"PRId32, pVnode->config.syncCfg.nodeInfo[0].nodeId);
+  snprintf(pVnode->monitor.strDnodeId, TSDB_NODE_ID_LEN, "%"PRId32, pVnode->config.syncCfg.nodeInfo[0].nodeId);
   snprintf(pVnode->monitor.strVgId, TSDB_VGROUP_ID_LEN, "%"PRId32, pVnode->config.vgId);
 
   if(pVnode->monitor.insertCounter == NULL){
