@@ -223,7 +223,7 @@ void    monSetVmInfo(SMonVmInfo *pInfo);
 void    monSetQmInfo(SMonQmInfo *pInfo);
 void    monSetSmInfo(SMonSmInfo *pInfo);
 void    monSetBmInfo(SMonBmInfo *pInfo);
-void    monSendReport();
+void    monGenAndSendReport();
 
 void tFreeSMonMmInfo(SMonMmInfo *pInfo);
 void tFreeSMonVmInfo(SMonVmInfo *pInfo);

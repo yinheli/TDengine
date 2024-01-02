@@ -525,7 +525,7 @@ static void monGenLogJson(SMonInfo *pMonitor) {
   if (tjsonAddItemToArray(pSummaryJson, pLogTrace) != 0) tjsonDelete(pLogTrace);
 }
 
-void monSendReportV1(SMonInfo *pMonitor){
+void monSendReport(SMonInfo *pMonitor){
   char *pCont = tjsonToString(pMonitor->pJson);
   // uInfoL("report cont:%s\n", pCont);
   if (pCont != NULL) {
@@ -537,7 +537,7 @@ void monSendReportV1(SMonInfo *pMonitor){
   }
 }
 
-void monSendReport() {
+void monGenAndSendReport() {
   SMonInfo *pMonitor = monCreateMonitorInfo();
   if (pMonitor == NULL) return;
 
@@ -559,7 +559,7 @@ void monSendReport() {
   //monGenMnodeRoleTable(pMonitor);
   //monGenVnodeRoleTable(pMonitor);
 
-  monSendReportV1(pMonitor);
+  monSendReport(pMonitor);
 
   monSendPromReport();
 
