@@ -3323,8 +3323,34 @@ static int32_t saveBlockRowToExtRowsBuf(STableMergeScanInfo* pInfo, SSDataBlock*
   return 0;
 }
 
+static void saveExtSrcRowsFp(SSDataBlock* pBlk, void* param) {
+  STableMergeScanInfo* pInfo = param;
+  if (pBlk != NULL) {
+    SColumnInfoData* blkIdxCol = taosArrayGet(pBlk->pDataBlock, 1);
+    SColumnInfoData* rowIdxCol = taosArrayGet(pBlk->pDataBlock, 2);
+    SColumnInfoData* pageIdCol = taosArrayGet(pBlk->pDataBlock, 1);
+    SColumnInfoData* offsetCol = taosArrayGet(pBlk->pDataBlock, 2);  
+    for (int32_t i = 0; i < pBlk->info.rows; ++i) {
+      int32_t blkIdx = *(int32_t*)colDataGetData(blkIdxCol, i);
+      int32_t rowIdx = *(int32_t*)colDataGetData(rowIdxCol, i);
+      SSDataBlock* pBlk = taosArrayGetP(pInfo->sortRowIdInfo.aBlocks, blkIdx);
+      int32_t pageId = -1;
+      int32_t offset = -1;
+      int32_t length = -1;
+      saveBlockRowToExtRowsBuf(pInfo, pBlk, rowIdx, &pageId, &offset, &length);
+      colDataSetInt32(pageIdCol, i, &pageId);
+      colDataSetInt32(offsetCol, i, &offset);
+    } 
+  } else {
+    taosArrayClear(pInfo->sortRowIdInfo.aBlocks);
+  }
+}
+
 static int32_t fillSortInputBlock(STableMergeScanInfo* pInfo, SSDataBlock* pSrcBlock, SSDataBlock* pSortInputBlk) {
   STmsSortRowIdInfo* pSortInfo = &pInfo->sortRowIdInfo;
+
+  taosArrayPush(pSortInfo->aBlocks, &pSrcBlock);
+  int32_t currBlockIdx = taosArrayGetSize(pSortInfo->aBlocks) - 1;
 
   int32_t nRows = pSrcBlock->info.rows;
   pSortInputBlk->info.window = pSrcBlock->info.window;
@@ -3335,18 +3361,12 @@ static int32_t fillSortInputBlock(STableMergeScanInfo* pInfo, SSDataBlock* pSrcB
   SColumnInfoData* pSrcTsCol = taosArrayGet(pSrcBlock->pDataBlock, pSortInfo->srcTsSlotId);
   colDataAssign(tsCol, pSrcTsCol, nRows, &pSortInputBlk->info);
 
-  SColumnInfoData* pageIdCol = taosArrayGet(pSortInputBlk->pDataBlock, 1);
-  SColumnInfoData* offsetCol = taosArrayGet(pSortInputBlk->pDataBlock, 2);
-
+  SColumnInfoData* blkIdxCol = taosArrayGet(pSortInputBlk->pDataBlock, 1);
+  SColumnInfoData* rowIdxCol = taosArrayGet(pSortInputBlk->pDataBlock, 2);
   for (int32_t i = 0; i < pSrcBlock->info.rows; ++i) {
-    int32_t pageId = -1;
-    int32_t offset = -1;
-    int32_t length = -1;
-    saveBlockRowToExtRowsBuf(pInfo, pSrcBlock, i, &pageId, &offset, &length);
-    colDataSetInt32(pageIdCol, i, &pageId);
-    colDataSetInt32(offsetCol, i, &offset);
+    colDataSetInt32(blkIdxCol, i, &currBlockIdx);
+    colDataSetInt32(rowIdxCol, i, &i);
   }
-
   pSortInputBlk->info.rows = nRows;
 
   return 0;
@@ -3596,18 +3616,22 @@ void tableMergeScanTsdbNotifyCb(ETsdReaderNotifyType type, STsdReaderNotifyInfo*
 
 int32_t startRowIdSort(STableMergeScanInfo *pInfo) {
   STmsSortRowIdInfo* pSort = &pInfo->sortRowIdInfo;
-  int32_t pageSize = getProperSortPageSize(blockDataGetRowSize(pInfo->pResBlock),
-                                                      taosArrayGetSize(pInfo->pResBlock->pDataBlock));
-  pageSize *= 2;
+
   int numOfTables = pInfo->tableEndIndex - pInfo->tableStartIndex + 1;                                                       
-  int32_t memSize = TMIN(pageSize * numOfTables, 512 * 1024 * 1024);
+  int32_t memSize = 512 * 1024 * 1024;
+  int32_t numOfCols = taosArrayGetSize(pInfo->pResBlock->pDataBlock);
+  int32_t rowBytes = blockDataGetRowSize(pInfo->pResBlock) + numOfCols + sizeof(int32_t);
+  int32_t pageSize = TMAX(memSize/numOfTables, rowBytes);
   int32_t code = createDiskbasedBuf(&pSort->pExtSrcRowsBuf, pageSize, memSize, "tms-ext-src-block", tsTempDir);
   dBufSetPrintInfo(pSort->pExtSrcRowsBuf);
+  pSort->aBlocks = taosArrayInit(512, POINTER_BYTES);
   return code;
 }
 
 int32_t stopRowIdSort(STableMergeScanInfo *pInfo) {
   STmsSortRowIdInfo* pSort = &pInfo->sortRowIdInfo;
+  taosArrayDestroy(pSort->aBlocks);
+  pSort->aBlocks = NULL;
 
   destroyDiskbasedBuf(pSort->pExtSrcRowsBuf);
   pSort->pExtSrcRowsBuf = NULL;
@@ -3638,7 +3662,7 @@ int32_t startDurationForGroupTableMergeScan(SOperatorInfo* pOperator) {
   tsortSetAbortCheckFn(pInfo->pSortHandle, isTaskKilled, pOperator->pTaskInfo);
 
   tsortSetFetchRawDataFp(pInfo->pSortHandle, getBlockForTableMergeScan, NULL, NULL);
-
+  tsortSetSaveExtSrcRowsFp(pInfo->pSortHandle, saveExtSrcRowsFp, pInfo);
   STableMergeScanSortSourceParam *param = taosMemoryCalloc(1, sizeof(STableMergeScanSortSourceParam));
   param->pOperator = pOperator;
 
@@ -3851,6 +3875,8 @@ void destroyTableMergeScanOperatorInfo(void* param) {
     destroyDiskbasedBuf(pTableScanInfo->sortRowIdInfo.pExtSrcRowsBuf);
     pTableScanInfo->sortRowIdInfo.pExtSrcRowsBuf = NULL;
   }
+
+  taosArrayDestroy(pTableScanInfo->sortRowIdInfo.aBlocks);
 
   int32_t numOfTable = taosArrayGetSize(pTableScanInfo->sortSourceParams);
 

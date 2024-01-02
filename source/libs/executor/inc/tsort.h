@@ -194,6 +194,8 @@ void tsortSetClosed(SSortHandle* pHandle);
 void tsortSetSingleTableMerge(SSortHandle* pHandle);
 void tsortSetAbortCheckFn(SSortHandle* pHandle, bool (*checkFn)(void* param), void* param);
 
+void tsortSetSaveExtSrcRowsFp(SSortHandle* pHandle, void (*saveExtSrcRowsFp)(SSDataBlock* pBlk, void* param), void* param);
+
 /**
  * @brief comp the tuple with keyBuf, if not equal, new keys will be built in keyBuf, newLen will be stored in keyLen
  * @param [in] pSortCols cols to comp and build

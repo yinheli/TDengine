@@ -75,6 +75,9 @@ struct SSortHandle {
 
   bool (*abortCheckFn)(void* param);
   void* abortCheckParam;
+
+  void (*saveExtSrcRowsFp)(SSDataBlock* pBlk, void* param);
+  void* saveExtSrcRowsParam;
 };
 
 void tsortSetSingleTableMerge(SSortHandle* pHandle) {
@@ -875,7 +878,17 @@ static int32_t blockCompareTsFn(const void* pLeft, const void* pRight, void* par
   return ret;
 }
 
+void tsortSetSaveExtSrcRowsFp(SSortHandle* pHandle, void (*saveExtSrcRowsFp)(SSDataBlock* pBlk, void* param), void* param) {
+  pHandle->saveExtSrcRowsFp = saveExtSrcRowsFp;
+  pHandle->saveExtSrcRowsParam = param;
+}
+
+
 static int32_t appendDataBlockToPageBuf(SSortHandle* pHandle, SSDataBlock* blk, SArray* aPgId) {
+  if (pHandle->saveExtSrcRowsFp != NULL) {
+    pHandle->saveExtSrcRowsFp(blk, pHandle->saveExtSrcRowsParam);
+  }
+
   int32_t pageId = -1;
   void*   pPage = getNewBufPage(pHandle->pBuf, &pageId);
   taosArrayPush(aPgId, &pageId);
@@ -1077,6 +1090,7 @@ static int32_t createBlocksMergeSortInitialSources(SSortHandle* pHandle) {
 
       int64_t p = taosGetTimestampUs();
       code = sortBlocksToExtSource(pHandle, aBlkSort, pOrder, aExtSrc);
+      pHandle->saveExtSrcRowsFp(NULL, pHandle->saveExtSrcRowsParam);
       if (code != TSDB_CODE_SUCCESS) {
         tSimpleHashCleanup(mUidBlk);
         taosArrayDestroy(aBlkSort);
