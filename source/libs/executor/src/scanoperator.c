@@ -3662,7 +3662,9 @@ int32_t startDurationForGroupTableMergeScan(SOperatorInfo* pOperator) {
   tsortSetAbortCheckFn(pInfo->pSortHandle, isTaskKilled, pOperator->pTaskInfo);
 
   tsortSetFetchRawDataFp(pInfo->pSortHandle, getBlockForTableMergeScan, NULL, NULL);
-  tsortSetSaveExtSrcRowsFp(pInfo->pSortHandle, saveExtSrcRowsFp, pInfo);
+  if (pInfo->bSortRowId) {
+    tsortSetSaveExtSrcRowsFp(pInfo->pSortHandle, saveExtSrcRowsFp, pInfo);
+  }
   STableMergeScanSortSourceParam *param = taosMemoryCalloc(1, sizeof(STableMergeScanSortSourceParam));
   param->pOperator = pOperator;
 
