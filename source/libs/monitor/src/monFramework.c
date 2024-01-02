@@ -233,7 +233,7 @@ void monGenClusterInfoTable(SMonInfo *pMonitor){
   taos_gauge_set(*metric, pInfo->vnodes_alive, sample_labels);
 
   metric = taosHashGet(tsMonitor.metrics, CONNECTIONS_TOTAL, strlen(CONNECTIONS_TOTAL));
-  taos_gauge_set(*metric, pInfo->vnodes_alive, sample_labels);
+  taos_gauge_set(*metric, pInfo->connections_total, sample_labels);
 
   metric = taosHashGet(tsMonitor.metrics, TOPICS_TOTAL, strlen(TOPICS_TOTAL));
   taos_gauge_set(*metric, pInfo->topics_toal, sample_labels);
