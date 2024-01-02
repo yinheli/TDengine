@@ -1090,7 +1090,9 @@ static int32_t createBlocksMergeSortInitialSources(SSortHandle* pHandle) {
 
       int64_t p = taosGetTimestampUs();
       code = sortBlocksToExtSource(pHandle, aBlkSort, pOrder, aExtSrc);
-      pHandle->saveExtSrcRowsFp(NULL, pHandle->saveExtSrcRowsParam);
+      if (pHandle->saveExtSrcRowsFp) {
+        pHandle->saveExtSrcRowsFp(NULL, pHandle->saveExtSrcRowsParam);
+      }
       if (code != TSDB_CODE_SUCCESS) {
         tSimpleHashCleanup(mUidBlk);
         taosArrayDestroy(aBlkSort);
