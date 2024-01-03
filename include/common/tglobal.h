@@ -47,6 +47,7 @@ extern int32_t tsCompressMsgSize;
 extern int64_t tsTickPerMin[3];
 extern int64_t tsTickPerHour[3];
 extern int32_t tsCountAlwaysReturnValue;
+extern int32_t tsCountReturnEmptyGroup;
 extern float   tsSelectivityRatio;
 extern int32_t tsTagFilterResCacheSize;
 

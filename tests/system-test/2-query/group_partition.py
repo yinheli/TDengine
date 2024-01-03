@@ -180,23 +180,27 @@ class TDTestCase:
         tdSql.prepare()
         self.prepare_db()
         # empty table only
-        self.test_groupby('group', self.tb_nums, 0)
-        self.test_groupby('partition', self.tb_nums, 0)
-        self.test_innerSelect(self.tb_nums)
-        self.test_multi_group_key(self.tb_nums, 0)
-        self.test_multi_agg(self.tb_nums, 0)
+        check_num = 0               # switch off
+        #check_num = self.tb_nums   # switch on
+        self.test_groupby('group', check_num, 0)
+        self.test_groupby('partition', check_num, 0)
+        self.test_innerSelect(check_num)
+        self.test_multi_group_key(check_num, 0)
+        self.test_multi_agg(check_num, 0)
         self.test_window(0)
 
         # insert data to 5 tables
         nonempty_tb_num = 5
+        check_num = nonempty_tb_num  # switch off
+        #check_num = self.tb_nums    # switch on
         self.insert_db(nonempty_tb_num, self.row_nums)
 
-        self.test_groupby('group', self.tb_nums, nonempty_tb_num)
-        self.test_groupby('partition', self.tb_nums, nonempty_tb_num)
-        self.test_innerSelect(self.tb_nums)
-        self.test_multi_group_key(self.tb_nums, nonempty_tb_num)
-        self.test_multi_agg(self.tb_nums, nonempty_tb_num)
-        self.test_window(nonempty_tb_num)
+        self.test_groupby('group', check_num, nonempty_tb_num)
+        self.test_groupby('partition', check_num, nonempty_tb_num)
+        self.test_innerSelect(check_num)
+        self.test_multi_group_key(check_num, nonempty_tb_num)
+        self.test_multi_agg(check_num, nonempty_tb_num)
+        self.test_window(check_num)
 
         ## test old version before changed
         # self.test_groupby('group', 0, 0)

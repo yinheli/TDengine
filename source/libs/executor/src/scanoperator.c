@@ -1177,7 +1177,7 @@ SOperatorInfo* createTableScanOperatorInfo(STableScanPhysiNode* pTableScanNode, 
                   pTaskInfo);
   pOperator->exprSupp.numOfExprs = numOfCols;
 
-  pInfo->needCountEmptyTable = tsCountAlwaysReturnValue && pTableScanNode->needCountEmptyTable;
+  pInfo->needCountEmptyTable = tsCountReturnEmptyGroup && pTableScanNode->needCountEmptyTable;
 
   pInfo->base.pTableListInfo = pTableListInfo;
   pInfo->base.metaCache.pTableMetaEntryCache = taosLRUCacheInit(1024 * 128, -1, .5);
@@ -3865,7 +3865,7 @@ SOperatorInfo* createTableMergeScanOperatorInfo(STableScanPhysiNode* pTableScanN
   } else {
     pInfo->filesetDelimited = pTableScanNode->filesetDelimited;
   }
-  pInfo->needCountEmptyTable = tsCountAlwaysReturnValue && pTableScanNode->needCountEmptyTable;
+  pInfo->needCountEmptyTable = tsCountReturnEmptyGroup && pTableScanNode->needCountEmptyTable;
   
   setOperatorInfo(pOperator, "TableMergeScanOperator", QUERY_NODE_PHYSICAL_PLAN_TABLE_MERGE_SCAN, false, OP_NOT_OPENED,
                   pInfo, pTaskInfo);

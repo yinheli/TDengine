@@ -1120,7 +1120,7 @@ class TDTestCase:
                 
         tdSql.query(f"insert into nested.stable_1 (ts,tbname) values(now,'stable_1_1');")
         tdSql.query(f"select tbname,count(*) from nested.stable_1 group by tbname order by tbname;")
-        tdSql.checkRows(6)
+        tdSql.checkRows(2)
         tdSql.checkData(0, 1, 101)
         tdSql.checkData(1, 1, 200)
                
@@ -1129,7 +1129,7 @@ class TDTestCase:
             coulmn_name =  qlist[i]
             tdSql.execute(f"insert into nested.stable_1 (ts, tbname, {coulmn_name}) values(now+{i}s,'stable_1_1',1);")
         tdSql.query(f"select tbname,count(*) from nested.stable_1 group by tbname order by tbname;",queryTimes=5)
-        tdSql.checkRows(6)
+        tdSql.checkRows(2)
         tdSql.checkData(0, 1, 111)
         tdSql.checkData(1, 1, 200)
 
@@ -1138,7 +1138,7 @@ class TDTestCase:
             coulmn_name =  q_null_list[i]
             tdSql.execute(f"insert into nested.stable_1 (ts, tbname, {coulmn_name}) values(now+{i}s,'stable_1_1',1);")       
         tdSql.query(f"select tbname,count(*) from nested.stable_1 group by tbname order by tbname;",queryTimes=5)
-        tdSql.checkRows(6)
+        tdSql.checkRows(2)
         tdSql.checkData(0, 1, 121)
         tdSql.checkData(1, 1, 200)
                        
@@ -1186,7 +1186,7 @@ class TDTestCase:
     def TS_3932_flushdb(self):
         tdLog.debug("test flush db and insert data into stable")
         tdSql.query(f"select tbname,count(*) from nested.stable_1 group by tbname order by tbname;")
-        tdSql.checkRows(6)
+        tdSql.checkRows(2)
         tdSql.checkData(0, 1, 121)
         tdSql.checkData(1, 1, 200)
 
@@ -1194,7 +1194,7 @@ class TDTestCase:
         q_null_list = ['q_int_null', 'q_bigint_null', 'q_smallint_null', 'q_tinyint_null', 'q_float_null', 'q_double_null', 'q_bool_null', 'q_binary_null', 'q_nchar_null', 'q_ts_null']                        
         tdSql.query(f"insert into nested.stable_1 (ts,tbname) values(now,'stable_1_1');")
         tdSql.query(f"select tbname,count(*) from nested.stable_1 group by tbname order by tbname;")
-        tdSql.checkRows(6)
+        tdSql.checkRows(2)
         tdSql.checkData(0, 1, 122)
         tdSql.checkData(1, 1, 200)
 
@@ -1207,7 +1207,7 @@ class TDTestCase:
             tdSql.execute(f"insert into nested.stable_1 (ts, tbname, {coulmn_name}) values({ts+i},'stable_1_1',1);")
         ts = ts + 20
         tdSql.query(f"select tbname,count(*) from nested.stable_1 group by tbname order by tbname;")
-        tdSql.checkRows(6)
+        tdSql.checkRows(2)
         tdSql.checkData(0, 1, 132)
         tdSql.checkData(1, 1, 200)
 
@@ -1216,7 +1216,7 @@ class TDTestCase:
             tdSql.execute(f"insert into nested.stable_1 (ts, tbname, {coulmn_name}) values({ts+i},'stable_1_1',1);")
         ts = ts + 20
         tdSql.query(f"select tbname,count(*) from nested.stable_1 group by tbname order by tbname;")
-        tdSql.checkRows(6)
+        tdSql.checkRows(4)
         tdSql.checkData(0, 1, 142)
         tdSql.checkData(1, 1, 200)
                        
@@ -1232,7 +1232,7 @@ class TDTestCase:
                       nested.stable_1 (ts,tbname,q_ts) values({ts+9},'stable_1_1',1);")
         ts = ts + 20
         tdSql.query(f"select tbname,count(*) from nested.stable_1 group by tbname order by tbname;")
-        tdSql.checkRows(6)
+        tdSql.checkRows(2)
         tdSql.checkData(0, 1, 152);
         tdSql.checkData(1, 1, 200);
                        
@@ -1346,7 +1346,7 @@ class TDTestCase:
                       nested.stable_null_childtable (ts,tbname,q_ts) values(now+9a,'stable_null_childtable_1',1);")
         
         tdSql.query(f"select tbname,count(*) from nested.stable_1 group by tbname order by tbname;")
-        tdSql.checkRows(6)
+        tdSql.checkRows(2)
         tdSql.checkData(0, 1, 162);
         tdSql.checkData(1, 1, 200);
         
@@ -1365,7 +1365,7 @@ class TDTestCase:
                       nested.stable_null_childtable (ts,tbname,q_int) values(now+10a,'$^%$%^&',1);")
         
         tdSql.query(f"select tbname,count(*) from nested.stable_1 group by tbname order by tbname;")
-        tdSql.checkRows(7)
+        tdSql.checkRows(3)
         tdSql.checkData(0, 1, 1);
         tdSql.checkData(1, 1, 162);
         tdSql.checkData(2, 1, 200);
@@ -1403,7 +1403,7 @@ class TDTestCase:
                       nested.stable_null_childtable(tbname,ts,q_int,q_binary) file '{self.testcasePath}/stable_null_childtable.csv';")
         
         tdSql.query(f"select tbname,count(*) from nested.stable_1 group by tbname order by tbname;")
-        tdSql.checkRows(7)
+        tdSql.checkRows(3)
         tdSql.checkData(0, 1, 1);
         tdSql.checkData(1, 1, 162);
         tdSql.checkData(2, 1, 200);
@@ -1439,7 +1439,7 @@ class TDTestCase:
         tdSql.query(f"insert into nested.stable_null_childtable(tbname,ts,q_int,q_binary) file '{self.testcasePath}/stable_null_childtable.csv';")
         
         tdSql.query(f"select tbname,count(*) from nested.stable_1 group by tbname order by tbname;")
-        tdSql.checkRows(7)
+        tdSql.checkRows(3)
         tdSql.checkData(0, 1, 1);
         tdSql.checkData(1, 1, 162);
         tdSql.checkData(2, 1, 200);

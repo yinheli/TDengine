@@ -175,6 +175,8 @@ int32_t tsCompressMsgSize = -1;
 // count/hyperloglog function always return values in case of all NULL data or Empty data set.
 int32_t tsCountAlwaysReturnValue = 1;
 
+int32_t tsCountReturnEmptyGroup = 0;
+
 // 1 ms for sliding time, the value will changed in case of time precision changed
 int32_t tsMinSlidingTime = 1;
 
@@ -588,6 +590,8 @@ static int32_t taosAddServerCfg(SConfig *pCfg) {
     return -1;
 
   if (cfgAddInt32(pCfg, "countAlwaysReturnValue", tsCountAlwaysReturnValue, 0, 1, CFG_SCOPE_BOTH, CFG_DYN_CLIENT) != 0)
+    return -1;
+  if (cfgAddInt32(pCfg, "countReturnEmptyGroup", tsCountReturnEmptyGroup, 0, 1, CFG_SCOPE_BOTH, CFG_DYN_CLIENT) != 0)
     return -1;
   if (cfgAddInt32(pCfg, "queryBufferSize", tsQueryBufferSize, -1, 500000000000, CFG_SCOPE_SERVER, CFG_DYN_NONE) != 0)
     return -1;
