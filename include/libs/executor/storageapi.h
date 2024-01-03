@@ -363,6 +363,16 @@ typedef struct SStateStore {
   int32_t (*streamStateSessionAllocWinBuffByNextPosition)(SStreamState* pState, SStreamStateCur* pCur,
                                                           const SSessionKey* pKey, void** pVal, int32_t* pVLen);
 
+  int32_t (*streamStateCountWinAddIfNotExist)(SStreamState* pState, SCountWinKey* pKey, void** pVal, int32_t* pVLen, SCountWinOtherInfo* pOther);
+  int32_t (*streamStateCountWinAdd)(SStreamState* pState, SCountWinKey* pKey, void** pVal, int32_t* pVLen);
+  int32_t (*streamStateCountDeleteWins)(SStreamState* pState, const SCountWinKey* pKey);
+  int32_t (*streamStateCountWinDel)(SStreamState* pState, const SCountWinKey* pKey);
+  SStreamStateCur* (*streamStateCountWindowSeekKeyCurrentNext)(SStreamState* pState, const SCountWinKey* pKey);
+  int32_t (*streamStateCountDataPut)(SStreamState* pState, const SRowDataKey* pKey, const void* pVal, int32_t vLen);
+  int32_t (*streamStateCountDataDel)(SStreamState* pState, const SRowDataKey* pKey);
+  SStreamStateCur* (*streamStateCountDataSeekKeyCurrentNext)(SStreamState* pState, const SRowDataKey* pKey);
+  int32_t (*streamStateCountGetDataKVByCur)(SStreamStateCur* pCur, SRowDataKey* pKey, void** ppVal, int32_t* pVLen);
+
   SUpdateInfo* (*updateInfoInit)(int64_t interval, int32_t precision, int64_t watermark, bool igUp);
   TSKEY (*updateInfoFillBlockData)(SUpdateInfo* pInfo, SSDataBlock* pBlock, int32_t primaryTsCol);
   bool (*updateInfoIsUpdated)(SUpdateInfo* pInfo, uint64_t tableId, TSKEY ts);

@@ -623,6 +623,12 @@ typedef struct SEventWinodwPhysiNode {
 
 typedef SEventWinodwPhysiNode SStreamEventWinodwPhysiNode;
 
+typedef struct SCountWinodwPhysiNode {
+  SWindowPhysiNode window;
+} SCountWinodwPhysiNode;
+
+typedef SCountWinodwPhysiNode SStreamCountWinodwPhysiNode;
+
 typedef struct SSortPhysiNode {
   SPhysiNode node;
   SNodeList* pExprs;     // these are expression list of order_by_clause and parameter expression of aggregate function

@@ -360,6 +360,7 @@ typedef struct SStreamAggSupporter {
   STimeWindow         winRange;
   SStorageAPI*        pSessionAPI;
   struct SUpdateInfo* pUpdateInfo;
+  int32_t             windowCount;
 } SStreamAggSupporter;
 
 typedef struct SWindowSupporter {
@@ -647,6 +648,27 @@ typedef struct SStreamEventAggOperatorInfo {
   SFilterInfo*        pEndCondInfo;
 } SStreamEventAggOperatorInfo;
 
+typedef struct SStreamCountAggOperatorInfo {
+  SOptrBasicInfo           binfo;
+  SStreamCountAggSupporter streamAggSup;
+  SExprSupp                scalarSupp;  // supporter for perform scalar function
+  SGroupResInfo            groupResInfo;
+  int32_t                  primaryTsIndex;  // primary timestamp slot id
+  STimeWindowAggSupp       twAggSup;
+  SSDataBlock*             pDelRes;
+  SSHashObj*               pSeDeleted;
+  void*                    pDelIterator;
+  bool                     ignoreExpiredData;
+  bool                     ignoreExpiredDataSaved;
+  SArray*                  pUpdated;
+  SSHashObj*               pSeUpdated;
+  int64_t                  dataVersion;
+  SArray*                  historyWins;
+  bool                     reCkBlock;
+  bool                     recvGetAll;
+  SSDataBlock*             pCheckpointRes;
+} SStreamCountAggOperatorInfo;
+
 typedef struct SStreamPartitionOperatorInfo {
   SOptrBasicInfo        binfo;
   SPartitionBySupporter partitionSup;
@@ -847,6 +869,7 @@ int64_t  getDeleteMark(SWindowPhysiNode* pWinPhyNode, int64_t interval);
 void     resetUnCloseSessionWinInfo(SSHashObj* winMap);
 void    setStreamOperatorCompleted(struct SOperatorInfo* pOperator);
 void     reloadAggSupFromDownStream(struct SOperatorInfo* downstream, SStreamAggSupporter* pAggSup);
+void     transBlockToResultRow(const SSDataBlock* pBlock, int32_t rowId, TSKEY ts, SResultRowData* pRowVal);
 
 int32_t encodeSSessionKey(void** buf, SSessionKey* key);
 void*   decodeSSessionKey(void* buf, SSessionKey* key);

@@ -386,7 +386,8 @@ SStreamStateCur* sessionWinStateSeekKeyCurrentPrev(SStreamFileState* pFileState,
   pCur->pStreamFileState = pFileState;
   return pCur;
 }
-static void transformCursor(SStreamFileState* pFileState, SStreamStateCur* pCur) {
+
+void transformCursor(SStreamFileState* pFileState, SStreamStateCur* pCur) {
   if (!pCur) {
     return;
   }

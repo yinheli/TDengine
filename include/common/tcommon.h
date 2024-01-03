@@ -54,6 +54,24 @@ typedef struct SSessionKey {
   uint64_t    groupId;
 } SSessionKey;
 
+typedef struct SRowDataKey {
+  uint64_t groupId;
+  TSKEY    ts;
+  uint64_t uid;
+} SRowDataKey;
+
+typedef struct SCountWinKey {
+  uint64_t    groupId;
+  STimeWindow win;
+  uint64_t    startWinUid;
+  uint64_t    endWinUid;
+} SCountWinKey;
+
+typedef struct SCountWinOtherInfo {
+  int32_t windowCount;
+  bool    lastWindow;
+} SCountWinOtherInfo;
+
 typedef struct SVersionRange {
   int64_t minVer;
   int64_t maxVer;

@@ -83,8 +83,26 @@ SStreamStateCur* streamStateGetAndCheckCur(SStreamState* pState, SWinKey* key);
 SStreamStateCur* streamStateSeekKeyNext(SStreamState* pState, const SWinKey* key);
 SStreamStateCur* streamStateFillSeekKeyNext(SStreamState* pState, const SWinKey* key);
 SStreamStateCur* streamStateFillSeekKeyPrev(SStreamState* pState, const SWinKey* key);
-void             streamStateFreeCur(SStreamStateCur* pCur);
-void             streamStateResetCur(SStreamStateCur* pCur);
+
+// count window
+int32_t streamStateCountWinAddIfNotExist(SStreamState* pState, SCountWinKey* pKey, void** ppVal, int32_t* pVLen,
+                                         SCountWinOtherInfo* pOther);
+int32_t streamStateCountWinAdd(SStreamState* pState, SCountWinKey* pKey, void** pVal, int32_t* pVLen);
+int32_t streamStateCountDeleteWins(SStreamState* pState, const SCountWinKey* pKey);
+int32_t streamStateCountWinDel(SStreamState* pState, const SCountWinKey* pKey);
+
+SStreamStateCur* streamStateCountWindowSeekKeyCurrentNext(SStreamState* pState, const SCountWinKey* key);
+int32_t streamStateCountGetWindowKVByCur(SStreamStateCur* pCur, SCountWinKey* pKey, void** pVal, int32_t* pVLen);
+
+// count data
+int32_t streamStateCountDataPut(SStreamState* pState, const SRowDataKey* pKey, const void* pVal, int32_t vLen);
+int32_t streamStateCountDataDel(SStreamState* pState, const SRowDataKey* pKey);
+
+SStreamStateCur* streamStateCountDataSeekKeyCurrentNext(SStreamState* pState, const SRowDataKey* pKey);
+int32_t streamStateCountGetDataKVByCur(SStreamStateCur* pCur, SRowDataKey* pKey, void** ppVal, int32_t* pVLen);
+
+void streamStateFreeCur(SStreamStateCur* pCur);
+void streamStateResetCur(SStreamStateCur* pCur);
 
 int32_t streamStateGetGroupKVByCur(SStreamStateCur* pCur, SWinKey* pKey, const void** pVal, int32_t* pVLen);
 int32_t streamStateGetKVByCur(SStreamStateCur* pCur, SWinKey* pKey, const void** pVal, int32_t* pVLen);
@@ -128,10 +146,6 @@ int sessionRangeKeyCmpr(const SSessionKey* pWin1, const SSessionKey* pWin2);
 int sessionWinKeyCmpr(const SSessionKey* pWin1, const SSessionKey* pWin2);
 int stateSessionKeyCmpr(const void* pKey1, int kLen1, const void* pKey2, int kLen2);
 int stateKeyCmpr(const void* pKey1, int kLen1, const void* pKey2, int kLen2);
-#if 0
-char* streamStateSessionDump(SStreamState* pState);
-char* streamStateIntervalDump(SStreamState* pState);
-#endif
 
 #ifdef __cplusplus
 }

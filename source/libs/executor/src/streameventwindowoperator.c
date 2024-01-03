@@ -306,8 +306,6 @@ static void doStreamEventAggImpl(SOperatorInfo* pOperator, SSDataBlock* pSDataBl
       i++;
       continue;
     }
-    int32_t          winIndex = 0;
-    bool             allEqual = true;
     SEventWindowInfo curWin = {0};
     SSessionKey nextWinKey = {0};
     setEventOutputBuf(pAggSup, tsCols, groupId, (bool*)pColStart->pData, (bool*)pColEnd->pData, i, rows, &curWin, &nextWinKey);

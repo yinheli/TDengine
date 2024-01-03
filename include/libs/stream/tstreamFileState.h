@@ -93,10 +93,15 @@ SStreamStateCur* sessionWinStateSeekKeyNext(SStreamFileState* pFileState, const 
 int32_t sessionWinStateGetKVByCur(SStreamStateCur* pCur, SSessionKey* pKey, void** pVal, int32_t* pVLen);
 int32_t sessionWinStateMoveToNext(SStreamStateCur* pCur);
 int32_t sessionWinStateGetKeyByRange(SStreamFileState* pFileState, const SSessionKey* key, SSessionKey* curKey);
+void transformCursor(SStreamFileState* pFileState, SStreamStateCur* pCur);
 
 // state window
 int32_t getStateWinResultBuff(SStreamFileState* pFileState, SSessionKey* key, char* pKeyData, int32_t keyDataLen,
                              state_key_cmpr_fn fn, void** pVal, int32_t* pVLen);
+
+// count window
+SStreamStateCur* countWinStateSeekKeyCurrentNext(SStreamFileState* pFileState, const SCountWinKey* pWinKey);
+int32_t countWinStateGetKVByCur(SStreamStateCur* pCur, SCountWinKey* pKey, void** pVal, int32_t* pVLen);
 
 #ifdef __cplusplus
 }
