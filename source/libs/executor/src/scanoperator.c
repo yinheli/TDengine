@@ -12,6 +12,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+#define ALLOW_FORBID_FUNC
 
 #include "executorInt.h"
 #include "filter.h"
@@ -3758,11 +3759,14 @@ SOperatorInfo* createTableMergeScanOperatorInfo(STableScanPhysiNode* pTableScanN
     pInfo->mSkipTables = NULL;
   }
 
-  if (!hasLimit && blockDataGetRowSize(pInfo->pResBlock) >= 256) {
-    pInfo->bSortRowId = true;
-  } else {
-    pInfo->bSortRowId = false;
-  }
+  int bSortRowId = 1;
+  FILE* fp = fopen("/tmp/rowid", "r");
+  if (fp) {
+    fscanf(fp, "%d", &bSortRowId);
+    fclose(fp);
+  } 
+  uInfo("sort by rowid %d", bSortRowId);
+  pInfo->bSortRowId = bSortRowId ? true : false;
 
   pInfo->pSortInfo = generateSortByTsInfo(pInfo->base.matchInfo.pList, pInfo->base.cond.order);
   pInfo->pSortInputBlock = createOneDataBlock(pInfo->pResBlock, false);
