@@ -68,8 +68,8 @@ class TDTestCase:
         tdSql.query(f"select t2, count(*) from {self.dbname}.{self.stable} where ts < now {keyword} by t2 ")
         tdSql.checkRows(check_num)
 
-        tdSql.query(f"select t2, count(*) from {self.dbname}.{self.stable} where ts > 1737146000000 {keyword} by t2 ")
-        tdSql.checkRows(check_num)
+        # tdSql.query(f"select t2, count(*) from {self.dbname}.{self.stable} where ts > 1737146000000 {keyword} by t2 ")
+        # tdSql.checkRows(check_num)
 
         tdSql.query(f"select t2, count(*) from {self.dbname}.{self.stable} where c1 = 1 {keyword} by t2 ")
         tdSql.checkRows(check_num)

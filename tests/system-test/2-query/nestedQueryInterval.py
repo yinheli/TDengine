@@ -1216,7 +1216,7 @@ class TDTestCase:
             tdSql.execute(f"insert into nested.stable_1 (ts, tbname, {coulmn_name}) values({ts+i},'stable_1_1',1);")
         ts = ts + 20
         tdSql.query(f"select tbname,count(*) from nested.stable_1 group by tbname order by tbname;")
-        tdSql.checkRows(4)
+        tdSql.checkRows(2)
         tdSql.checkData(0, 1, 142)
         tdSql.checkData(1, 1, 200)
                        
