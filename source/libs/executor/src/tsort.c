@@ -85,6 +85,9 @@ struct SSortHandle {
   SBlockOrderInfo extRowsOrderInfo;
 };
 
+int64_t zts, zte, zt0, zt1, zt2, zt3, zt4, zt5, zt6, zt7, zt8, zt9, zt10, zt11;
+int64_t zt01, zt12, zt23, zt34, zt45, zt56, zt67, zt78;
+
 void tsortSetSingleTableMerge(SSortHandle* pHandle) {
   pHandle->singleTableMerge = true;
 }
@@ -1178,6 +1181,7 @@ static int32_t blockCompareTsFn(const void* pLeft, const void* pRight, void* par
 }
 
 static int32_t appendDataBlockToPageBuf(SSortHandle* pHandle, SSDataBlock* blk, SArray* aPgId) {
+  zt10 = taosGetTimestampMs();
   int32_t pageId = -1;
   void*   pPage = getNewBufPage(pHandle->pBuf, &pageId);
   taosArrayPush(aPgId, &pageId);
@@ -1189,7 +1193,8 @@ static int32_t appendDataBlockToPageBuf(SSortHandle* pHandle, SSDataBlock* blk, 
 
   setBufPageDirty(pPage, true);
   releaseBufPage(pHandle->pBuf, pPage);
-
+  zt11 = taosGetTimestampMs();
+  zt34 += zt11-zt10;
   return 0;
 }
 
@@ -1662,17 +1667,21 @@ static int32_t createInitialSources(SSortHandle* pHandle) {
 }
 
 static bool tsortOpenForBufMergeSort(SSortHandle* pHandle) {
+  zt0 = taosGetTimestampMs();
   int32_t code = createInitialSources(pHandle);
+  zt1 = taosGetTimestampMs();
+  zt01 += zt1-zt0;
   if (code != TSDB_CODE_SUCCESS) {
     return code;
   }
-
+ 
   // do internal sort
   code = doInternalMergeSort(pHandle);
   if (code != TSDB_CODE_SUCCESS) {
     return code;
   }
-
+  zt2 = taosGetTimestampMs();
+  zt12 += zt2-zt1;
   int32_t numOfSources = taosArrayGetSize(pHandle->pOrderedSource);
   if (pHandle->pBuf != NULL) {
     ASSERT(numOfSources <= getNumOfInMemBufPages(pHandle->pBuf));
@@ -1681,7 +1690,7 @@ static bool tsortOpenForBufMergeSort(SSortHandle* pHandle) {
   if (numOfSources == 0) {
     return 0;
   }
-
+  
   code = sortComparInit(&pHandle->cmpParam, pHandle->pOrderedSource, 0, numOfSources - 1, pHandle);
   if (code != TSDB_CODE_SUCCESS) {
     return code;
