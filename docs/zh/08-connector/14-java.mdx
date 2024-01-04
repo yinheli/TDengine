@@ -36,7 +36,7 @@ REST 连接支持所有能运行 Java 的平台。
 
 | taos-jdbcdriver 版本 |                                                                        主要变化                                                                        |   TDengine 版本    |
 | :------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------: | :----------------: |
-|        3.2.7         | 支持VARBINARY和GEOMETRY类型，增加native连接的时区设置支持。增加websocket自动重连功能。                                                                                                          | 3.2.0.0 及更高版本 |
+|        3.2.7         | 支持VARBINARY和GEOMETRY类型，增加native连接的时区设置支持。增加websocket自动重连功能。                                                                      | 3.2.0.0 及更高版本 |
 |        3.2.5         |                                                      数据订阅增加 committed()、assignment() 方法                                                       | 3.1.0.3 及更高版本 |
 |        3.2.4         |                                   数据订阅在 WebSocket 连接下增加 enable.auto.commit 参数，以及 unsubscribe() 方法。                                   |         -          |
 |        3.2.3         |                                                         修复 ResultSet 在一些情况数据解析失败                                                          |         -          |
@@ -123,7 +123,7 @@ JDBC 连接器可能报错的错误码包括 4 种：
 | 0x2379     | seek offset must not be a negative number                       | seek 接口参数不能为负值，请使用正确的参数                                                 |
 | 0x237a     | vGroup not found in result set                                  | VGroup 没有分配给当前 consumer，由于 Rebalance 机制导致 Consumer 与 VGroup 不是绑定的关系 |
 
-- [TDengine Java Connector](https://github.com/taosdata/taos-connector-jdbc/blob/main/src/main/java/com/taosdata/jdbc/TSDBErrorNumbers.java)
+- [TDengine Java Connector Error Code](https://github.com/taosdata/taos-connector-jdbc/blob/main/src/main/java/com/taosdata/jdbc/TSDBErrorNumbers.java)
 <!-- - [TDengine_ERROR_CODE](../error-code) -->
 
 ## TDengine DataType 和 Java DataType
@@ -387,27 +387,18 @@ properties 中的配置参数如下：
 ### 创建数据库和表
 
 ```java
-Statement stmt = conn.createStatement();
+{{#include examples/JDBC/JDBCDemo/src/main/java/com/taosdata/example/JdbcBasicDemo.java:create_db_and_table}}
 
-// create database
-stmt.executeUpdate("create database if not exists db");
-
-// use database
-stmt.executeUpdate("use db");
-
-// create table
-stmt.executeUpdate("create table if not exists tb (ts timestamp, temperature int, humidity float)");
 ```
+
 
 > **注意**：如果不使用 `use db` 指定数据库，则后续对表的操作都需要增加数据库名称作为前缀，如 db.tb。
 
 ### 插入数据
 
 ```java
-// insert data
-int affectedRows = stmt.executeUpdate("insert into tb values(now, 23, 10.3) (now + 1s, 20, 9.3)");
+{{#include examples/JDBC/JDBCDemo/src/main/java/com/taosdata/example/JdbcBasicDemo.java:insert_data}}
 
-System.out.println("insert " + affectedRows + " rows.");
 ```
 
 > now 为系统内部函数，默认为客户端所在计算机当前时间。
@@ -416,20 +407,8 @@ System.out.println("insert " + affectedRows + " rows.");
 ### 查询数据
 
 ```java
-// query data
-ResultSet resultSet = stmt.executeQuery("select * from tb");
+{{#include examples/JDBC/JDBCDemo/src/main/java/com/taosdata/example/JdbcBasicDemo.java:query_data}}
 
-Timestamp ts = null;
-int temperature = 0;
-float humidity = 0;
-while(resultSet.next()){
-
-    ts = resultSet.getTimestamp(1);
-    temperature = resultSet.getInt(2);
-    humidity = resultSet.getFloat("humidity");
-
-    System.out.printf("%s, %d, %s\n", ts, temperature, humidity);
-}
 ```
 
 > 查询和操作关系型数据库一致，使用下标获取返回字段内容时从 1 开始，建议使用字段名称获取。
@@ -439,12 +418,8 @@ while(resultSet.next()){
 此 reqId 可用于请求链路追踪。
 
 ```java
-AbstractStatement aStmt = (AbstractStatement) connection.createStatement();
-aStmt.execute("create database if not exists db", 1L);
-aStmt.executeUpdate("use db", 2L);
-try (ResultSet rs = aStmt.executeQuery("select * from tb", 3L)) {
-    Timestamp ts = rs.getTimestamp(1);
-}
+{{#include examples/JDBC/JDBCDemo/src/main/java/com/taosdata/example/JdbcBasicDemo.java:with_reqid}}
+
 ```
 
 ### 通过参数绑定写入数据
@@ -460,6 +435,11 @@ TDengine 的 JDBC 原生连接实现大幅改进了参数绑定方式对数据�
 
 <Tabs defaultValue="native">
 <TabItem value="native" label="原生连接">
+
+```java
+{{#include examples/JDBC/JDBCDemo/src/main/java/com/taosdata/example/ParameterBindingDemo.java:para_bind}}
+
+```
 
 ```java
 public class ParameterBindingDemo {
