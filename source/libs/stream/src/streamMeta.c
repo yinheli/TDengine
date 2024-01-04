@@ -419,6 +419,7 @@ _err:
 }
 
 // todo refactor: the lock shoud be restricted in one function
+#ifdef BUILD_NO_CALL
 void streamMetaInitBackend(SStreamMeta* pMeta) {
   pMeta->streamBackend = streamBackendInit(pMeta->path, pMeta->chkpId, pMeta->vgId);
   if (pMeta->streamBackend == NULL) {
@@ -440,6 +441,7 @@ void streamMetaInitBackend(SStreamMeta* pMeta) {
   pMeta->streamBackendRid = taosAddRef(streamBackendId, pMeta->streamBackend);
   streamBackendLoadCheckpointInfo(pMeta);
 }
+#endif
 
 void streamMetaClear(SStreamMeta* pMeta) {
   // remove all existed tasks in this vnode
@@ -1484,7 +1486,7 @@ int32_t streamMetaStartAllTasks(SStreamMeta* pMeta) {
       continue;
     }
 
-    EStreamTaskEvent event = (HAS_RELATED_FILLHISTORY_TASK(pTask)) ? TASK_EVENT_INIT_STREAM_SCANHIST : TASK_EVENT_INIT;
+    EStreamTaskEvent event = /*(HAS_RELATED_FILLHISTORY_TASK(pTask)) ? TASK_EVENT_INIT_STREAM_SCANHIST : */TASK_EVENT_INIT;
     int32_t          ret = streamTaskHandleEvent(pTask->status.pSM, event);
     if (ret != TSDB_CODE_SUCCESS) {
       stError("vgId:%d failed to handle event:%d", pMeta->vgId, event);

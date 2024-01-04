@@ -801,9 +801,23 @@ static void doStreamIntervalAggImpl(SOperatorInfo* pOperator, SSDataBlock* pSDat
   SRowBuffPos*    pResPos = NULL;
   SResultRow*     pResult = NULL;
   int32_t         forwardRows = 0;
+  int32_t         endRowId = pSDataBlock->info.rows - 1;
 
   SColumnInfoData* pColDataInfo = taosArrayGet(pSDataBlock->pDataBlock, pInfo->primaryTsIndex);
   tsCols = (int64_t*)pColDataInfo->pData;
+
+  if (pSDataBlock->info.window.skey != tsCols[0] || pSDataBlock->info.window.ekey != tsCols[endRowId]) {
+    qError("table uid %" PRIu64 " data block timestamp range may not be calculated! minKey %" PRId64
+            ",maxKey %" PRId64,
+            pSDataBlock->info.id.uid, pSDataBlock->info.window.skey, pSDataBlock->info.window.ekey);
+    blockDataUpdateTsWindow(pSDataBlock, pInfo->primaryTsIndex);
+
+    // timestamp of the data is incorrect
+    if (pSDataBlock->info.window.skey <= 0 || pSDataBlock->info.window.ekey <= 0) {
+      qError("table uid %" PRIu64 " data block timestamp is out of range! minKey %" PRId64 ",maxKey %" PRId64,
+              pSDataBlock->info.id.uid, pSDataBlock->info.window.skey, pSDataBlock->info.window.ekey);
+    }
+  }
 
   int32_t     startPos = 0;
   TSKEY       ts = getStartTsKey(&pSDataBlock->info.window, tsCols);
@@ -902,19 +916,6 @@ static void doStreamIntervalAggImpl(SOperatorInfo* pOperator, SSDataBlock* pSDat
       pInfo->delKey = key;
     }
     int32_t prevEndPos = (forwardRows - 1) * step + startPos;
-    if (pSDataBlock->info.window.skey <= 0 || pSDataBlock->info.window.ekey <= 0) {
-      qError("table uid %" PRIu64 " data block timestamp range may not be calculated! minKey %" PRId64
-             ",maxKey %" PRId64,
-             pSDataBlock->info.id.uid, pSDataBlock->info.window.skey, pSDataBlock->info.window.ekey);
-      blockDataUpdateTsWindow(pSDataBlock, 0);
-
-      // timestamp of the data is incorrect
-      if (pSDataBlock->info.window.skey <= 0 || pSDataBlock->info.window.ekey <= 0) {
-        qError("table uid %" PRIu64 " data block timestamp is out of range! minKey %" PRId64 ",maxKey %" PRId64,
-               pSDataBlock->info.id.uid, pSDataBlock->info.window.skey, pSDataBlock->info.window.ekey);
-      }
-    }
-
     if (IS_FINAL_INTERVAL_OP(pOperator)) {
       startPos = getNextQualifiedFinalWindow(&pInfo->interval, &nextWin, &pSDataBlock->info, tsCols, prevEndPos);
     } else {
@@ -1223,7 +1224,7 @@ static SSDataBlock* doStreamFinalIntervalAgg(SOperatorInfo* pOperator) {
       return pInfo->pCheckpointRes;
     }
 
-    setOperatorCompleted(pOperator);
+    setStreamOperatorCompleted(pOperator);
     if (!IS_FINAL_INTERVAL_OP(pOperator)) {
       clearFunctionContext(&pOperator->exprSupp);
       // semi interval operator clear disk buffer
@@ -2343,10 +2344,6 @@ int32_t buildSessionResultDataBlock(SOperatorInfo* pOperator, void* pState, SSDa
     }
 
     int32_t code = pAPI->stateStore.streamStateGetByPos(pState, pPos, (void**)&pRow);
-    if (pBlock->info.rows + pRow->numOfRows > pBlock->info.capacity) {
-      ASSERT(pBlock->info.rows > 0);
-      break;
-    }
 
     if (code == -1) {
       // for history
@@ -2361,6 +2358,11 @@ int32_t buildSessionResultDataBlock(SOperatorInfo* pOperator, void* pState, SSDa
     if (pRow->numOfRows == 0) {
       pGroupResInfo->index += 1;
       continue;
+    }
+
+    if (pBlock->info.rows + pRow->numOfRows > pBlock->info.capacity) {
+      ASSERT(pBlock->info.rows > 0);
+      break;
     }
 
     pGroupResInfo->index += 1;
@@ -2609,18 +2611,18 @@ static SSDataBlock* doStreamSessionAgg(SOperatorInfo* pOperator) {
       return opRes;
     }
 
+    if (pInfo->recvGetAll) {
+      pInfo->recvGetAll = false;
+      resetUnCloseSessionWinInfo(pInfo->streamAggSup.pResultRows);
+    }
+
     if (pInfo->reCkBlock) {
       pInfo->reCkBlock = false;
       printDataBlock(pInfo->pCheckpointRes, getStreamOpName(pOperator->operatorType), GET_TASKID(pTaskInfo));
       return pInfo->pCheckpointRes;
     }
 
-    if (pInfo->recvGetAll) {
-      pInfo->recvGetAll = false;
-      resetUnCloseSessionWinInfo(pInfo->streamAggSup.pResultRows);
-    }
-
-    setOperatorCompleted(pOperator);
+    setStreamOperatorCompleted(pOperator);
     return NULL;
   }
 
@@ -2718,7 +2720,7 @@ static SSDataBlock* doStreamSessionAgg(SOperatorInfo* pOperator) {
     return opRes;
   }
 
-  setOperatorCompleted(pOperator);
+  setStreamOperatorCompleted(pOperator);
   return NULL;
 }
 
@@ -2759,6 +2761,18 @@ void getSessionWindowInfoByKey(SStreamAggSupporter* pAggSup, SSessionKey* pKey, 
   }
 }
 
+void reloadAggSupFromDownStream(SOperatorInfo* downstream, SStreamAggSupporter* pAggSup) {
+  SStateStore* pAPI = &downstream->pTaskInfo->storageAPI.stateStore;
+
+  if (downstream->operatorType != QUERY_NODE_PHYSICAL_PLAN_STREAM_SCAN) {
+    reloadAggSupFromDownStream(downstream->pDownstream[0], pAggSup);
+    return;
+  }
+
+  SStreamScanInfo* pScanInfo = downstream->info;
+  pAggSup->pUpdateInfo = pScanInfo->pUpdateInfo;
+}
+
 void streamSessionSemiReloadState(SOperatorInfo* pOperator) {
   SStreamSessionAggOperatorInfo* pInfo = pOperator->info;
   SStreamAggSupporter*           pAggSup = &pInfo->streamAggSup;
@@ -2790,6 +2804,7 @@ void streamSessionSemiReloadState(SOperatorInfo* pOperator) {
   if (downstream->fpSet.reloadStreamStateFn) {
     downstream->fpSet.reloadStreamStateFn(downstream);
   }
+  reloadAggSupFromDownStream(downstream, &pInfo->streamAggSup);
 }
 
 void streamSessionReloadState(SOperatorInfo* pOperator) {
@@ -2842,6 +2857,7 @@ void streamSessionReloadState(SOperatorInfo* pOperator) {
   if (downstream->fpSet.reloadStreamStateFn) {
     downstream->fpSet.reloadStreamStateFn(downstream);
   }
+  reloadAggSupFromDownStream(downstream, &pInfo->streamAggSup);
 }
 
 SOperatorInfo* createStreamSessionAggOperatorInfo(SOperatorInfo* downstream, SPhysiNode* pPhyNode,
@@ -3001,7 +3017,7 @@ static SSDataBlock* doStreamSessionSemiAgg(SOperatorInfo* pOperator) {
       clearFunctionContext(&pOperator->exprSupp);
       // semi session operator clear disk buffer
       clearStreamSessionOperator(pInfo);
-      setOperatorCompleted(pOperator);
+      setStreamOperatorCompleted(pOperator);
       pInfo->clearState = false;
       return NULL;
     }
@@ -3074,7 +3090,7 @@ static SSDataBlock* doStreamSessionSemiAgg(SOperatorInfo* pOperator) {
   clearFunctionContext(&pOperator->exprSupp);
   // semi session operator clear disk buffer
   clearStreamSessionOperator(pInfo);
-  setOperatorCompleted(pOperator);
+  setStreamOperatorCompleted(pOperator);
   return NULL;
 }
 
@@ -3551,18 +3567,18 @@ static SSDataBlock* doStreamStateAgg(SOperatorInfo* pOperator) {
       return resBlock;
     }
 
+    if (pInfo->recvGetAll) {
+      pInfo->recvGetAll = false;
+      resetUnCloseSessionWinInfo(pInfo->streamAggSup.pResultRows);
+    }
+
     if (pInfo->reCkBlock) {
       pInfo->reCkBlock = false;
       printDataBlock(pInfo->pCheckpointRes, getStreamOpName(pOperator->operatorType), GET_TASKID(pTaskInfo));
       return pInfo->pCheckpointRes;
     }
 
-    if (pInfo->recvGetAll) {
-      pInfo->recvGetAll = false;
-      resetUnCloseSessionWinInfo(pInfo->streamAggSup.pResultRows);
-    }
-
-    setOperatorCompleted(pOperator);
+    setStreamOperatorCompleted(pOperator);
     return NULL;
   }
 
@@ -3628,7 +3644,7 @@ static SSDataBlock* doStreamStateAgg(SOperatorInfo* pOperator) {
   if (resBlock != NULL) {
     return resBlock;
   }
-  setOperatorCompleted(pOperator);
+  setStreamOperatorCompleted(pOperator);
   return NULL;
 }
 
@@ -3724,6 +3740,7 @@ void streamStateReloadState(SOperatorInfo* pOperator) {
   if (downstream->fpSet.reloadStreamStateFn) {
     downstream->fpSet.reloadStreamStateFn(downstream);
   }
+  reloadAggSupFromDownStream(downstream, &pInfo->streamAggSup);
 }
 
 SOperatorInfo* createStreamStateAggOperatorInfo(SOperatorInfo* downstream, SPhysiNode* pPhyNode,
@@ -3864,11 +3881,11 @@ static SSDataBlock* doStreamIntervalAgg(SOperatorInfo* pOperator) {
 
     if (pInfo->reCkBlock) {
       pInfo->reCkBlock = false;
-      // printDataBlock(pInfo->pCheckpointRes, "single interval ck");
+      printDataBlock(pInfo->pCheckpointRes, getStreamOpName(pOperator->operatorType), GET_TASKID(pTaskInfo));
       return pInfo->pCheckpointRes;
     }
 
-    setOperatorCompleted(pOperator);
+    setStreamOperatorCompleted(pOperator);
     return NULL;
   }
 
@@ -3900,7 +3917,6 @@ static SSDataBlock* doStreamIntervalAgg(SOperatorInfo* pOperator) {
       doDeleteWindows(pOperator, &pInfo->interval, pBlock, pInfo->pDelWins, pInfo->pUpdatedMap);
       continue;
     } else if (pBlock->info.type == STREAM_GET_ALL) {
-      qDebug("===stream===%s recv|block type STREAM_GET_ALL", getStreamOpName(pOperator->operatorType));
       pInfo->recvGetAll = true;
       getAllIntervalWindow(pInfo->aggSup.pResultRowHashTable, pInfo->pUpdatedMap);
       continue;
@@ -4082,4 +4098,9 @@ _error:
   taosMemoryFreeClear(pOperator);
   pTaskInfo->code = code;
   return NULL;
+}
+
+void setStreamOperatorCompleted(SOperatorInfo* pOperator) {
+  setOperatorCompleted(pOperator);
+  qDebug("stask:%s  %s status: %d. set completed", GET_TASKID(pOperator->pTaskInfo), getStreamOpName(pOperator->operatorType), pOperator->status);
 }

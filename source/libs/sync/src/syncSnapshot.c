@@ -806,6 +806,13 @@ static int32_t syncNodeOnSnapshotBegin(SSyncNode *pSyncNode, SyncSnapshotSend *p
     goto _SEND_REPLY;
   }
 
+  SyncIndex beginIndex = syncNodeGetSnapBeginIndex(pSyncNode);
+  if (pReceiver->snapshotParam.start != beginIndex) {
+    sRError(pReceiver, "snapshot begin index is changed unexpectedly. sver:%" PRId64 ", beginIndex:%" PRId64,
+            pReceiver->snapshotParam.start, beginIndex);
+    goto _SEND_REPLY;
+  }
+
   code = 0;
 _SEND_REPLY:
   if (code != 0 && terrno != 0) {
@@ -994,6 +1001,7 @@ int32_t syncNodeOnSnapshot(SSyncNode *pSyncNode, SRpcMsg *pRpcMsg) {
     sRError(pReceiver, "reject snap replication with smaller term. msg term:%" PRId64 ", seq:%d", pMsg->term,
             pMsg->seq);
     terrno = TSDB_CODE_SYN_MISMATCHED_SIGNATURE;
+    syncSnapSendRsp(pReceiver, pMsg, NULL, 0, 0, terrno);
     return -1;
   }
 
