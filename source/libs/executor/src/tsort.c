@@ -1005,6 +1005,7 @@ static int32_t blockRowToBuf(SSDataBlock* pBlock, int32_t rowIdx, char* buf) {
 }
 
 static int32_t saveBlockRowToExtRowsBuf(SSortHandle* pHandle, SSDataBlock* pBlock, int32_t rowIdx, int32_t* pPageId, int32_t* pOffset, int32_t* pLength) {
+  zt6 = taosGetTimestampMs();
   SDiskbasedBuf* pResultBuf = pHandle->pExtRowsBuf;
   int32_t rowBytes = blockDataGetRowSize(pBlock) + taosArrayGetSize(pBlock->pDataBlock) + sizeof(int32_t);
   int32_t pageId = -1;
@@ -1013,14 +1014,18 @@ static int32_t saveBlockRowToExtRowsBuf(SSortHandle* pHandle, SSDataBlock* pBloc
   if (code != TSDB_CODE_SUCCESS) {
     return code;
   }
-
+  zt7 = taosGetTimestampMs();
   *pPageId = pageId;
   *pOffset = pFilePage->num;
   *pLength = blockRowToBuf(pBlock, rowIdx, (char*)pFilePage + (*pOffset));
-
+  
   pFilePage->num += (*pLength);
   setBufPageDirty(pFilePage, true);
   releaseBufPage(pResultBuf, pFilePage);
+  zt8 = taosGetTimestampMs();
+  
+  zt45 += zt7-zt6;
+  zt56 += zt8-zt7;
   return 0;
 }
 
