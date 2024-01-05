@@ -150,7 +150,7 @@ class TDTestCase:
                     'colSchema':   [{'type': 'INT', 'count':2}, {'type': 'binary', 'len':20, 'count':1}, {'type': 'TIMESTAMP', 'count':1}],
                     'tagSchema':   [{'type': 'INT', 'count':1}, {'type': 'binary', 'len':20, 'count':1}],
                     'ctbPrefix':  'ctb',
-                    'ctbNum':     1,
+                    'ctbNum':     20,
                     'rowsPerTbl': 40000,
                     'batchNum':   10,
                     'startTs':    1640966400000,  # 2022-01-01 00:00:00.000
@@ -164,7 +164,7 @@ class TDTestCase:
         topicNameList = ['topic1']
         expectRowsList = []
         tmqCom.initConsumerTable()
-        tdCom.create_database(tdSql, paraDict["dbName"],paraDict["dropFlag"], vgroups=4,replica=self.replicaVar)
+        tdCom.create_database(tdSql, paraDict["dbName"],paraDict["dropFlag"], vgroups=paraDict["vgroups"],replica=self.replicaVar)
         tdLog.info("create stb")
         tdCom.create_stable(tdSql, dbname=paraDict["dbName"],stbname=paraDict["stbName"], column_elm_list=paraDict['colSchema'], tag_elm_list=paraDict['tagSchema'])
         tdLog.info("create ctb")
@@ -180,41 +180,47 @@ class TDTestCase:
         tdLog.info("create topic sql: %s"%sqlString)
         tdSql.execute(sqlString)
 
+        pThread.join()
+
         # init consume info, and start tmq_sim, then check consume result
         tdLog.info("insert consume info to consume processor")
-        consumerId   = 0
+        consumerId0  = 0
+        consumerId1  = 1
+
         expectrowcnt = paraDict["rowsPerTbl"] * paraDict["ctbNum"] * 2   # because taosd switch, may be consume duplication data
         topicList    = topicNameList[0]
         ifcheckdata  = 1
         ifManualCommit = 1
         keyList      = 'group.id:cgrp1, enable.auto.commit:false, auto.commit.interval.ms:6000, auto.offset.reset:earliest'
-        tmqCom.insertConsumerInfo(consumerId, expectrowcnt,topicList,keyList,ifcheckdata,ifManualCommit)
-
+        tmqCom.insertConsumerInfo(consumerId0, expectrowcnt,topicList,keyList,ifcheckdata,ifManualCommit)
         tdLog.info("start consume processor")
         tmqCom.startTmqSimProcess(paraDict['pollDelay'],paraDict["dbName"],paraDict['showMsg'], paraDict['showRow'])
 
+
         tdLog.info("wait the notify info of start consume")
-        tmqCom.getStartConsumeNotifyFromTmqsim()
+        tmqCom.getStartConsumeNotifyFromTmqsim(rows=1)
 
         tdLog.info("start switch mnode ................")
         tdDnodes = cluster.dnodes
-
+        time.sleep(5)
         tdLog.info("1. stop dnode 0")
         tdDnodes[0].stoptaosd()
-        time.sleep(10)
-        self.check3mnode1off()
-
-        tdLog.info("2. start dnode 0")
         tdDnodes[0].starttaosd()
-        self.check3mnode()
+
+        tmqCom.insertConsumerInfo(1, expectrowcnt,topicList,keyList,ifcheckdata,ifManualCommit)
+        tmqCom.insertConsumerInfo(2, expectrowcnt,topicList,keyList,ifcheckdata,ifManualCommit)
+        tmqCom.startTmqSimProcess(paraDict['pollDelay'],paraDict["dbName"],paraDict['showMsg'], paraDict['showRow'],alias=1)
+        tdLog.info("2. start dnode 0")
 
         tdLog.info("3. stop dnode 2")
+        tdDnodes[1].stoptaosd()
+        tdDnodes[1].starttaosd()
         tdDnodes[2].stoptaosd()
-        time.sleep(10)
-        self.check3mnode1off()
+        tdDnodes[2].starttaosd()
+
+        self.check3mnode()
 
         tdLog.info("switch end and wait insert data end ................")
-        pThread.join()
 
         tdLog.info("check the consume result")
         tdSql.query(queryString)
@@ -228,7 +234,7 @@ class TDTestCase:
             tdLog.exit("0 tmq consume rows error!")
 
         if expectRowsList[0] == resultList[0]:
-            tmqCom.checkFileContent(consumerId, queryString)
+            tmqCom.checkFileContent(consumerId0, queryString)
 
         time.sleep(10)
         for i in range(len(topicNameList)):
