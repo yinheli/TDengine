@@ -161,7 +161,7 @@ struct STSchema {
 
 struct SRow {
   uint8_t  flag;
-  uint8_t  rsv;
+  uint8_t  kType;
   uint16_t sver;
   uint32_t len;
   TSKEY    ts;
@@ -177,6 +177,12 @@ struct SValue {
     };
   };
 };
+
+typedef struct SRowKey {
+  TSKEY  ts;
+  int8_t kType;
+  SValue value;
+} SRowKey;
 
 struct SColVal {
   int16_t cid;

@@ -31,7 +31,7 @@
 #define SL_MOVE_BACKWARD 0x1
 #define SL_MOVE_FROM_POS 0x2
 
-static void    tbDataMovePosTo(STbData *pTbData, SMemSkipListNode **pos, TSDBKEY *pKey, int32_t flags);
+static void    tbDataMovePosTo(STbData *pTbData, SMemSkipListNode **pos, TSDBROW *pRow, int32_t flags);
 static int32_t tsdbGetOrCreateTbData(SMemTable *pMemTable, tb_uid_t suid, tb_uid_t uid, STbData **ppTbData);
 static int32_t tsdbInsertRowDataToTable(SMemTable *pMemTable, STbData *pTbData, int64_t version,
                                         SSubmitTbData *pSubmitTbData, int32_t *affectedRows);
@@ -217,7 +217,7 @@ _err:
   return code;
 }
 
-int32_t tsdbTbDataIterCreate(STbData *pTbData, TSDBKEY *pFrom, int8_t backward, STbDataIter **ppIter) {
+int32_t tsdbTbDataIterCreate(STbData *pTbData, TSDBROW *pFrom, int8_t backward, STbDataIter **ppIter) {
   int32_t code = 0;
 
   (*ppIter) = (STbDataIter *)taosMemoryCalloc(1, sizeof(STbDataIter));
@@ -239,7 +239,7 @@ void *tsdbTbDataIterDestroy(STbDataIter *pIter) {
   return NULL;
 }
 
-void tsdbTbDataIterOpen(STbData *pTbData, TSDBKEY *pFrom, int8_t backward, STbDataIter *pIter) {
+void tsdbTbDataIterOpen(STbData *pTbData, TSDBROW *pFrom, int8_t backward, STbDataIter *pIter) {
   SMemSkipListNode *pos[SL_MAX_LEVEL];
   SMemSkipListNode *pHead;
   SMemSkipListNode *pTail;
@@ -248,7 +248,6 @@ void tsdbTbDataIterOpen(STbData *pTbData, TSDBKEY *pFrom, int8_t backward, STbDa
   pTail = pTbData->sl.pTail;
   pIter->pTbData = pTbData;
   pIter->backward = backward;
-  pIter->pRow = NULL;
   if (pFrom == NULL) {
     // create from head or tail
     if (backward) {
@@ -269,7 +268,6 @@ void tsdbTbDataIterOpen(STbData *pTbData, TSDBKEY *pFrom, int8_t backward, STbDa
 }
 
 bool tsdbTbDataIterNext(STbDataIter *pIter) {
-  pIter->pRow = NULL;
   if (pIter->backward) {
     ASSERT(pIter->pNode != pIter->pTbData->sl.pTail);
 
@@ -430,7 +428,7 @@ _err:
   return code;
 }
 
-static void tbDataMovePosTo(STbData *pTbData, SMemSkipListNode **pos, TSDBKEY *pKey, int32_t flags) {
+static void tbDataMovePosTo(STbData *pTbData, SMemSkipListNode **pos, TSDBROW *pRow, int32_t flags) {
   SMemSkipListNode *px;
   SMemSkipListNode *pn;
   TSDBKEY           tKey = {0};
@@ -452,15 +450,7 @@ static void tbDataMovePosTo(STbData *pTbData, SMemSkipListNode **pos, TSDBKEY *p
       for (int8_t iLevel = pTbData->sl.level - 1; iLevel >= 0; iLevel--) {
         pn = SL_GET_NODE_BACKWARD(px, iLevel);
         while (pn != pTbData->sl.pHead) {
-          if (pn->flag == TSDBROW_ROW_FMT) {
-            tKey.version = pn->version;
-            tKey.ts = ((SRow *)pn->pData)->ts;
-          } else if (pn->flag == TSDBROW_COL_FMT) {
-            tKey.version = ((SBlockData *)pn->pData)->aVersion[pn->iRow];
-            tKey.ts = ((SBlockData *)pn->pData)->aTSKEY[pn->iRow];
-          }
-
-          int32_t c = tsdbKeyCmprFn(&tKey, pKey);
+          int32_t c = tsdbRowCmprFn(&pn->row, pRow);
           if (c <= 0) {
             break;
           } else {
@@ -487,15 +477,7 @@ static void tbDataMovePosTo(STbData *pTbData, SMemSkipListNode **pos, TSDBKEY *p
       for (int8_t iLevel = pTbData->sl.level - 1; iLevel >= 0; iLevel--) {
         pn = SL_GET_NODE_FORWARD(px, iLevel);
         while (pn != pTbData->sl.pTail) {
-          if (pn->flag == TSDBROW_ROW_FMT) {
-            tKey.version = pn->version;
-            tKey.ts = ((SRow *)pn->pData)->ts;
-          } else if (pn->flag == TSDBROW_COL_FMT) {
-            tKey.version = ((SBlockData *)pn->pData)->aVersion[pn->iRow];
-            tKey.ts = ((SBlockData *)pn->pData)->aTSKEY[pn->iRow];
-          }
-
-          int32_t c = tsdbKeyCmprFn(&tKey, pKey);
+          int32_t c = tsdbRowCmprFn(&pn->row, pRow);
           if (c >= 0) {
             break;
           } else {
@@ -544,14 +526,12 @@ static int32_t tbDataDoPut(SMemTable *pMemTable, STbData *pTbData, SMemSkipListN
   }
 
   pNode->level = level;
-  pNode->flag = pRow->type;
   if (pRow->type == TSDBROW_ROW_FMT) {
-    pNode->version = pRow->version;
-    pNode->pData = (char *)pNode + nSize;
-    memcpy(pNode->pData, pRow->pTSRow, pRow->pTSRow->len);
+    memcpy(&pNode->row, pRow, sizeof(pNode->row));
+    pNode->row.pTSRow = (SRow *)((char *)pNode + nSize);
+    memcpy(pNode->row.pTSRow, pRow->pTSRow, pRow->pTSRow->len);
   } else if (pRow->type == TSDBROW_COL_FMT) {
-    pNode->iRow = pRow->iRow;
-    pNode->pData = pRow->pBlockData;
+    memcpy(&pNode->row, pRow, sizeof(pNode->row));
   } else {
     ASSERT(0);
   }
@@ -657,7 +637,7 @@ static int32_t tsdbInsertColDataToTable(SMemTable *pMemTable, STbData *pTbData, 
   TSDBROW           lRow;  // last row
 
   // first row
-  tbDataMovePosTo(pTbData, pos, &key, SL_MOVE_BACKWARD);
+  tbDataMovePosTo(pTbData, pos, &tRow, SL_MOVE_BACKWARD);
   if ((code = tbDataDoPut(pMemTable, pTbData, pos, &tRow, 0))) goto _exit;
   pTbData->minKey = TMIN(pTbData->minKey, key.ts);
   lRow = tRow;
@@ -673,7 +653,7 @@ static int32_t tsdbInsertColDataToTable(SMemTable *pMemTable, STbData *pTbData, 
       key.ts = pBlockData->aTSKEY[tRow.iRow];
 
       if (SL_NODE_FORWARD(pos[0], 0) != pTbData->sl.pTail) {
-        tbDataMovePosTo(pTbData, pos, &key, SL_MOVE_FROM_POS);
+        tbDataMovePosTo(pTbData, pos, &tRow, SL_MOVE_FROM_POS);
       }
 
       if ((code = tbDataDoPut(pMemTable, pTbData, pos, &tRow, 1))) goto _exit;
@@ -717,7 +697,7 @@ static int32_t tsdbInsertRowDataToTable(SMemTable *pMemTable, STbData *pTbData, 
   // backward put first data
   tRow.pTSRow = aRow[iRow++];
   key.ts = tRow.pTSRow->ts;
-  tbDataMovePosTo(pTbData, pos, &key, SL_MOVE_BACKWARD);
+  tbDataMovePosTo(pTbData, pos, &tRow, SL_MOVE_BACKWARD);
   code = tbDataDoPut(pMemTable, pTbData, pos, &tRow, 0);
   if (code) goto _exit;
   lRow = tRow;
@@ -735,7 +715,7 @@ static int32_t tsdbInsertRowDataToTable(SMemTable *pMemTable, STbData *pTbData, 
       key.ts = tRow.pTSRow->ts;
 
       if (SL_NODE_FORWARD(pos[0], 0) != pTbData->sl.pTail) {
-        tbDataMovePosTo(pTbData, pos, &key, SL_MOVE_FROM_POS);
+        tbDataMovePosTo(pTbData, pos, &tRow, SL_MOVE_FROM_POS);
       }
 
       code = tbDataDoPut(pMemTable, pTbData, pos, &tRow, 1);

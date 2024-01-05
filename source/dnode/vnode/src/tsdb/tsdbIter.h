@@ -45,7 +45,7 @@ typedef struct {
     SDataFileReader *dataReader;  // TSDB_ITER_TYPE_DATA || TSDB_ITER_TYPE_DATA_TOMB
     struct {
       SMemTable *memt;  // TSDB_ITER_TYPE_MEMT_TOMB
-      TSDBKEY    from[1];
+      TSDBROW    from[1];
     };  // TSDB_ITER_TYPE_MEMT
   };
   bool    filterByVersion;

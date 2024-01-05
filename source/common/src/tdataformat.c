@@ -85,10 +85,19 @@ int32_t tRowBuild(SArray *aColVal, const STSchema *pTSchema, SRow **ppRow) {
   int32_t         nkv = 0;
   int32_t         maxIdx = 0;
   int32_t         nIdx = 0;
+  int32_t         kType = TSDB_DATA_TYPE_NULL;
   while (pTColumn) {
     if (pColVal) {
       if (pColVal->cid == pTColumn->colId) {
         if (COL_VAL_IS_VALUE(pColVal)) {  // VALUE
+          if (pTColumn->flags & COL_IS_KEY) {
+            if (kType == TSDB_DATA_TYPE_NULL) {
+              kType = pTColumn->type;
+            } else {
+              code = TSDB_CODE_INVALID_PARA;
+              goto _exit;
+            }
+          }
           flag |= HAS_VALUE;
           maxIdx = nkv;
           if (IS_VAR_DATA_TYPE(pTColumn->type)) {
@@ -99,8 +108,16 @@ int32_t tRowBuild(SArray *aColVal, const STSchema *pTSchema, SRow **ppRow) {
           }
           nIdx++;
         } else if (COL_VAL_IS_NONE(pColVal)) {  // NONE
+          if (ASSERTS((pTColumn->flags & COL_IS_KEY) == 0, "invalid input")) {
+            code = TSDB_CODE_INVALID_PARA;
+            goto _exit;
+          }
           flag |= HAS_NONE;
         } else if (COL_VAL_IS_NULL(pColVal)) {  // NULL
+          if (ASSERTS((pTColumn->flags & COL_IS_KEY) == 0, "invalid input")) {
+            code = TSDB_CODE_INVALID_PARA;
+            goto _exit;
+          }
           flag |= HAS_NULL;
           maxIdx = nkv;
           nkv += tPutI16v(NULL, -pTColumn->colId);
@@ -115,12 +132,20 @@ int32_t tRowBuild(SArray *aColVal, const STSchema *pTSchema, SRow **ppRow) {
         pTColumn = (++iTColumn < pTSchema->numOfCols) ? pTSchema->columns + iTColumn : NULL;
         pColVal = (++iColVal < nColVal) ? &colVals[iColVal] : NULL;
       } else if (pColVal->cid > pTColumn->colId) {  // NONE
+        if (ASSERTS((pTColumn->flags & COL_IS_KEY) == 0, "invalid input")) {
+          code = TSDB_CODE_INVALID_PARA;
+          goto _exit;
+        }
         flag |= HAS_NONE;
         pTColumn = (++iTColumn < pTSchema->numOfCols) ? pTSchema->columns + iTColumn : NULL;
       } else {
         pColVal = (++iColVal < nColVal) ? &colVals[iColVal] : NULL;
       }
     } else {  // NONE
+      if (ASSERTS((pTColumn->flags & COL_IS_KEY) == 0, "invalid input")) {
+        code = TSDB_CODE_INVALID_PARA;
+        goto _exit;
+      }
       flag |= HAS_NONE;
       pTColumn = (++iTColumn < pTSchema->numOfCols) ? pTSchema->columns + iTColumn : NULL;
     }
@@ -180,7 +205,7 @@ int32_t tRowBuild(SArray *aColVal, const STSchema *pTSchema, SRow **ppRow) {
   pColVal = &colVals[0];
 
   pRow->flag = flag;
-  pRow->rsv = 0;
+  pRow->kType = kType;
   pRow->sver = pTSchema->version;
   pRow->len = nRow;
   memcpy(&pRow->ts, &pColVal->value.val, sizeof(TSKEY));
