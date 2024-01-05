@@ -868,6 +868,7 @@ static int32_t createPageBuf(SSortHandle* pHandle) {
 }
 
 static int32_t transformIntoSortInputBlock(SSortHandle* pHandle, SSDataBlock* pSrcBlock, SSDataBlock* pSortInputBlk) {
+  int64_t ztn = taosGetTimestampMs();
   int32_t nRows = pSrcBlock->info.rows;
   pSortInputBlk->info.window = pSrcBlock->info.window;
   pSortInputBlk->info.id = pSrcBlock->info.id;
@@ -902,7 +903,7 @@ static int32_t transformIntoSortInputBlock(SSortHandle* pHandle, SSDataBlock* pS
   }
 
   pSortInputBlk->info.rows = nRows;
-
+  zt67 += taosGetTimestampMs() - ztn;
   return 0;
 }
 
@@ -1067,7 +1068,7 @@ static int32_t appendDataBlockToPageBuf(SSortHandle* pHandle, SSDataBlock* blk, 
 }
 
 static int32_t saveDataBlockToPageBufPages(SSortHandle* pHandle, SSDataBlock* pDataBlock, SArray* pPageIdList) {
-  zt10 = taosGetTimestampMs();
+  int64_t ztn = taosGetTimestampMs();
   int32_t start = 0;
   while (start < pDataBlock->info.rows) {
     int32_t stop = 0;
@@ -1098,8 +1099,7 @@ static int32_t saveDataBlockToPageBufPages(SSortHandle* pHandle, SSDataBlock* pD
     start = stop + 1;
   }
 
-  zt11 = taosGetTimestampMs();
-  zt34 += zt11-zt10;
+  zt34 += taosGetTimestampMs()-ztn;
   return 0;
 }
 
@@ -1317,8 +1317,9 @@ static int32_t sortBlocksToExtSourceWhenRowIdSort(SSortHandle* pHandle, SArray* 
       }
     }
     blockDataEnsureCapacity(pHandle->pExtDataBlock, pHandle->pExtDataBlock->info.rows + 1);
+    int64_t ztm = taosGetTimestampMs();
     appendOneRowToDataBlock(pHandle->pExtDataBlock, minBlk, &minRow);
-
+    zt78 += taosGetTimestampMs()-ztm;
     blkPgSz += bufInc;
     ++nRows;
 
