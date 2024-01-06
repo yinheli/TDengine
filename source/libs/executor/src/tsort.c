@@ -86,8 +86,10 @@ struct SSortHandle {
 };
 
 int64_t zts, zte, zt0, zt1, zt2, zt3, zt4, zt5, zt6, zt7, zt8, zt9, zt10, zt11;
-int64_t zt01, zt12, zt23, zt34, zt45, zt56, zt67, zt78;
+int64_t zt01, zt12, zt23, zt34, zt45, zt56, zt67, zt78, zt89, zt910;
 
+int64_t ttts;
+int64_t tt01, tt02, tt03, tt04, tt05, tt06, tt07, tt08, tt09, tt10, tt11, tt12, tt13;
 void tsortSetSingleTableMerge(SSortHandle* pHandle) {
   pHandle->singleTableMerge = true;
 }
@@ -868,6 +870,7 @@ static int32_t createPageBuf(SSortHandle* pHandle) {
 }
 
 static int32_t transformIntoSortInputBlock(SSortHandle* pHandle, SSDataBlock* pSrcBlock, SSDataBlock* pSortInputBlk) {
+  int64_t ztn0 = taosGetTimestampMs();
   int32_t nRows = pSrcBlock->info.rows;
   pSortInputBlk->info.window = pSrcBlock->info.window;
   pSortInputBlk->info.id = pSrcBlock->info.id;
@@ -887,13 +890,16 @@ static int32_t transformIntoSortInputBlock(SSortHandle* pHandle, SSDataBlock* pS
     blockDataSplitRows(pSrcBlock, pSrcBlock->info.hasVarCol, start, &stop, pHandle->extRowsPageSize);
     SSDataBlock* p = blockDataExtractBlock(pSrcBlock, start, stop-start+1);
 
+    int64_t ztn = taosGetTimestampMs();
     int32_t pageId = -1;
     void* pPage = getNewBufPage(pHandle->pExtRowsBuf, &pageId);
+    zt45 += taosGetTimestampMs() - ztn;
 
     int32_t size = blockDataGetSize(p) + sizeof(int32_t) + taosArrayGetSize(p->pDataBlock) * sizeof(int32_t);
     ASSERT(size <= getBufPageSize(pHandle->pExtRowsBuf));
-
+    ztn = taosGetTimestampMs();
     blockDataToBuf(pPage, p);
+    zt56 += taosGetTimestampMs() - ztn;
 
     setBufPageDirty(pPage, true);
     releaseBufPage(pHandle->pExtRowsBuf, pPage);
@@ -906,9 +912,9 @@ static int32_t transformIntoSortInputBlock(SSortHandle* pHandle, SSDataBlock* pS
     }
     start = stop + 1;
   }
-
+  
   pSortInputBlk->info.rows = nRows;
-
+  zt67 += taosGetTimestampMs() - ztn0;
   return 0;
 }
 
@@ -1227,6 +1233,7 @@ static int32_t getPageBufIncForRow(SSDataBlock* blk, int32_t row, int32_t rowIdx
 }
 
 static int32_t sortBlocksToExtSourceWhenNotRowIdSort(SSortHandle* pHandle, SArray* aBlk, SArray* aExtSrc) {
+  int64_t ttts0 = taosGetTimestampMs();
   int32_t code = TSDB_CODE_SUCCESS;
   int pgHeaderSz = sizeof(int32_t) + sizeof(int32_t) * taosArrayGetSize(pHandle->pDataBlock->pDataBlock);
   int32_t rowCap = blockDataGetCapacityInRow(pHandle->pDataBlock, pHandle->pageSize, pgHeaderSz);
@@ -1293,8 +1300,10 @@ static int32_t sortBlocksToExtSourceWhenNotRowIdSort(SSortHandle* pHandle, SArra
           break;
         }        
     }
+    int64_t tts10 = taosGetTimestampMs();
     blockDataEnsureCapacity(pHandle->pDataBlock, pHandle->pDataBlock->info.rows + 1);
     appendOneRowToDataBlock(pHandle->pDataBlock, minBlk, &minRow);
+    zt78 += taosGetTimestampMs() - tts10;
     blkPgSz += bufInc;
 
     ++nRows;
@@ -1330,7 +1339,6 @@ static int32_t sortBlocksToExtSourceWhenNotRowIdSort(SSortHandle* pHandle, SArra
   taosMemoryFree(sup.aTs);
 
   tMergeTreeDestroy(&pTree);
-
   return 0;
 }
 
@@ -1383,7 +1391,6 @@ static int32_t sortBlocksToExtSourceWhenRowIdSort(SSortHandle* pHandle, SArray* 
     SSDataBlock* minBlk = taosArrayGetP(aBlk, minIdx);
     int32_t minRow = sup.aRowIdx[minIdx];
     int32_t bufInc = getPageBufIncForRow(pHandle->pDataBlock, minRow, pHandle->pExtDataBlock->info.rows);
-
     if (blkPgSz <= pHandle->pageSize && blkPgSz + bufInc > pHandle->pageSize) {
       SColumnInfoData* tsCol = taosArrayGet(pHandle->pExtDataBlock->pDataBlock, pOrigBlockOrder->slotId);
       lastPageBufTs = ((int64_t*)tsCol->pData)[pHandle->pExtDataBlock->info.rows - 1];
@@ -1404,9 +1411,10 @@ static int32_t sortBlocksToExtSourceWhenRowIdSort(SSortHandle* pHandle, SArray* 
           break;
       }
     }
+    int64_t tts10 = taosGetTimestampMs();
     blockDataEnsureCapacity(pHandle->pExtDataBlock, pHandle->pExtDataBlock->info.rows + 1);
     appendOneRowToDataBlock(pHandle->pExtDataBlock, minBlk, &minRow);
-
+    zt78 += taosGetTimestampMs() - tts10;
     blkPgSz += bufInc;
     ++nRows;
 
@@ -1442,7 +1450,6 @@ static int32_t sortBlocksToExtSourceWhenRowIdSort(SSortHandle* pHandle, SArray* 
   taosMemoryFree(sup.aTs);
 
   tMergeTreeDestroy(&pTree);
-
   return 0;
 }
 

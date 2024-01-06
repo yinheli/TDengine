@@ -208,7 +208,9 @@ void tsortAppendTupleToBlock(SSortHandle* pHandle, SSDataBlock* pBlock, STupleHa
 int32_t tsortCompAndBuildKeys(const SArray* pSortCols, char* keyBuf, int32_t* keyLen, const STupleHandle* pTuple);
 
 extern int64_t zts, zte, zt0, zt1, zt2, zt3, zt4, zt5, zt6, zt7, zt8, zt9, zt10, zt11;
-extern int64_t zt01, zt12, zt23, zt34, zt45, zt56, zt67, zt78;
+extern int64_t zt01, zt12, zt23, zt34, zt45, zt56, zt67, zt78, zt89, zt910;
+extern int64_t ttts;
+extern int64_t tt01, tt02, tt03, tt04, tt05, tt06, tt07, tt08, tt09, tt10, tt11, tt12, tt13;
 #ifdef __cplusplus
 }
 #endif
