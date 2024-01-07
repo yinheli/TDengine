@@ -3672,8 +3672,13 @@ void destroyTableMergeScanOperatorInfo(void* param) {
 
   taosArrayDestroy(pTableScanInfo->pSortInfo);
   taosMemoryFreeClear(param);
-  uInfo("slzhou create initial sources: %ld, internal merge sort %ld, final read %ld. idx/whl write time %ld, extrows page: %ld, extrows buf %ld, idx/whl extra %ld, extrows blk %ld", zt01, zt12, zt23, zt34, zt45, zt56, zt67, zt78);
+  uInfo("slzhou create initial sources: %6ld, internal merge sort %6ld, final read %6ld. \t" 
+         "loop1 %6ld, %6ld, loopif %6ld, loop2 %6ld, %6ld. \t",
+        zt01, zt12, zt23, 
+        zt6, zt7, zt8, 
+        zt9, zt10);
   zt01 = 0; zt12 = 0; zt23 = 0; zt34 = 0; zt45 = 0; zt56 = 0; zt67=0; zt78 = 0;
+  zt6 = 0; zt7 = 0; zt8 = 0; zt9 = 0; zt10 = 0; zt11 = 0;
 }
 
 int32_t getTableMergeScanExplainExecInfo(SOperatorInfo* pOptr, void** pOptrExplain, uint32_t* len) {

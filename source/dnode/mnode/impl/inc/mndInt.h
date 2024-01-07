@@ -37,7 +37,7 @@ extern "C" {
 #define mFatal(...) { if (mDebugFlag & DEBUG_FATAL) { taosPrintLog("MND FATAL ", DEBUG_FATAL, 255,        __VA_ARGS__); }}
 #define mError(...) { if (mDebugFlag & DEBUG_ERROR) { taosPrintLog("MND ERROR ", DEBUG_ERROR, 255,        __VA_ARGS__); }}
 #define mWarn(...)  { if (mDebugFlag & DEBUG_WARN)  { taosPrintLog("MND WARN ",  DEBUG_WARN,  255,        __VA_ARGS__); }}
-#define mInfo(...)  { if (mDebugFlag & DEBUG_INFO)  { taosPrintLog("MND ",       DEBUG_INFO,  255,        __VA_ARGS__); }}
+#define mInfo(...)  { if (mDebugFlag & DEBUG_INFO)  { taosPrintLog("MND ",       DEBUG_INFO,  mDebugFlag,        __VA_ARGS__); }}
 #define mDebug(...) { if (mDebugFlag & DEBUG_DEBUG) { taosPrintLog("MND ",       DEBUG_DEBUG, mDebugFlag, __VA_ARGS__); }}
 #define mTrace(...) { if (mDebugFlag & DEBUG_TRACE) { taosPrintLog("MND ",       DEBUG_TRACE, mDebugFlag, __VA_ARGS__); }}
 

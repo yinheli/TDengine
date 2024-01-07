@@ -868,7 +868,6 @@ static int32_t createPageBuf(SSortHandle* pHandle) {
 }
 
 static int32_t transformIntoSortInputBlock(SSortHandle* pHandle, SSDataBlock* pSrcBlock, SSDataBlock* pSortInputBlk) {
-  int64_t ztn = taosGetTimestampMs();
   int32_t nRows = pSrcBlock->info.rows;
   pSortInputBlk->info.window = pSrcBlock->info.window;
   pSortInputBlk->info.id = pSrcBlock->info.id;
@@ -883,16 +882,11 @@ static int32_t transformIntoSortInputBlock(SSortHandle* pHandle, SSDataBlock* pS
   SColumnInfoData* rowIdxCol = taosArrayGet(pSortInputBlk->pDataBlock, 2);
 
   int32_t pageId = -1;
-  zt6 = taosGetTimestampMs();
   void* pPage = getNewBufPage(pHandle->pExtRowsBuf, &pageId);
-  zt7 = taosGetTimestampMs();
-  zt45 += zt7-zt6;
   int32_t size = blockDataGetSize(pSrcBlock) + sizeof(int32_t) + taosArrayGetSize(pSrcBlock->pDataBlock) * sizeof(int32_t);
   ASSERT(size <= getBufPageSize(pHandle->pExtRowsBuf));
 
   blockDataToBuf(pPage, pSrcBlock);
-  zt8 = taosGetTimestampMs();
-  zt56 += zt8-zt7;
   setBufPageDirty(pPage, true);
   releaseBufPage(pHandle->pExtRowsBuf, pPage);
 
@@ -903,7 +897,6 @@ static int32_t transformIntoSortInputBlock(SSortHandle* pHandle, SSDataBlock* pS
   }
 
   pSortInputBlk->info.rows = nRows;
-  zt67 += taosGetTimestampMs() - ztn;
   return 0;
 }
 
@@ -1050,7 +1043,6 @@ static int32_t blockCompareTsFn(const void* pLeft, const void* pRight, void* par
 }
 
 static int32_t appendDataBlockToPageBuf(SSortHandle* pHandle, SSDataBlock* blk, SArray* aPgId) {
-  zt10 = taosGetTimestampMs();
   int32_t pageId = -1;
   void*   pPage = getNewBufPage(pHandle->pBuf, &pageId);
   taosArrayPush(aPgId, &pageId);
@@ -1062,13 +1054,10 @@ static int32_t appendDataBlockToPageBuf(SSortHandle* pHandle, SSDataBlock* blk, 
 
   setBufPageDirty(pPage, true);
   releaseBufPage(pHandle->pBuf, pPage);
-  zt11 = taosGetTimestampMs();
-  zt34 += zt11-zt10;
   return 0;
 }
 
 static int32_t saveDataBlockToPageBufPages(SSortHandle* pHandle, SSDataBlock* pDataBlock, SArray* pPageIdList) {
-  int64_t ztn = taosGetTimestampMs();
   int32_t start = 0;
   while (start < pDataBlock->info.rows) {
     int32_t stop = 0;
@@ -1099,7 +1088,6 @@ static int32_t saveDataBlockToPageBufPages(SSortHandle* pHandle, SSDataBlock* pD
     start = stop + 1;
   }
 
-  zt34 += taosGetTimestampMs()-ztn;
   return 0;
 }
 
@@ -1175,12 +1163,16 @@ static int32_t sortBlocksToExtSourceWhenNotRowIdSort(SSortHandle* pHandle, SArra
   int64_t lastPageBufTs = (pHandleBlockOrder->order == TSDB_ORDER_ASC) ? INT64_MAX : INT64_MIN;
   int64_t currTs = (pHandleBlockOrder->order == TSDB_ORDER_ASC) ? INT64_MAX : INT64_MIN;
   while (nRows < totalRows) {
+    int64_t tloop = taosGetTimestampMs();
     int32_t minIdx = tMergeTreeGetChosenIndex(pTree);
+    int64_t tloop1 = taosGetTimestampMs();
+    zt6 += tloop1 - tloop;
     SSDataBlock* minBlk = taosArrayGetP(aBlk, minIdx);
     int32_t minRow = sup.aRowIdx[minIdx];
     int32_t bufInc = getPageBufIncForRow(minBlk, minRow, pHandle->pDataBlock->info.rows);
-
+    zt7 += taosGetTimestampMs() - tloop1;
     if (blkPgSz <= pHandle->pageSize && blkPgSz + bufInc > pHandle->pageSize) {
+        int64_t tif=taosGetTimestampMs();
         SColumnInfoData* tsCol = taosArrayGet(pHandle->pDataBlock->pDataBlock, pHandleBlockOrder->slotId);
         lastPageBufTs = ((int64_t*)tsCol->pData)[pHandle->pDataBlock->info.rows - 1];
         appendDataBlockToPageBuf(pHandle, pHandle->pDataBlock, aPgId);
@@ -1197,11 +1189,14 @@ static int32_t sortBlocksToExtSourceWhenNotRowIdSort(SSortHandle* pHandle, SArra
           }
           break;
         }        
+        zt8 += taosGetTimestampMs() - tif;
     }
+    int64_t taddrow = taosGetTimestampMs();
     blockDataEnsureCapacity(pHandle->pDataBlock, pHandle->pDataBlock->info.rows + 1);
     appendOneRowToDataBlock(pHandle->pDataBlock, minBlk, &minRow);
     blkPgSz += bufInc;
-
+    int64_t taddrow1 = taosGetTimestampMs();
+    zt9 += taddrow1 - taddrow;
     ++nRows;
 
     if (sup.aRowIdx[minIdx] == minBlk->info.rows - 1) {
@@ -1210,6 +1205,7 @@ static int32_t sortBlocksToExtSourceWhenNotRowIdSort(SSortHandle* pHandle, SArra
       ++sup.aRowIdx[minIdx];
     }
     tMergeTreeAdjust(pTree, tMergeTreeGetAdjustIndex(pTree));
+    zt10 += taosGetTimestampMs() - taddrow1;
   }
   if (pHandle->pDataBlock->info.rows > 0) {
     if (!mergeLimitReached) {
@@ -1241,9 +1237,13 @@ static int32_t sortBlocksToExtSourceWhenNotRowIdSort(SSortHandle* pHandle, SArra
 
 static int32_t sortBlocksToExtSourceWhenRowIdSort(SSortHandle* pHandle, SArray* aBlk, SArray* aExtSrc) {
   int32_t code = TSDB_CODE_SUCCESS;
-  int pgHeaderSz = sizeof(int32_t) + sizeof(int32_t) * taosArrayGetSize(pHandle->pDataBlock->pDataBlock);
+  int32_t pgHeaderSz = blockDataGetSerialMetaSize(taosArrayGetSize(pHandle->pDataBlock->pDataBlock));
   int32_t rowCap = blockDataGetCapacityInRow(pHandle->pDataBlock, pHandle->pageSize, pgHeaderSz);
   blockDataEnsureCapacity(pHandle->pDataBlock, rowCap);
+  int32_t extMetaSize = blockDataGetSerialMetaSize(taosArrayGetSize(pHandle->pExtDataBlock->pDataBlock));
+  int32_t extRowCap = blockDataGetCapacityInRow(pHandle->pExtDataBlock, pHandle->extRowsPageSize, extMetaSize);
+  blockDataEnsureCapacity(pHandle->pExtDataBlock, extRowCap);
+
   blockDataCleanup(pHandle->pDataBlock);
   blockDataCleanup(pHandle->pExtDataBlock);
 
@@ -1269,6 +1269,14 @@ static int32_t sortBlocksToExtSourceWhenRowIdSort(SSortHandle* pHandle, SArray* 
 
   SArray* aPgId = taosArrayInit(8, sizeof(int32_t));
 
+  int32_t nRows = 0;
+  int32_t nMergedRows = 0;
+  bool mergeLimitReached = false;
+  int64_t lastPageBufTs = (pHandleBlockOrder->order == TSDB_ORDER_ASC) ? INT64_MAX : INT64_MIN;
+  int64_t currTs = (pHandleBlockOrder->order == TSDB_ORDER_ASC) ? INT64_MAX : INT64_MIN;
+  SSDataBlock* pSortInputBlk = createOneDataBlock(pHandle->pDataBlock, false);
+  SSDataBlock* pExtDataBlock = pHandle->pExtDataBlock;
+
   SMultiwayMergeTreeInfo* pTree = NULL;
   code = tMergeTreeCreate(&pTree, taosArrayGetSize(aBlk), &sup, blockCompareTsFn);
   if (TSDB_CODE_SUCCESS != code) {
@@ -1277,23 +1285,25 @@ static int32_t sortBlocksToExtSourceWhenRowIdSort(SSortHandle* pHandle, SArray* 
 
     return code;
   }
-  int32_t nRows = 0;
-  int32_t nMergedRows = 0;
-  bool mergeLimitReached = false;
-  int extPgHeaderSz = sizeof(int32_t) + sizeof(int32_t) * taosArrayGetSize(pHandle->pExtDataBlock->pDataBlock);
-  size_t blkPgSz = extPgHeaderSz;
-  int64_t lastPageBufTs = (pHandleBlockOrder->order == TSDB_ORDER_ASC) ? INT64_MAX : INT64_MIN;
-  int64_t currTs = (pHandleBlockOrder->order == TSDB_ORDER_ASC) ? INT64_MAX : INT64_MIN;
-  SSDataBlock* pSortInputBlk = createOneDataBlock(pHandle->pDataBlock, false);
   while (nRows < totalRows) {
+    int64_t tloop = taosGetTimestampMs();
     int32_t minIdx = tMergeTreeGetChosenIndex(pTree);
+    int64_t tloop1 = taosGetTimestampMs();
+    zt6 += tloop1 - tloop;
+
     SSDataBlock* minBlk = taosArrayGetP(aBlk, minIdx);
     int32_t minRow = sup.aRowIdx[minIdx];
-    int32_t bufInc = getPageBufIncForRow(minBlk, minRow, pHandle->pExtDataBlock->info.rows);
+    appendOneRowToDataBlock(pExtDataBlock, minBlk, &minRow);
+    int64_t taddrow1 = taosGetTimestampMs();
+    zt9 += taddrow1 - tloop1;
+    if (nRows == 0)
+      uInfo("slzhou wall %ld", zt9);
+    ++nRows;
 
-    if (blkPgSz <= pHandle->extRowsPageSize && blkPgSz + bufInc > pHandle->extRowsPageSize) {
-      SColumnInfoData* tsCol = taosArrayGet(pHandle->pExtDataBlock->pDataBlock, pOrigBlockOrder->slotId);
-      lastPageBufTs = ((int64_t*)tsCol->pData)[pHandle->pExtDataBlock->info.rows - 1];
+    if (pExtDataBlock->info.rows == extRowCap) {
+      int64_t tif = taosGetTimestampMs();
+      SColumnInfoData* tsCol = taosArrayGet(pExtDataBlock->pDataBlock, pOrigBlockOrder->slotId);
+      lastPageBufTs = ((int64_t*)tsCol->pData)[pExtDataBlock->info.rows - 1];
 
       transformIntoSortInputBlock(pHandle, pHandle->pExtDataBlock, pSortInputBlk);
       blockDataMerge(pHandle->pDataBlock, pSortInputBlk);
@@ -1302,10 +1312,8 @@ static int32_t sortBlocksToExtSourceWhenRowIdSort(SSortHandle* pHandle, SArray* 
           saveDataBlockToPageBufPages(pHandle, pHandle->pDataBlock, aPgId);
           blockDataCleanup(pHandle->pDataBlock);
       }
-      nMergedRows += pHandle->pExtDataBlock->info.rows;
-      blockDataCleanup(pHandle->pExtDataBlock);
-      blkPgSz = extPgHeaderSz;
-      bufInc = getPageBufIncForRow(minBlk, minRow, 0);
+      nMergedRows += pExtDataBlock->info.rows;
+      blockDataCleanup(pExtDataBlock);
 
       if ((pHandle->mergeLimit != -1) && (nMergedRows >= pHandle->mergeLimit)) {
           mergeLimitReached = true;
@@ -1315,29 +1323,26 @@ static int32_t sortBlocksToExtSourceWhenRowIdSort(SSortHandle* pHandle, SArray* 
           }
           break;
       }
+      zt8 += taosGetTimestampMs() - tif;
     }
-    blockDataEnsureCapacity(pHandle->pExtDataBlock, pHandle->pExtDataBlock->info.rows + 1);
-    int64_t ztm = taosGetTimestampMs();
-    appendOneRowToDataBlock(pHandle->pExtDataBlock, minBlk, &minRow);
-    zt78 += taosGetTimestampMs()-ztm;
-    blkPgSz += bufInc;
-    ++nRows;
 
     if (sup.aRowIdx[minIdx] == minBlk->info.rows - 1) {
       sup.aRowIdx[minIdx] = -1;
     } else {
       ++sup.aRowIdx[minIdx];
     }
+    int64_t tadj = taosGetTimestampMs();
     tMergeTreeAdjust(pTree, tMergeTreeGetAdjustIndex(pTree));
+    zt10 += taosGetTimestampMs() - tadj;
   }
-  if (pHandle->pExtDataBlock->info.rows > 0) {
+  if (pExtDataBlock->info.rows > 0) {
     if (!mergeLimitReached) {
-      SColumnInfoData* tsCol = taosArrayGet(pHandle->pExtDataBlock->pDataBlock, pOrigBlockOrder->slotId);
-      lastPageBufTs = ((int64_t*)tsCol->pData)[pHandle->pExtDataBlock->info.rows - 1];
-      transformIntoSortInputBlock(pHandle, pHandle->pExtDataBlock, pSortInputBlk);
+      SColumnInfoData* tsCol = taosArrayGet(pExtDataBlock->pDataBlock, pOrigBlockOrder->slotId);
+      lastPageBufTs = ((int64_t*)tsCol->pData)[pExtDataBlock->info.rows - 1];
+      transformIntoSortInputBlock(pHandle, pExtDataBlock, pSortInputBlk);
       blockDataMerge(pHandle->pDataBlock, pSortInputBlk);
       blockDataCleanup(pSortInputBlk);
-      nMergedRows += pHandle->pExtDataBlock->info.rows;
+      nMergedRows += pExtDataBlock->info.rows;
       if ((pHandle->mergeLimit != -1) && (nMergedRows >= pHandle->mergeLimit)) {
           mergeLimitReached = true;
           if ((lastPageBufTs < pHandle->currMergeLimitTs && pHandleBlockOrder->order == TSDB_ORDER_ASC) ||
@@ -1346,7 +1351,7 @@ static int32_t sortBlocksToExtSourceWhenRowIdSort(SSortHandle* pHandle, SArray* 
           }
       }
     }
-    blockDataCleanup(pHandle->pExtDataBlock);
+    blockDataCleanup(pExtDataBlock);
   }
   if (pHandle->pDataBlock->info.rows > 0) {
     saveDataBlockToPageBufPages(pHandle, pHandle->pDataBlock, aPgId);
@@ -1361,7 +1366,6 @@ static int32_t sortBlocksToExtSourceWhenRowIdSort(SSortHandle* pHandle, SArray* 
   taosMemoryFree(sup.aTs);
 
   tMergeTreeDestroy(&pTree);
-
   return 0;
 }
 
@@ -1431,7 +1435,6 @@ static int32_t createBlocksMergeSortInitialSources(SSortHandle* pHandle) {
 
       int64_t el = taosGetTimestampUs() - p;
       pHandle->sortElapsed += el;
-
       for (int i = 0; i < taosArrayGetSize(aBlkSort); ++i) {
         blockDataDestroy(taosArrayGetP(aBlkSort, i));
       }
