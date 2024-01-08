@@ -41,6 +41,7 @@ typedef struct SDnodeMgmt {
   GetMnodeLoadsFp        getMnodeLoadsFp;
   GetQnodeLoadsFp        getQnodeLoadsFp;
   int32_t                statusSeq;
+  SendMonitorReportFp    sendMonitorReportFpBasic;
 } SDnodeMgmt;
 
 // dmHandle.c

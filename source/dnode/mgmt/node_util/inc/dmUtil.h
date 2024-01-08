@@ -120,6 +120,7 @@ typedef struct {
   ProcessAlterNodeTypeFp processAlterNodeTypeFp;
   ProcessDropNodeFp   processDropNodeFp;
   SendMonitorReportFp sendMonitorReportFp;
+  SendMonitorReportFp sendMonitorReportFpBasic;
   GetVnodeLoadsFp     getVnodeLoadsFp;
   GetVnodeLoadsFp     getVnodeLoadsLiteFp;
   GetMnodeLoadsFp     getMnodeLoadsFp;

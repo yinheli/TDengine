@@ -192,7 +192,7 @@ static void monGenBasicJson(SMonInfo *pMonitor) {
   tjsonAddStringToObject(pJson, "dnode_ep", pInfo->dnode_ep);
   snprintf(buf, sizeof(buf), "%" PRId64, pInfo->cluster_id);
   tjsonAddStringToObject(pJson, "cluster_id", buf);
-  tjsonAddDoubleToObject(pJson, "protocol", 2);
+  tjsonAddDoubleToObject(pJson, "protocol", pInfo->protocol);
 }
 
 static void monGenClusterJson(SMonInfo *pMonitor) {
@@ -535,7 +535,7 @@ static const char *monLogLevelStr(ELogLevel level) {
 void monSendReport(SMonInfo *pMonitor){
   char *pCont = tjsonToString(pMonitor->pJson);
   if(tsMonitorLogProtocol){
-    uInfoL("report cont:\n%s", pCont);
+    uInfoL("report cont basic:\n%s", pCont);
   }
   if (pCont != NULL) {
     EHttpCompFlag flag = tsMonitor.cfg.comp ? HTTP_GZIP : HTTP_FLAT;
@@ -550,15 +550,6 @@ void monGenAndSendReport() {
   SMonInfo *pMonitor = monCreateMonitorInfo();
   if (pMonitor == NULL) return;
 
-  monGenBasicJson(pMonitor);
-  monGenClusterJson(pMonitor);
-  //monGenVgroupJson(pMonitor);
-  //monGenStbJson(pMonitor);
-  //monGenGrantJson(pMonitor);
-  //monGenDnodeJson(pMonitor);
-  //monGenDiskJson(pMonitor);
-  //monGenLogJson(pMonitor);
-
   monGenClusterInfoTable(pMonitor);
   monGenVgroupInfoTable(pMonitor);
   monGenDnodeInfoTable(pMonitor);
@@ -568,10 +559,25 @@ void monGenAndSendReport() {
   monGenMnodeRoleTable(pMonitor);
   monGenVnodeRoleTable(pMonitor);
 
-  monSendReport(pMonitor);
-
   monSendPromReport();
 
   monCleanupMonitorInfo(pMonitor);
 }
 
+void monGenAndSendReportBasic() {
+  SMonInfo *pMonitor = monCreateMonitorInfo();
+  if (pMonitor == NULL) return;
+
+  monGenBasicJson(pMonitor);
+  monGenClusterJson(pMonitor);
+  //monGenVgroupJson(pMonitor);
+  //monGenStbJson(pMonitor);
+  //monGenGrantJson(pMonitor);
+  //monGenDnodeJson(pMonitor);
+  //monGenDiskJson(pMonitor);
+  //monGenLogJson(pMonitor);
+
+  monSendReport(pMonitor);
+
+  monCleanupMonitorInfo(pMonitor);
+}

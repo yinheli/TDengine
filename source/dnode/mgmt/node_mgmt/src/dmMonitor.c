@@ -18,7 +18,8 @@
 #include "dmNodes.h"
 
 static void dmGetMonitorBasicInfo(SDnode *pDnode, SMonBasicInfo *pInfo) {
-  pInfo->protocol = 1;
+  //pInfo->protocol = 1;
+  pInfo->protocol = 2;
   pInfo->dnode_id = pDnode->data.dnodeId;
   pInfo->cluster_id = pDnode->data.clusterId;
   tstrncpy(pInfo->dnode_ep, tsLocalEp, TSDB_EP_LEN);
@@ -106,6 +107,19 @@ void dmSendMonitorReport() {
   dmGetQmMonitorInfo(pDnode);
   dmGetSmMonitorInfo(pDnode);
   monGenAndSendReport();
+}
+
+void dmSendMonitorReportBasic() {
+  if (!tsEnableMonitor || tsMonitorFqdn[0] == 0 || tsMonitorPort == 0) return;
+  dTrace("send monitor report to %s:%u", tsMonitorFqdn, tsMonitorPort);
+
+  SDnode *pDnode = dmInstance();
+  dmGetDmMonitorInfo(pDnode);
+  dmGetMmMonitorInfo(pDnode);
+  dmGetVmMonitorInfo(pDnode);
+  dmGetQmMonitorInfo(pDnode);
+  dmGetSmMonitorInfo(pDnode);
+  monGenAndSendReportBasic();
 }
 
 void dmGetVnodeLoads(SMonVloadInfo *pInfo) {

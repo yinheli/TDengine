@@ -60,6 +60,7 @@ static int32_t dmOpenMgmt(SMgmtInputOpt *pInput, SMgmtOutputOpt *pOutput) {
   pMgmt->processAlterNodeTypeFp = pInput->processAlterNodeTypeFp;
   pMgmt->processDropNodeFp = pInput->processDropNodeFp;
   pMgmt->sendMonitorReportFp = pInput->sendMonitorReportFp;
+  pMgmt->sendMonitorReportFpBasic = pInput->sendMonitorReportFpBasic;
   pMgmt->getVnodeLoadsFp = pInput->getVnodeLoadsFp;
   pMgmt->getVnodeLoadsLiteFp = pInput->getVnodeLoadsLiteFp;
   pMgmt->getMnodeLoadsFp = pInput->getMnodeLoadsFp;
