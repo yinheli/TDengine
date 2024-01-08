@@ -39,6 +39,7 @@ typedef struct SRowIter SRowIter;
 typedef struct STagVal  STagVal;
 typedef struct STag     STag;
 typedef struct SColData SColData;
+typedef struct SRowKey  SRowKey;
 
 #define HAS_NONE  ((uint8_t)0x1)
 #define HAS_NULL  ((uint8_t)0x2)
@@ -98,6 +99,8 @@ void    tRowDestroy(SRow *pRow);
 int32_t tRowSort(SArray *aRowP);
 int32_t tRowMerge(SArray *aRowP, STSchema *pTSchema, int8_t flag);
 int32_t tRowUpsertColData(SRow *pRow, STSchema *pTSchema, SColData *aColData, int32_t nColData, int32_t flag);
+void    tRowGetKey(SRow *row, SRowKey *key);
+int32_t tRowKeyCmpr(const void *p1, const void *p2);
 
 // SRowIter ================================
 int32_t  tRowIterOpen(SRow *pRow, STSchema *pTSchema, SRowIter **ppIter);
@@ -178,11 +181,11 @@ struct SValue {
   };
 };
 
-typedef struct SRowKey {
+struct SRowKey {
   TSKEY  ts;
   int8_t kType;
   SValue value;
-} SRowKey;
+};
 
 struct SColVal {
   int16_t cid;

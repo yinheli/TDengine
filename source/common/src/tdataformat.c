@@ -1126,6 +1126,30 @@ int32_t tRowUpsertColData(SRow *pRow, STSchema *pTSchema, SColData *aColData, in
   }
 }
 
+void tRowGetKey(SRow *row, SRowKey *key) {
+  key->ts = row->ts;
+  key->kType = row->kType;
+  if (key->kType != TSDB_DATA_TYPE_NULL) {
+    // TODO
+  }
+}
+
+int32_t tRowKeyCmpr(const void *p1, const void *p2) {
+  SRowKey *k1 = (SRowKey *)p1;
+  SRowKey *k2 = (SRowKey *)p2;
+  if (k1->ts < k2->ts) {
+    return -1;
+  } else if (k1->ts > k2->ts) {
+    return 1;
+  }
+
+  ASSERT(k1->kType == k2->kType);
+  if (k1->kType != TSDB_DATA_TYPE_NULL) {
+    // TODO
+  }
+  return 0;
+}
+
 // STag ========================================
 static int tTagValCmprFn(const void *p1, const void *p2) {
   if (((STagVal *)p1)->cid < ((STagVal *)p2)->cid) {
