@@ -1028,6 +1028,7 @@ static void initRowIdSort(SSortHandle* pHandle) {
   int32_t ret = db_create(&pHandle->pExtRowsDb, NULL, 0);
   ASSERT(ret == 0);
   DB* pExtRowsDb = pHandle->pExtRowsDb;
+  pExtRowsDb->set_cachesize(pExtRowsDb,  0, 512*1024*1024, 0);
   ret = pExtRowsDb->open(pExtRowsDb, NULL, "sort-ext-rows.db", NULL, DB_HASH, DB_CREATE|DB_TRUNCATE, 0);
   ASSERT(ret == 0);
   pHandle->extRowBytes = blockDataGetRowSize(pExtDataBlock) + taosArrayGetSize(pExtDataBlock->pDataBlock) + sizeof(int32_t);
