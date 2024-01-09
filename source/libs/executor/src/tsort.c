@@ -993,8 +993,7 @@ static int32_t saveBlockRowToBdb(SSortHandle* pHandle, SSDataBlock* pBlock, int3
 
 static void appendToRowIndexDataBlock(SSortHandle* pHandle, SSDataBlock* pSource, int32_t* rowIndex) {
   saveBlockRowToBdb(pHandle, pSource, *rowIndex, pHandle->extRowId);
-  pHandle->extRowId++;
-  if (pHandle->extRowId % 10000 == 0) {
+  if (pHandle->extRowId % 100000 == 0) {
     uInfo("%ld rows inserted", pHandle->extRowId);
   }
   SSDataBlock* pBlock = pHandle->pDataBlock;
@@ -1005,6 +1004,8 @@ static void appendToRowIndexDataBlock(SSortHandle* pHandle, SSDataBlock* pSource
 
   SColumnInfoData* pRowIdCol = taosArrayGet(pBlock->pDataBlock, 1);
   colDataSetInt64(pRowIdCol, pBlock->info.rows, &pHandle->extRowId);
+
+  pHandle->extRowId++;
 
   pBlock->info.rows += 1;
   *rowIndex += 1;
