@@ -102,6 +102,7 @@ source/libs/parser/inc/sql.*
 tests/script/tmqResult.txt
 tests/tmqResult.txt
 tests/script/jenkins/basic.txt
+tests/system-test/output.txt
 
 # Emacs
 # -*- mode: gitignore; -*-
