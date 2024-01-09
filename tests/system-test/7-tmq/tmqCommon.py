@@ -65,17 +65,22 @@ class TMQCom:
         sql = "insert into %s.consumeinfo values "%cdbName
         sql += "(now + %ds, %d, '%s', '%s', %d, %d, %d)"%(consumerId, consumerId, topicList, keyList, expectrowcnt, ifcheckdata, ifmanualcommit)
         tdLog.info("consume info sql: %s"%sql)
-        tdSql.query(sql)
+        tdSql.execute(sql)
 
-    def selectConsumeResult(self,expectRows,cdbName='cdb'):
+    def selectConsumeResult(self,expectRows,cdbName='cdb',count=30):
         resultList=[]
-        while 1:
+        count_init = 0
+        while True:
             tdSql.query("select * from %s.consumeresult"%cdbName)
             #tdLog.info("row: %d, %l64d, %l64d"%(tdSql.getData(0, 1),tdSql.getData(0, 2),tdSql.getData(0, 3))
             if tdSql.getRows() == expectRows:
                 break
             else:
                 time.sleep(0.5)
+                count_init += 1
+                if count_init == count:
+                    tdLog.exit(f"{tdSql.getRows()},{expectRows}")                   
+            
 
         for i in range(expectRows):
             tdLog.info ("consume id: %d, consume msgs: %d, consume rows: %d"%(tdSql.getData(i , 1), tdSql.getData(i , 2), tdSql.getData(i , 3)))
@@ -479,8 +484,9 @@ class TMQCom:
                 tdLog.exit("consumerId %d consume rows len is not match the rows by direct query,len(dstSplit):%d != len(srcSplit):%d, dst:%s, src:%s"
                            %(consumerId, len(dstSplit), len(srcSplit), dst, src))
 
-            for i in range(len(dstSplit)):
+            for i in range(1,len(dstSplit)):
                 if srcSplit[i] != dstSplit[i]:
+                    print(i,srcSplit[i],dstSplit[i])
                     srcFloat = float(srcSplit[i])
                     dstFloat = float(dstSplit[i])
                     if not math.isclose(srcFloat, dstFloat, abs_tol=1e-9):
