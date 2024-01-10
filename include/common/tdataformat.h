@@ -99,6 +99,7 @@ void    tRowDestroy(SRow *pRow);
 int32_t tRowSort(SArray *aRowP);
 int32_t tRowMerge(SArray *aRowP, STSchema *pTSchema, int8_t flag);
 int32_t tRowUpsertColData(SRow *pRow, STSchema *pTSchema, SColData *aColData, int32_t nColData, int32_t flag);
+int32_t tRowCmpr(const void *p1, const void *p2);
 void    tRowGetKey(const SRow *row, SRowKey *key);
 int32_t tRowKeyCmpr(const void *p1, const void *p2);
 

@@ -1126,28 +1126,80 @@ int32_t tRowUpsertColData(SRow *pRow, STSchema *pTSchema, SColData *aColData, in
   }
 }
 
+int32_t tRowCmpr(const void *p1, const void *p2) {
+  SRow *r1 = (SRow *)p1;
+  SRow *r2 = (SRow *)p2;
+
+  if (r1->kType == TSDB_DATA_TYPE_NULL) {
+    return (r1->ts < r2->ts) ? -1 : ((r1->ts > r2->ts) ? 1 : 0);
+  } else {
+    SRowKey k1, k2;
+    tRowGetKey(r1, &k1);
+    tRowGetKey(r2, &k2);
+    return tRowKeyCmpr(&k1, &k2);
+  }
+}
+
 void tRowGetKey(const SRow *row, SRowKey *key) {
   key->ts = row->ts;
   key->kType = row->kType;
-  if (row->kType == TSDB_DATA_TYPE_NULL) return;
+
+  if (row->kType == TSDB_DATA_TYPE_NULL) {
+    return;
+  }
 
   if (row->flag >> 4) {  // KV Row
     // TODO
   } else {  // Tuple Row
-    // TODO
+    if (IS_VAR_DATA_TYPE(row->kType)) {
+      // TODO
+    } else {
+      memcpy(&key->value.val, row->data, TYPE_BYTES[row->kType]);
+    }
   }
 }
 
-#define T_CMPR_SCALAR_VALUE(k1, k2, type)                               \
-  do {                                                                  \
-    if (*(type *)&(k1)->value.val < *(type *)&(k2)->value.val) {        \
-      return -1;                                                        \
-    } else if (*(type *)&(k1)->value.val > *(type *)&(k2)->value.val) { \
-      return 1;                                                         \
-    } else {                                                            \
-      return 0;                                                         \
-    }                                                                   \
+#define T_CMPR_SCALAR_VALUE(v1, v2, type)                   \
+  do {                                                      \
+    if (*(type *)&(v1)->val < *(type *)&(v2)->val) {        \
+      return -1;                                            \
+    } else if (*(type *)&(v1)->val > *(type *)&(v2)->val) { \
+      return 1;                                             \
+    } else {                                                \
+      return 0;                                             \
+    }                                                       \
   } while (0)
+
+static int32_t tValueCmpr(int8_t type, SValue *v1, SValue *v2) {
+  switch (type) {
+    case TSDB_DATA_TYPE_BOOL:
+    case TSDB_DATA_TYPE_TINYINT:
+      T_CMPR_SCALAR_VALUE(v1, v2, int8_t);
+    case TSDB_DATA_TYPE_SMALLINT:
+      T_CMPR_SCALAR_VALUE(v1, v2, int16_t);
+    case TSDB_DATA_TYPE_INT:
+      T_CMPR_SCALAR_VALUE(v1, v2, int32_t);
+    case TSDB_DATA_TYPE_BIGINT:
+    case TSDB_DATA_TYPE_TIMESTAMP:
+      T_CMPR_SCALAR_VALUE(v1, v2, int64_t);
+    case TSDB_DATA_TYPE_FLOAT:
+      T_CMPR_SCALAR_VALUE(v1, v2, float);
+    case TSDB_DATA_TYPE_DOUBLE:
+      T_CMPR_SCALAR_VALUE(v1, v2, double);
+    case TSDB_DATA_TYPE_UTINYINT:
+      T_CMPR_SCALAR_VALUE(v1, v2, uint8_t);
+    case TSDB_DATA_TYPE_USMALLINT:
+      T_CMPR_SCALAR_VALUE(v1, v2, uint16_t);
+    case TSDB_DATA_TYPE_UINT:
+      T_CMPR_SCALAR_VALUE(v1, v2, uint32_t);
+    case TSDB_DATA_TYPE_UBIGINT:
+      T_CMPR_SCALAR_VALUE(v1, v2, uint64_t);
+    default:
+      // TODO
+      ASSERT(0);
+  }
+  return 0;
+}
 
 int32_t tRowKeyCmpr(const void *p1, const void *p2) {
   SRowKey *k1 = (SRowKey *)p1;
@@ -1158,36 +1210,7 @@ int32_t tRowKeyCmpr(const void *p1, const void *p2) {
     return 1;
   }
 
-  if (k1->kType == TSDB_DATA_TYPE_NULL) return 0;
-
-  switch (k1->kType) {
-    case TSDB_DATA_TYPE_BOOL:
-    case TSDB_DATA_TYPE_TINYINT:
-      T_CMPR_SCALAR_VALUE(k1, k2, int8_t);
-    case TSDB_DATA_TYPE_SMALLINT:
-      T_CMPR_SCALAR_VALUE(k1, k2, int16_t);
-    case TSDB_DATA_TYPE_INT:
-      T_CMPR_SCALAR_VALUE(k1, k2, int32_t);
-    case TSDB_DATA_TYPE_BIGINT:
-    case TSDB_DATA_TYPE_TIMESTAMP:
-      T_CMPR_SCALAR_VALUE(k1, k2, int64_t);
-    case TSDB_DATA_TYPE_FLOAT:
-      T_CMPR_SCALAR_VALUE(k1, k2, float);
-    case TSDB_DATA_TYPE_DOUBLE:
-      T_CMPR_SCALAR_VALUE(k1, k2, double);
-    case TSDB_DATA_TYPE_UTINYINT:
-      T_CMPR_SCALAR_VALUE(k1, k2, uint8_t);
-    case TSDB_DATA_TYPE_USMALLINT:
-      T_CMPR_SCALAR_VALUE(k1, k2, uint16_t);
-    case TSDB_DATA_TYPE_UINT:
-      T_CMPR_SCALAR_VALUE(k1, k2, uint32_t);
-    case TSDB_DATA_TYPE_UBIGINT:
-      T_CMPR_SCALAR_VALUE(k1, k2, uint64_t);
-    default:
-      ASSERT(0);
-  }
-
-  return 0;
+  return (k1->kType == TSDB_DATA_TYPE_NULL) ? 0 : tValueCmpr(k1->kType, &k1->value, &k2->value);
 }
 
 // STag ========================================
