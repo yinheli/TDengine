@@ -14,6 +14,7 @@
  */
 
 #include "tsdb.h"
+#include "tsdbRow.h"
 #include "util/tsimplehash.h"
 
 #define MEM_MIN_HASH 1024
@@ -31,7 +32,7 @@
 #define SL_MOVE_BACKWARD 0x1
 #define SL_MOVE_FROM_POS 0x2
 
-static void    tbDataMovePosTo(STbData *pTbData, SMemSkipListNode **pos, TSDBROW *pRow, int32_t flags);
+static void    tbDataMovePosTo(STbData *pTbData, SMemSkipListNode **pos, STRowKey *rowKey, int32_t flags);
 static int32_t tsdbGetOrCreateTbData(SMemTable *pMemTable, tb_uid_t suid, tb_uid_t uid, STbData **ppTbData);
 static int32_t tsdbInsertRowDataToTable(SMemTable *pMemTable, STbData *pTbData, int64_t version,
                                         SSubmitTbData *pSubmitTbData, int32_t *affectedRows);
@@ -241,7 +242,7 @@ void *tsdbTbDataIterDestroy(STbDataIter *pIter) {
   return NULL;
 }
 
-void tsdbTbDataIterOpen(STbData *pTbData, TSDBROW *pFrom, int8_t backward, STbDataIter *pIter) {
+void tsdbTbDataIterOpen(STbData *pTbData, STRowKey *pFrom, int8_t backward, STbDataIter *pIter) {
   SMemSkipListNode *pos[SL_MAX_LEVEL];
   SMemSkipListNode *pHead;
   SMemSkipListNode *pTail;
@@ -431,10 +432,10 @@ _err:
   return code;
 }
 
-static void tbDataMovePosTo(STbData *pTbData, SMemSkipListNode **pos, TSDBROW *pRow, int32_t flags) {
+static void tbDataMovePosTo(STbData *pTbData, SMemSkipListNode **pos, STRowKey *rowKey, int32_t flags) {
   SMemSkipListNode *px;
   SMemSkipListNode *pn;
-  TSDBKEY           tKey = {0};
+  STRowKey          tKey = {0};
   int32_t           backward = flags & SL_MOVE_BACKWARD;
   int32_t           fromPos = flags & SL_MOVE_FROM_POS;
 
@@ -453,7 +454,8 @@ static void tbDataMovePosTo(STbData *pTbData, SMemSkipListNode **pos, TSDBROW *p
       for (int8_t iLevel = pTbData->sl.level - 1; iLevel >= 0; iLevel--) {
         pn = SL_GET_NODE_BACKWARD(px, iLevel);
         while (pn != pTbData->sl.pHead) {
-          int32_t c = tsdbRowCmprFn(&pn->row, pRow);
+          tsdbRowGetKey(&pn->row, &tKey);
+          int32_t c = tTRowKeyCmpr(&tKey, rowKey);
           if (c <= 0) {
             break;
           } else {
@@ -480,7 +482,8 @@ static void tbDataMovePosTo(STbData *pTbData, SMemSkipListNode **pos, TSDBROW *p
       for (int8_t iLevel = pTbData->sl.level - 1; iLevel >= 0; iLevel--) {
         pn = SL_GET_NODE_FORWARD(px, iLevel);
         while (pn != pTbData->sl.pTail) {
-          int32_t c = tsdbRowCmprFn(&pn->row, pRow);
+          tsdbRowGetKey(&pn->row, &tKey);
+          int32_t c = tTRowKeyCmpr(&tKey, rowKey);
           if (c >= 0) {
             break;
           } else {
