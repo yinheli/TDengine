@@ -96,12 +96,14 @@ static void *dmMonitorThreadFp(void *param) {
       (*pMgmt->sendMonitorReportFp)();
       lastTime = curTime;
     }
-
-    if (curTime < lastTimeForBasic) lastTimeForBasic = curTime;
-    float intervalForBasic = (curTime - lastTimeForBasic) / 1000.0f;
-    if (intervalForBasic >= tsMonitorIntervalForBasic) {
-      (*pMgmt->sendMonitorReportFpBasic)();
-      lastTimeForBasic = curTime;
+    
+    if(tsMonitorForceV2){
+      if (curTime < lastTimeForBasic) lastTimeForBasic = curTime;
+      float intervalForBasic = (curTime - lastTimeForBasic) / 1000.0f;
+      if (intervalForBasic >= tsMonitorIntervalForBasic) {
+        (*pMgmt->sendMonitorReportFpBasic)();
+        lastTimeForBasic = curTime;
+      }
     }
   }
 

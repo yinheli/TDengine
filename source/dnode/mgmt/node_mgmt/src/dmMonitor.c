@@ -116,9 +116,9 @@ void dmSendMonitorReportBasic() {
   SDnode *pDnode = dmInstance();
   dmGetDmMonitorInfo(pDnode);
   dmGetMmMonitorInfo(pDnode);
-  dmGetVmMonitorInfo(pDnode);
-  dmGetQmMonitorInfo(pDnode);
-  dmGetSmMonitorInfo(pDnode);
+  //dmGetVmMonitorInfo(pDnode);
+  //dmGetQmMonitorInfo(pDnode);
+  //dmGetSmMonitorInfo(pDnode);
   monGenAndSendReportBasic();
 }
 
