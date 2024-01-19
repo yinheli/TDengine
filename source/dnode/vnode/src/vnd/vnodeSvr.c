@@ -1680,17 +1680,17 @@ _exit:
     atomic_add_fetch_64(&pVnode->statis.nBatchInsertSuccess, 1);
     tdProcessRSmaSubmit(pVnode->pSma, ver, pSubmitReq, pReq, len, STREAM_INPUT__DATA_SUBMIT);
 
-    const char *batch_sample_labels[] = {VNODE_METRIC_TAG_VALUE_INSERT, pVnode->monitor.strClusterId, 
-                                        pVnode->monitor.strDnodeId, tsLocalEp, pVnode->monitor.strVgId, 
-                                        pOriginalMsg->info.conn.user, "Success"};
-    taos_counter_inc(pVnode->monitor.insertCounter, batch_sample_labels);
+    //const char *batch_sample_labels[] = {VNODE_METRIC_TAG_VALUE_INSERT, pVnode->monitor.strClusterId, 
+    //                                    pVnode->monitor.strDnodeId, tsLocalEp, pVnode->monitor.strVgId, 
+    //                                    pOriginalMsg->info.conn.user, "Success"};
+    //taos_counter_inc(pVnode->monitor.insertCounter, batch_sample_labels);
   }
-  else{
-    const char *batch_sample_labels[] = {VNODE_METRIC_TAG_VALUE_INSERT, pVnode->monitor.strClusterId, 
-                                        pVnode->monitor.strDnodeId, tsLocalEp, pVnode->monitor.strVgId, 
-                                        pOriginalMsg->info.conn.user, "Failed"};
-    taos_counter_inc(pVnode->monitor.insertCounter, batch_sample_labels);
-  }
+  //else{
+  //  const char *batch_sample_labels[] = {VNODE_METRIC_TAG_VALUE_INSERT, pVnode->monitor.strClusterId, 
+  //                                      pVnode->monitor.strDnodeId, tsLocalEp, pVnode->monitor.strVgId, 
+  //                                      pOriginalMsg->info.conn.user, "Failed"};
+  //  taos_counter_inc(pVnode->monitor.insertCounter, batch_sample_labels);
+  //}
 
 
 
