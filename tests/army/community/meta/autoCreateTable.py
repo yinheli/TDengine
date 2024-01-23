@@ -29,13 +29,23 @@ class TDTestCase(TBase):
         tdSql.execute(f"use {self.db}")
         autoGen = AutoGen()
         autoGen.create_stable(self.stb, 15, 15, 8, 8)
-        autoGen.create_child(self.stb, "dt", self.childtable_count, '001', True)
+        autoGen.create_child(self.stb, "dt1", self.childtable_count, '001', True)
+        autoGen.create_child(self.stb, "dt2", self.childtable_count, '"001"', True)
+        autoGen.create_child(self.stb, "dt3", self.childtable_count, "'001'", True)
+        autoGen.child_cnt = 1
+        autoGen.child_name = 'dt1'
+        autoGen.insert_data(10, False, '001')
+        autoGen.child_name = 'dt2'
+        autoGen.insert_data(10, False, '001')
+        autoGen.child_name = 'dt3'
         autoGen.insert_data(10, False, '001')
 
         autoGen.mtags
         autoGen = AutoGen()
         autoGen.create_stable('astb', 15, 15, 8, 8)
         autoGen.insert_data_auto_create(10, self.childtable_count, "adt", False, '001', '001', True)
+        autoGen.insert_data_auto_create(10, self.childtable_count, "adt", True, '001', '"001"', True)
+        autoGen.insert_data_auto_create(10, self.childtable_count, "adt", True, '001', "'001'", True)
         bCheck = True
         for i in range(1, 15):
             # sql1 = f"select t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13 from {self.stb} where t{i}=001"
