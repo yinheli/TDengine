@@ -21,12 +21,13 @@ import copy
 from frame.log import *
 from frame.sql import *
 
+
 # test case base
 class TBase:
 
-#
-#   frame call 
-#          
+    #
+    #   frame call
+    #
 
     # init
     def init(self, conn, logSql, replicaVar=1, db="db", stb="stb", checkColName="ic"):
@@ -41,40 +42,39 @@ class TBase:
         self.mLevelDisk = 0
 
         # test case information
-        self.db     = db
-        self.stb    = stb
+        self.db = db
+        self.stb = stb
 
-        # sql 
+        # sql
         self.sqlSum = f"select sum({checkColName}) from {self.stb}"
         self.sqlMax = f"select max({checkColName}) from {self.stb}"
         self.sqlMin = f"select min({checkColName}) from {self.stb}"
         self.sqlAvg = f"select avg({checkColName}) from {self.stb}"
         self.sqlFirst = f"select first(ts) from {self.stb}"
-        self.sqlLast  = f"select last(ts) from {self.stb}"
+        self.sqlLast = f"select last(ts) from {self.stb}"
 
     # stop
     def stop(self):
         tdSql.close()
 
+    #
+    #   db action
+    #
 
-#
-#   db action
-#         
+    def trimDb(self, show=False):
+        tdSql.execute(f"trim database {self.db}", show=show)
 
-    def trimDb(self, show = False):
-        tdSql.execute(f"trim database {self.db}", show = show)
+    def compactDb(self, show=False):
+        tdSql.execute(f"compact database {self.db}", show=show)
 
-    def compactDb(self, show = False):
-        tdSql.execute(f"compact database {self.db}", show = show)
+    def flushDb(self, show=False):
+        tdSql.execute(f"flush database {self.db}", show=show)
 
-    def flushDb(self, show = False):
-        tdSql.execute(f"flush database {self.db}", show = show)
+    def dropDb(self, show=False):
+        tdSql.execute(f"drop database {self.db}", show=show)
 
-    def dropDb(self, show = False):
-        tdSql.execute(f"drop database {self.db}", show = show)
-
-    def dropStream(self, sname, show = False):
-        tdSql.execute(f"drop stream {sname}", show = show)
+    def dropStream(self, sname, show=False):
+        tdSql.execute(f"drop stream {sname}", show=show)
 
     def splitVGroups(self):
         vgids = self.getVGroup(self.db)
@@ -85,7 +85,6 @@ class TBase:
             tdLog.exit(f"{sql} transaction not finished")
             return False
         return True
-    
 
     def alterReplica(self, replica):
         sql = f"alter database {self.db} replica {replica}"
@@ -102,7 +101,7 @@ class TBase:
             tdLog.exit(f"{sql} transaction not finished")
             return False
         return True
-    
+
     def balanceVGroupLeader(self):
         sql = f"balance vgroup leader"
         tdSql.execute(sql, show=True)
@@ -110,7 +109,6 @@ class TBase:
             tdLog.exit(f"{sql} transaction not finished")
             return False
         return True
-
 
     def balanceVGroupLeaderOn(self, vgId):
         sql = f"balance vgroup leader on {vgId}"
@@ -120,10 +118,9 @@ class TBase:
             return False
         return True
 
-
-#
-#  check db correct
-#                
+    #
+    #  check db correct
+    #
 
     # basic
     def checkInsertCorrect(self):
@@ -141,24 +138,24 @@ class TBase:
         tdSql.checkRows(0)
 
     # save agg result
-    def snapshotAgg(self):        
-        self.sum =  tdSql.getFirstValue(self.sqlSum)
-        self.avg =  tdSql.getFirstValue(self.sqlAvg)
-        self.min =  tdSql.getFirstValue(self.sqlMin)
-        self.max =  tdSql.getFirstValue(self.sqlMax)
+    def snapshotAgg(self):
+        self.sum = tdSql.getFirstValue(self.sqlSum)
+        self.avg = tdSql.getFirstValue(self.sqlAvg)
+        self.min = tdSql.getFirstValue(self.sqlMin)
+        self.max = tdSql.getFirstValue(self.sqlMax)
         self.first = tdSql.getFirstValue(self.sqlFirst)
-        self.last  = tdSql.getFirstValue(self.sqlLast)
+        self.last = tdSql.getFirstValue(self.sqlLast)
 
-    # check agg 
+    # check agg
     def checkAggCorrect(self):
         tdSql.checkAgg(self.sqlSum, self.sum)
         tdSql.checkAgg(self.sqlAvg, self.avg)
         tdSql.checkAgg(self.sqlMin, self.min)
         tdSql.checkAgg(self.sqlMax, self.max)
         tdSql.checkAgg(self.sqlFirst, self.first)
-        tdSql.checkAgg(self.sqlLast,  self.last)
+        tdSql.checkAgg(self.sqlLast, self.last)
 
-    # self check 
+    # self check
     def checkConsistency(self, col):
         # top with max
         sql = f"select max({col}) from {self.stb}"
@@ -166,7 +163,7 @@ class TBase:
         sql = f"select top({col}, 5) from {self.stb}"
         tdSql.checkFirstValue(sql, expect)
 
-        #bottom with min
+        # bottom with min
         sql = f"select min({col}) from {self.stb}"
         expect = tdSql.getFirstValue(sql)
         sql = f"select bottom({col}, 5) from {self.stb}"
@@ -184,18 +181,17 @@ class TBase:
         sql = f"select {col} from {self.stb} order by _c0 asc limit 1"
         tdSql.checkFirstValue(sql, expect)
 
-
     # check sql1 is same result with sql2
-    def checkSameResult(self, sql1, sql2):
+    def checkSameResult(self, sql1, sql2, bErrExit=True):
         tdLog.info(f"sql1={sql1}")
         tdLog.info(f"sql2={sql2}")
         tdLog.info("compare sql1 same with sql2 ...")
 
         # sql
-        rows1 = tdSql.query(sql1,queryTimes=2)
+        rows1 = tdSql.query(sql1, queryTimes=2)
         res1 = copy.deepcopy(tdSql.res)
 
-        tdSql.query(sql2,queryTimes=2)
+        tdSql.query(sql2, queryTimes=2)
         res2 = tdSql.res
 
         rowlen1 = len(res1)
@@ -203,9 +199,12 @@ class TBase:
         errCnt = 0
 
         if rowlen1 != rowlen2:
-            tdLog.exit(f"both row count not equal. rowlen1={rowlen1} rowlen2={rowlen2} ")
+            if bErrExit:
+                tdLog.exit(f"both row count not equal. rowlen1={rowlen1} rowlen2={rowlen2} ")
+
+            tdLog.info(f"both row count not equal. rowlen1={rowlen1} rowlen2={rowlen2} ")
             return False
-        
+
         for i in range(rowlen1):
             row1 = res1[i]
             row2 = res2[i]
@@ -216,17 +215,22 @@ class TBase:
                 return False
             for j in range(collen1):
                 if row1[j] != row2[j]:
-                    tdLog.info(f"error both column value not equal. row={i} col={j} col1={row1[j]} col2={row2[j]} .")
+                    tdLog.info(
+                        f"error both column value not equal. row={i} col={j} col1={row1[j]}-type:{type(row1[j])}-len:{len(row1[j])} col2={row2[j]}-type:{type(row2[j])}-len:{len(row2[j])} .")
                     errCnt += 1
 
         if errCnt > 0:
-            tdLog.exit(f"sql2 column value different with sql1. different count ={errCnt} ")
+            if bErrExit:
+                tdLog.exit(f"sql2 column value different with sql1. different count ={errCnt} ")
+            tdLog.info(f"sql2 column value different with sql1. different count ={errCnt} ")
+            return False
 
         tdLog.info("sql1 same result with sql2.")
+        return True
 
-#
-#   get db information
-#
+    #
+    #   get db information
+    #
 
     # get vgroups
     def getVGroup(self, dbName):
@@ -238,7 +242,7 @@ class TBase:
             vgidList.append(res[i][0])
 
         return vgidList
-    
+
     # get distributed rows
     def getDistributed(self, tbName):
         sql = f"show table distributed {tbName}"
@@ -247,15 +251,15 @@ class TBase:
         i = 0
         for i in range(tdSql.getRows()):
             row = tdSql.getData(i, 0)
-            #print(row)
+            # print(row)
             row = row.replace('[', '').replace(']', '')
-            #print(row)
+            # print(row)
             items = row.split(' ')
-            #print(items)
+            # print(items)
             for item in items:
-                #print(item)
+                # print(item)
                 v = item.split('=')
-                #print(v)
+                # print(v)
                 if len(v) == 2:
                     dics[v[0]] = v[1]
             if i > 5:
@@ -263,26 +267,26 @@ class TBase:
         print(dics)
         return dics
 
+    #
+    #   util
+    #
 
-#
-#   util 
-#
-    
     # wait transactions count to zero , return False is translation not finished
-    def waitTransactionZero(self, seconds = 300, interval = 1):
+    def waitTransactionZero(self, seconds=300, interval=1):
         # wait end
         for i in range(seconds):
-            sql ="show transactions;"
+            sql = "show transactions;"
             rows = tdSql.query(sql)
             if rows == 0:
                 tdLog.info("transaction count became zero.")
                 return True
-            #tdLog.info(f"i={i} wait ...")
+            # tdLog.info(f"i={i} wait ...")
             time.sleep(interval)
-        
-        return False    
 
-    # check file exist
+        return False
+
+        # check file exist
+
     def checkFileExist(self, pathFile):
         if os.path.exists(pathFile) == False:
             tdLog.exit(f"file not exist {pathFile}")
@@ -292,12 +296,11 @@ class TBase:
         if len(lists) == 0:
             tdLog.exit(f"list is empty {tips}")
 
-
-#
-#  str util
-#
+    #
+    #  str util
+    #
     # covert list to sql format string
-    def listSql(self, lists, sepa = ","):
+    def listSql(self, lists, sepa=","):
         strs = ""
         for ls in lists:
             if strs != "":
