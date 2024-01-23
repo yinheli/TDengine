@@ -19,6 +19,7 @@ class AutoGen:
         self.batch_size = 100
         seed = time.time() % 10000
         random.seed(seed)
+        self.dbname = 'db'
         self.fillOne = fillOne
 
     # set start ts
@@ -137,7 +138,7 @@ class AutoGen:
 
         tdLog.info(f"create child tables {cnt} ok")
 
-    def insert_data_child(self, child_name, cnt, batch_size, step):        
+    def insert_data_child(self, child_name, cnt, batch_size, step, tags_data, autoCreatTable=False):
         values = ""
         print("insert child data")
         ts = self.ts
@@ -151,16 +152,23 @@ class AutoGen:
             ts += step
             values += f"({ts},{value}) "
             if batch_size == 1 or (i > 0 and i % batch_size == 0) :
-                sql = f"insert into {self.dbname}.{child_name} values {values}"
+                if autoCreatTable:
+
+                    sql = f"insert into {self.dbname}.{child_name} usring {self.dbname}.{stbname} tags({tags_data}) values {values}"
+                else:
+                    sql = f"insert into {self.dbname}.{child_name} values {values}"
                 tdSql.execute(sql)
                 values = ""
 
         # end batch
         if values != "":
-            sql = f"insert into {self.dbname}.{child_name} values {values}"
+            if autoCreatTable:
+                tags_data = self.gen_data(i, self.mtags)
+                sql = f"insert into {self.dbname}.{child_name} usring {self.dbname}.{stbname} tags({tags_data}) values {values}"
+            else:
+                sql = f"insert into {self.dbname}.{child_name} values {values}"
             tdSql.execute(sql)
             tdLog.info(f" insert data i={i}")
-            values = ""
 
         tdLog.info(f" insert child data {child_name} finished, insert rows={cnt}")
         return ts
@@ -176,6 +184,19 @@ class AutoGen:
 
         self.ts = currTs
         tdLog.info(f" insert data ok, child table={self.child_cnt} insert rows={cnt}")
+
+    def insert_data(self, cnt, child_cnt, child_name, bContinue=False):
+        if not bContinue:
+            self.ts = 1600000000000
+
+        currTs = 1600000000000
+        for i in range(child_cnt):
+            name = f"{child_name}{i}"
+            tags_data = self.gen_data(i, self.mtags)
+            currTs = self.insert_data_child(name, cnt, self.batch_size, 1, True, tags_data)
+
+        self.ts = currTs
+        tdLog.info(f" auto insert data ok, child table={child_cnt} insert rows={cnt}")
 
     # insert same timestamp to all childs
     def insert_samets(self, cnt):
