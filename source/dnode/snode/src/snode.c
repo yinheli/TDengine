@@ -178,7 +178,7 @@ int32_t sndProcessStreamMsg(SSnode *pSnode, SRpcMsg *pMsg) {
       return tqStreamTaskProcessScanHistoryFinishRsp(pSnode->pMeta, pMsg);
     case TDMT_SNODE_STREAM_TASK_CHECK:
       return tqStreamTaskProcessCheckReq(pSnode->pMeta, pMsg);
-    case TDMT_VND_STREAM_TASK_CHECK_RSP:
+    case TDMT_SNODE_STREAM_TASK_CHECK_RSP:
       return tqStreamTaskProcessCheckRsp(pSnode->pMeta, pMsg, true);
     case TDMT_STREAM_TASK_CHECKPOINT_READY:
       return tqStreamTaskProcessCheckpointReadyMsg(pSnode->pMeta, pMsg);
