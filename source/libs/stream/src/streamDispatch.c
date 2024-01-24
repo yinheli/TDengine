@@ -271,7 +271,11 @@ int32_t streamSendCheckMsg(SStreamTask* pTask, const SStreamTaskCheckReq* pReq, 
   }
   tEncoderClear(&encoder);
 
-  initRpcMsg(&msg, TDMT_VND_STREAM_TASK_CHECK, buf, tlen + sizeof(SMsgHead));
+  if (nodeId == SNODE_HANDLE) {
+    initRpcMsg(&msg, TDMT_SNODE_STREAM_TASK_CHECK, buf, tlen + sizeof(SMsgHead));
+  } else {
+    initRpcMsg(&msg, TDMT_VND_STREAM_TASK_CHECK, buf, tlen + sizeof(SMsgHead));
+  }
   stDebug("s-task:%s (level:%d) send check msg to s-task:0x%" PRIx64 ":0x%x (vgId:%d)", pTask->id.idStr,
           pTask->info.taskLevel, pReq->streamId, pReq->downstreamTaskId, nodeId);
 
@@ -549,19 +553,19 @@ int32_t streamSearchAndAddBlock(SStreamTask* pTask, SStreamDispatchReq* pReqs, S
   } else {
     char ctbName[TSDB_TABLE_FNAME_LEN] = {0};
     if (pDataBlock->info.parTbName[0]) {
-      if(pTask->ver >= SSTREAM_TASK_SUBTABLE_CHANGED_VER &&
-          !isAutoTableName(pDataBlock->info.parTbName) &&
-          !alreadyAddGroupId(pDataBlock->info.parTbName) &&
-          groupId != 0){
+      if (pTask->ver >= SSTREAM_TASK_SUBTABLE_CHANGED_VER && !isAutoTableName(pDataBlock->info.parTbName) &&
+          !alreadyAddGroupId(pDataBlock->info.parTbName) && groupId != 0) {
         buildCtbNameAddGruopId(pDataBlock->info.parTbName, groupId);
       }
     } else {
       buildCtbNameByGroupIdImpl(pTask->outputInfo.shuffleDispatcher.stbFullName, groupId, pDataBlock->info.parTbName);
     }
-    snprintf(ctbName, TSDB_TABLE_NAME_LEN, "%s.%s", pTask->outputInfo.shuffleDispatcher.dbInfo.db, pDataBlock->info.parTbName);
+    snprintf(ctbName, TSDB_TABLE_NAME_LEN, "%s.%s", pTask->outputInfo.shuffleDispatcher.dbInfo.db,
+             pDataBlock->info.parTbName);
     /*uint32_t hashValue = MurmurHash3_32(ctbName, strlen(ctbName));*/
     SUseDbRsp* pDbInfo = &pTask->outputInfo.shuffleDispatcher.dbInfo;
-    hashValue = taosGetTbHashVal(ctbName, strlen(ctbName), pDbInfo->hashMethod, pDbInfo->hashPrefix, pDbInfo->hashSuffix);
+    hashValue =
+        taosGetTbHashVal(ctbName, strlen(ctbName), pDbInfo->hashMethod, pDbInfo->hashPrefix, pDbInfo->hashSuffix);
     SBlockName bln = {0};
     bln.hashValue = hashValue;
     memcpy(bln.parTbName, pDataBlock->info.parTbName, strlen(pDataBlock->info.parTbName));
@@ -819,8 +823,8 @@ int32_t doDispatchScanHistoryFinishMsg(SStreamTask* pTask, const SStreamScanHist
   tmsgSendReq(pEpSet, &msg);
 
   SStreamTaskState* pState = streamTaskGetStatus(pTask);
-  stDebug("s-task:%s status:%s dispatch scan-history finish msg to taskId:0x%x (vgId:%d)", pTask->id.idStr, pState->name,
-          pReq->downstreamTaskId, vgId);
+  stDebug("s-task:%s status:%s dispatch scan-history finish msg to taskId:0x%x (vgId:%d)", pTask->id.idStr,
+          pState->name, pReq->downstreamTaskId, vgId);
   return 0;
 }
 
@@ -1189,8 +1193,8 @@ int32_t streamProcessDispatchRsp(SStreamTask* pTask, SStreamDispatchRsp* pRsp, i
         stError("s-task:%s failed to dispatch checkpoint-trigger msg, checkpointId:%" PRId64
                 ", set the current checkpoint failed, and send rsp to mnode",
                 id, pTask->chkInfo.checkpointingId);
-        { // send checkpoint failure msg to mnode directly
-          pTask->chkInfo.failedId = pTask->chkInfo.checkpointingId;   // record the latest failed checkpoint id
+        {                                                            // send checkpoint failure msg to mnode directly
+          pTask->chkInfo.failedId = pTask->chkInfo.checkpointingId;  // record the latest failed checkpoint id
           pTask->chkInfo.checkpointingId = pTask->chkInfo.checkpointingId;
           streamTaskSendCheckpointSourceRsp(pTask);
         }

@@ -91,7 +91,7 @@ int32_t sndExpandTask(SSnode *pSnode, SStreamTask *pTask, int64_t nextProcessVer
             pTask->id.idStr, pChkInfo->checkpointId, pChkInfo->checkpointVer, pChkInfo->nextProcessVer);
   }
 
-  char* p = streamTaskGetStatus(pTask)->name;
+  char *p = streamTaskGetStatus(pTask)->name;
   if (pTask->info.fillHistory) {
     sndInfo("vgId:%d expand stream task, s-task:%s, checkpointId:%" PRId64 " checkpointVer:%" PRId64
             " nextProcessVer:%" PRId64
@@ -123,7 +123,8 @@ SSnode *sndOpen(const char *path, const SSnodeOpt *pOption) {
   }
 
   pSnode->msgCb = pOption->msgCb;
-  pSnode->pMeta = streamMetaOpen(path, pSnode, (FTaskExpand *)sndExpandTask, SNODE_HANDLE, taosGetTimestampMs(), tqStartTaskCompleteCallback);
+  pSnode->pMeta = streamMetaOpen(path, pSnode, (FTaskExpand *)sndExpandTask, SNODE_HANDLE, taosGetTimestampMs(),
+                                 tqStartTaskCompleteCallback);
   if (pSnode->pMeta == NULL) {
     terrno = TSDB_CODE_OUT_OF_MEMORY;
     goto FAIL;
@@ -175,7 +176,7 @@ int32_t sndProcessStreamMsg(SSnode *pSnode, SRpcMsg *pMsg) {
       return tqStreamTaskProcessScanHistoryFinishReq(pSnode->pMeta, pMsg);
     case TDMT_VND_STREAM_SCAN_HISTORY_FINISH_RSP:
       return tqStreamTaskProcessScanHistoryFinishRsp(pSnode->pMeta, pMsg);
-    case TDMT_VND_STREAM_TASK_CHECK:
+    case TDMT_SNODE_STREAM_TASK_CHECK:
       return tqStreamTaskProcessCheckReq(pSnode->pMeta, pMsg);
     case TDMT_VND_STREAM_TASK_CHECK_RSP:
       return tqStreamTaskProcessCheckRsp(pSnode->pMeta, pMsg, true);
@@ -191,9 +192,10 @@ int32_t sndProcessStreamMsg(SSnode *pSnode, SRpcMsg *pMsg) {
 int32_t sndProcessWriteMsg(SSnode *pSnode, SRpcMsg *pMsg, SRpcMsg *pRsp) {
   switch (pMsg->msgType) {
     case TDMT_STREAM_TASK_DEPLOY: {
-      void *  pReq = POINTER_SHIFT(pMsg->pCont, sizeof(SMsgHead));
+      void   *pReq = POINTER_SHIFT(pMsg->pCont, sizeof(SMsgHead));
       int32_t len = pMsg->contLen - sizeof(SMsgHead);
-      return tqStreamTaskProcessDeployReq(pSnode->pMeta, &pSnode->msgCb,pMsg->info.conn.applyIndex, pReq, len, true, true);
+      return tqStreamTaskProcessDeployReq(pSnode->pMeta, &pSnode->msgCb, pMsg->info.conn.applyIndex, pReq, len, true,
+                                          true);
     }
 
     case TDMT_STREAM_TASK_DROP:
