@@ -82,11 +82,6 @@ class TDTestCase(TBase):
         self.childtable_count = data['databases'][0]['super_tables'][0]['childtable_count']
         self.timestamp_step = data['databases'][0]['super_tables'][0]['timestamp_step']
 
-    # def changeMasterThread(self, configFile, event):
-    #     while not event.isSet():
-    #         self.dNodeStop()
-    #         time.sleep(5)
-
     def dNodeStop(self):
         queryRows = tdSql.query('show vnodes')
         dnodeId = 1
@@ -106,15 +101,16 @@ class TDTestCase(TBase):
         queryRows = tdSql.query('show mnodes')
         if queryRows > 0:
             for i in range(queryRows):
-              status = tdSql.getData(i, 2)
-              if str(status) == 'leader':
-                  endpoint = tdSql.getData(i, 1)
-                  tdLog.debug(endpoint)
-                  dnodeId = self.getDnodeInfo(endpoint, -1)
-                  sc.dnodeStop(dnodeId)
-                  time.sleep(5)
-                  sc.dnodeStart(dnodeId)
-                  break
+                status = tdSql.getData(i, 2)
+                if str(status) == 'leader':
+                    endpoint = tdSql.getData(i, 1)
+                    tdLog.debug(endpoint)
+                    dnodeId = self.getDnodeInfo(endpoint, -1)
+                    sc.dnodeStop(dnodeId)
+                    time.sleep(5)
+                    sc.dnodeStart(dnodeId)
+                    break
+
         if dnodeId is None:
             tdLog.exit(f"no find master dnode!")
 
@@ -135,7 +131,6 @@ class TDTestCase(TBase):
         return dnodeId
 
     def dbQueryThread(self, configFile, event):
-        streamSum = 0
         while not event.isSet():
             queryRows = tdSql.query("select count(*), sum(ic), avg(ic) from db.stb partition by ic")
             if queryRows > 0:
@@ -145,15 +140,25 @@ class TDTestCase(TBase):
                 tdLog.debug(f"dbQueryThread count:{count}, sum:{sum}, avg:{avg}")
 
             streamSum = self.tmqStreamQuery()
+            tdLog.debug(f"tmqStreamQuery streamSum:{streamSum}")
             self.dNodeStop()
             time.sleep(5)
 
         streamSum = self.tmqStreamQuery()
-        if streamSum != self.childtable_count * self.insert_rows:
-            tdLog.exit(
-                f"tmqStreamThread count != insert_rows, sum:{streamSum}, insert_rows:{self.childtable_count * self.insert_rows}")
+        count = self.getStreamCount()
+        if streamSum != count:
+            tdLog.exit(f"tmqStreamThread count != insert_rows, sum:{streamSum}, insert_rows:{count}")
 
         self.checkInsertCorrect()
+
+    def getStreamCount(self):
+        queryRows = tdSql.query("select last(_wend) from db.sta ;")
+        if queryRows > 0:
+            lastTime = tdSql.getData(0, 0)
+            tdSql.query(f"select count(*) from db.stb where ts < '{lastTime}';")
+            return tdSql.getData(0, 0)
+
+        return 0
 
     def dbInsertThread(self, configFile, event):
         tdLog.debug(f"dbInsertThread start {configFile}")
@@ -210,9 +215,15 @@ class TDTestCase(TBase):
             consumer.close()
 
         tdLog.info(f"tmqSubscribeThread Subscribe sum:{sum}")
-        if sum != self.childtable_count * self.insert_rows:
-            tdLog.exit(
-                f"tmqSubscribeThread sum != insert_rows, sum:{sum}, insert_rows:{self.childtable_count * self.insert_rows}")
+        count = self.getDataCount()
+        if sum != count:
+            tdLog.exit(f"tmqSubscribeThread sum != insert_rows, sum:{sum}, insert_rows:{count}")
+
+    def getDataCount(self):
+        queryRows = tdSql.query("select count(*) from db.stb")
+        if queryRows > 0:
+            return tdSql.getData(0, 0)
+        return 0
 
     def tmqStreamQuery(self):
         count = 0
