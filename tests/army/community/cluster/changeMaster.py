@@ -96,7 +96,7 @@ class TDTestCase(TBase):
                 if str(status) == 'leader':
                     dnodeId = tdSql.getData(i, 0)
                     tdLog.debug(dnodeId)
-                    #   dnodeId = self.getDnodeInfo("", dnodeId)
+                    dnodeId = self.getDnodeInfo("", dnodeId)
                     sc.dnodeStop(dnodeId)
                     time.sleep(10)
                     sc.dnodeStart(dnodeId)
@@ -110,7 +110,7 @@ class TDTestCase(TBase):
               if str(status) == 'leader':
                   endpoint = tdSql.getData(i, 1)
                   tdLog.debug(endpoint)
-                #   dnodeId = self.getDnodeInfo(endpoint, -1)
+                  dnodeId = self.getDnodeInfo(endpoint, -1)
                   sc.dnodeStop(dnodeId)
                   time.sleep(5)
                   sc.dnodeStart(dnodeId)
