@@ -102,19 +102,19 @@ class TDTestCase(TBase):
                     sc.dnodeStart(dnodeId)
                     break
 
-        # time.sleep(5)
-        # queryRows = tdSql.query('show mnodes')
-        # if queryRows > 0:
-        #     for i in range(queryRows):
-        #       status = tdSql.getData(i, 2)
-        #       if str(status) == 'leader':
-        #           endpoint = tdSql.getData(i, 1)
-        #           tdLog.debug(endpoint)
-        #         #   dnodeId = self.getDnodeInfo(endpoint, -1)
-        #           sc.dnodeStop(dnodeId)
-        #           time.sleep(5)
-        #           sc.dnodeStart(dnodeId)
-        #           break
+        time.sleep(5)
+        queryRows = tdSql.query('show mnodes')
+        if queryRows > 0:
+            for i in range(queryRows):
+              status = tdSql.getData(i, 2)
+              if str(status) == 'leader':
+                  endpoint = tdSql.getData(i, 1)
+                  tdLog.debug(endpoint)
+                #   dnodeId = self.getDnodeInfo(endpoint, -1)
+                  sc.dnodeStop(dnodeId)
+                  time.sleep(5)
+                  sc.dnodeStart(dnodeId)
+                  break
         if dnodeId is None:
             tdLog.exit(f"no find master dnode!")
 
