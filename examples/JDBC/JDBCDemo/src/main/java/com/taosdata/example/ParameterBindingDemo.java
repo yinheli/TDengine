@@ -11,9 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-
-
-// ANCHOR: para_bind
 public class ParameterBindingDemo {
 
     private static final String host = "127.0.0.1";
@@ -317,4 +314,3 @@ public class ParameterBindingDemo {
         }
     }
 }
-// ANCHOR_END: para_bind
