@@ -7,17 +7,9 @@ description: TDengine Java 连接器基于标准 JDBC API 实现, 并提供原�
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import RequestId from "./_request_id.mdx";
 
-`taos-jdbcdriver` 是 TDengine 的官方 Java 语言连接器，Java 开发人员可以通过它开发存取 TDengine 数据库的应用软件。`taos-jdbcdriver` 实现了 JDBC driver 标准的接口，并提供两种形式的连接器。一种是通过 TDengine 客户端驱动程序（taosc）原生连接 TDengine 实例，支持数据写入、查询、订阅、schemaless 接口和参数绑定接口等功能，一种是通过 taosAdapter 提供的 REST 接口连接 TDengine 实例。REST 连接实现的功能集合和原生连接有少量不同。
-
-![TDengine Database Connector Java](tdengine-jdbc-connector.webp)
-
-上图显示了两种 Java 应用使用连接器访问 TDengine 的两种方式：
-
-- JDBC 原生连接：Java 应用在物理节点 1（pnode1）上使用 TSDBDriver 直接调用客户端驱动（libtaos.so 或 taos.dll）的 API 将写入和查询请求发送到位于物理节点 2（pnode2）上的 taosd 实例。
-- JDBC REST 连接：Java 应用通过 RestfulDriver 将 SQL 封装成一个 REST 请求，发送给物理节点 2 的 REST 服务器（taosAdapter），通过 REST 服务器请求 taosd 并返回结果。
-
-使用 REST 连接，不依赖 TDengine 客户端驱动，可以跨平台，更加方便灵活。
+`taos-jdbcdriver` 是 TDengine 的官方 Java 语言连接器，Java 开发人员可以通过它开发存取 TDengine 数据库的应用软件。`taos-jdbcdriver` 实现了 JDBC driver 标准的接口.
 
 :::info
 TDengine 的 JDBC 驱动实现尽可能与关系型数据库驱动保持一致，但 TDengine 与关系对象型数据库的使用场景和技术特征存在差异，所以`taos-jdbcdriver` 与传统的 JDBC driver 也存在一定差异。在使用时需要注意以下几点：
@@ -26,6 +18,19 @@ TDengine 的 JDBC 驱动实现尽可能与关系型数据库驱动保持一致�
 - 目前不支持事务操作。
 
 :::
+
+## 连接方式
+`taos-jdbcdriver`主要提供三种形式的连接器。一般我们推荐使用 **Websocket 连接**。
+- **原生连接**，通过 TDengine 客户端驱动程序（taosc）原生连接 TDengine 实例，支持数据写入、查询、数据订阅、schemaless 接口和参数绑定接口等功能。
+- **REST 连接**，通过 taosAdapter 提供的 HTTP 接口连接 TDengine 实例，不支持 schemaless 和数据订阅等特性。
+- **Websocket 连接**，通过 taosAdapter 提供的 Websocket 接口连接 TDengine 实例，WebSocket 连接实现的功能集合和原生连接有少量不同。
+
+连接方式的详细介绍请参考：[连接器建立连接的方式](../../develop/connect/#连接器建立连接的方式)
+
+## JDBC和JRE兼容性
+
+- JDBC: 主要兼容 JDBC 4.2 版本，部分功能如数据订阅单独提供  
+- JRE: 支持JRE 8 及以上版本  
 
 ## 支持的平台
 
@@ -36,8 +41,7 @@ REST 连接支持所有能运行 Java 的平台。
 
 | taos-jdbcdriver 版本 |                                                                        主要变化                                                                        |   TDengine 版本    |
 | :------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------: | :----------------: |
-|        3.2.8         | 优化了自动提交, 解决了 websocket 手动提交 bug, 优化 Websocket prepareStatement 使用一个连接，元数据支持视图                                       |        -         |
-|        3.2.7         | 支持 VARBINARY 和 GEOMETRY 类型，增加 native 连接的时区设置支持。增加 websocket 自动重连功能。                                                                      | 3.2.0.0 及更高版本 |
+|        3.2.7         | 支持VARBINARY和GEOMETRY类型，增加native连接的时区设置支持。增加websocket自动重连功能。                                                                                                          | 3.2.0.0 及更高版本 |
 |        3.2.5         |                                                      数据订阅增加 committed()、assignment() 方法                                                       | 3.1.0.3 及更高版本 |
 |        3.2.4         |                                   数据订阅在 WebSocket 连接下增加 enable.auto.commit 参数，以及 unsubscribe() 方法。                                   |         -          |
 |        3.2.3         |                                                         修复 ResultSet 在一些情况数据解析失败                                                          |         -          |
@@ -124,7 +128,7 @@ JDBC 连接器可能报错的错误码包括 4 种：
 | 0x2379     | seek offset must not be a negative number                       | seek 接口参数不能为负值，请使用正确的参数                                                 |
 | 0x237a     | vGroup not found in result set                                  | VGroup 没有分配给当前 consumer，由于 Rebalance 机制导致 Consumer 与 VGroup 不是绑定的关系 |
 
-- [TDengine Java Connector Error Code](https://github.com/taosdata/taos-connector-jdbc/blob/main/src/main/java/com/taosdata/jdbc/TSDBErrorNumbers.java)
+- [TDengine Java Connector](https://github.com/taosdata/taos-connector-jdbc/blob/main/src/main/java/com/taosdata/jdbc/TSDBErrorNumbers.java)
 <!-- - [TDengine_ERROR_CODE](../error-code) -->
 
 ## TDengine DataType 和 Java DataType
@@ -388,18 +392,27 @@ properties 中的配置参数如下：
 ### 创建数据库和表
 
 ```java
-{{#include examples/JDBC/JDBCDemo/src/main/java/com/taosdata/example/JdbcBasicDemo.java:create_db_and_table}}
+Statement stmt = conn.createStatement();
 
+// create database
+stmt.executeUpdate("create database if not exists db");
+
+// use database
+stmt.executeUpdate("use db");
+
+// create table
+stmt.executeUpdate("create table if not exists tb (ts timestamp, temperature int, humidity float)");
 ```
-
 
 > **注意**：如果不使用 `use db` 指定数据库，则后续对表的操作都需要增加数据库名称作为前缀，如 db.tb。
 
 ### 插入数据
 
 ```java
-{{#include examples/JDBC/JDBCDemo/src/main/java/com/taosdata/example/JdbcBasicDemo.java:insert_data}}
+// insert data
+int affectedRows = stmt.executeUpdate("insert into tb values(now, 23, 10.3) (now + 1s, 20, 9.3)");
 
+System.out.println("insert " + affectedRows + " rows.");
 ```
 
 > now 为系统内部函数，默认为客户端所在计算机当前时间。
@@ -408,19 +421,35 @@ properties 中的配置参数如下：
 ### 查询数据
 
 ```java
-{{#include examples/JDBC/JDBCDemo/src/main/java/com/taosdata/example/JdbcBasicDemo.java:query_data}}
+// query data
+ResultSet resultSet = stmt.executeQuery("select * from tb");
 
+Timestamp ts = null;
+int temperature = 0;
+float humidity = 0;
+while(resultSet.next()){
+
+    ts = resultSet.getTimestamp(1);
+    temperature = resultSet.getInt(2);
+    humidity = resultSet.getFloat("humidity");
+
+    System.out.printf("%s, %d, %s\n", ts, temperature, humidity);
+}
 ```
 
 > 查询和操作关系型数据库一致，使用下标获取返回字段内容时从 1 开始，建议使用字段名称获取。
 
 ### 执行带有 reqId 的 SQL
 
-此 reqId 可用于请求链路追踪。
+<RequestId />
 
 ```java
-{{#include examples/JDBC/JDBCDemo/src/main/java/com/taosdata/example/JdbcBasicDemo.java:with_reqid}}
-
+AbstractStatement aStmt = (AbstractStatement) connection.createStatement();
+aStmt.execute("create database if not exists db", 1L);
+aStmt.executeUpdate("use db", 2L);
+try (ResultSet rs = aStmt.executeQuery("select * from tb", 3L)) {
+    Timestamp ts = rs.getTimestamp(1);
+}
 ```
 
 ### 通过参数绑定写入数据
@@ -436,11 +465,6 @@ TDengine 的 JDBC 原生连接实现大幅改进了参数绑定方式对数据�
 
 <Tabs defaultValue="native">
 <TabItem value="native" label="原生连接">
-
-```java
-{{#include examples/JDBC/JDBCDemo/src/main/java/com/taosdata/example/ParameterBindingDemo.java:para_bind}}
-
-```
 
 ```java
 public class ParameterBindingDemo {
