@@ -141,7 +141,7 @@ static int32_t mndCreateDefaultDnode(SMnode *pMnode) {
     memcpy(dnodeObj.machineId, machineId, TSDB_MACHINE_ID_LEN);
     taosMemoryFreeClear(machineId);
   } else {
-#ifdef TD_UNIQ_GRANT
+#if defined(TD_UNIQ_GRANT) && defined(_GRANT)
     terrno = TSDB_CODE_DNODE_NO_MACHINE_CODE;
     goto _OVER;
 #endif
