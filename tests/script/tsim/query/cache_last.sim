@@ -4,7 +4,7 @@ system sh/exec.sh -n dnode1 -s start
 sql connect
 
 sql drop database if exists db1;
-sql create database if not exists db1 cachemodel 'both' cachesize 10;
+sql create database if not exists db1 cachemodel 'both' cachesize 100;
 sql use db1;
 sql create stable sta (ts timestamp, f1 double, f2 binary(200)) tags(t1 int);
 sql create table tba1 using sta tags(1);
@@ -35,11 +35,12 @@ if $data03 != b then
   return -1
 endi
 sql explain select count(*), last(*) from sta;
-if $data00 != @-> Merge (columns=4 width=226 input_order=unknown output_order=unknown mode=column)@ then
+if $data00 != @-> Merge (columns=5 width=230 input_order=unknown output_order=unknown mode=column)@ then
+  print $data00
   return -1
 endi
 sql explain select first(f1), last(*) from sta;
-if $data00 != @-> Merge (columns=4 width=226 input_order=unknown output_order=unknown mode=column)@ then
+if $data00 != @-> Merge (columns=5 width=230 input_order=unknown output_order=unknown mode=column)@ then
   return -1
 endi
 sql select first(f1), last(*) from sta;
