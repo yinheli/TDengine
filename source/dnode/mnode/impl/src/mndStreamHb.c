@@ -229,7 +229,7 @@ int32_t mndProcessStreamHb(SRpcMsg *pReq) {
   SArray      *pFailedTasks = NULL;
   SArray      *pOrphanTasks = NULL;
 
-  if (grantCheckExpire(TSDB_GRANT_STREAMS) < 0) {
+  if (pauseStream == 1 || grantCheckExpire(TSDB_GRANT_STREAMS) < 0) {
     if (suspendAllStreams(pMnode, &pReq->info) < 0) {
       return -1;
     }

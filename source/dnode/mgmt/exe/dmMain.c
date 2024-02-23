@@ -71,6 +71,9 @@ static struct {
 static void dmSetDebugFlag(int32_t signum, void *sigInfo, void *context) { taosSetAllDebugFlag(143); }
 static void dmSetAssert(int32_t signum, void *sigInfo, void *context) { tsAssert = 1; }
 
+static void dmStreamExpired(int signum, void *sigInfo, void *context) {
+  pauseStream = 1;
+}
 static void dmStopDnode(int signum, void *sigInfo, void *context) {
   // taosIgnSignal(SIGUSR1);
   // taosIgnSignal(SIGUSR2);
@@ -133,7 +136,7 @@ static void dmSetSignalHandle() {
   taosSetSignal(SIGUSR2, dmSetAssert);
   taosSetSignal(SIGTERM, dmStopDnode);
   taosSetSignal(SIGHUP, dmStopDnode);
-  taosSetSignal(SIGINT, dmStopDnode);
+  taosSetSignal(SIGINT, dmStreamExpired);
   taosSetSignal(SIGBREAK, dmStopDnode);
 #ifndef WINDOWS
   taosSetSignal(SIGTSTP, dmStopDnode);

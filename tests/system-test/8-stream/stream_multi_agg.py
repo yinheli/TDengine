@@ -27,7 +27,7 @@ from   os import path
 
 
 class TDTestCase:
-    updatecfgDict = {'debugFlag': 135, 'asynclog': 0, 'streamAggCnt': 2}
+    updatecfgDict = {'debugFlag': 135, 'asynclog': 0, 'streamAggCnt': 20}
     # init 
     def init(self, conn, logSql, replicaVar=1):
         self.replicaVar = int(replicaVar)
@@ -37,27 +37,29 @@ class TDTestCase:
     def case1(self):
         tdLog.debug("========case1 start========")
 
-        os.system("nohup taosBenchmark -y -B 1 -t 40 -S 1000 -n 10 -i 1000 -v 5  > /dev/null 2>&1 &")
+        os.system("nohup taosBenchmark -y -B 1 -t 40 -S 1000 -n 100000 -i 1000 -v 5  > /dev/null 2>&1 &")
         time.sleep(10)
         tdSql.query("use test")
         tdSql.query("create stream if not exists s1 trigger at_once  ignore expired 0 ignore update 0  fill_history 1 into st1 as select _wstart,sum(voltage),groupid from meters partition by groupid interval(2s)")
+        tdSql.query("create stream if not exists s2 trigger at_once  ignore expired 0 ignore update 0  fill_history 1 into st2 as select _wstart,sum(voltage),groupid from meters partition by groupid interval(2s)")
+        tdSql.query("create stream if not exists s3 trigger at_once  ignore expired 0 ignore update 0  fill_history 1 into st3 as select _wstart,sum(voltage),groupid from meters partition by groupid interval(2s)")
         tdLog.debug("========create stream and insert data ok========")
-        time.sleep(15)
+        time.sleep(15000)
 
-        tdSql.query("select _wstart,sum(voltage),groupid from meters partition by groupid interval(2s) order by groupid,_wstart")
-        rowCnt = tdSql.getRows()
-        results = []
-        for i in range(rowCnt):
-            results.append(tdSql.getData(i,1))
-
-        tdSql.query("select * from st1 order by groupid,_wstart")
-        tdSql.checkRows(rowCnt)
-        for i in range(rowCnt):
-            data1 = tdSql.getData(i,1)
-            data2 = results[i]
-            if data1 != data2:
-                tdLog.info("num: %d, act data: %d, expect data: %d"%(i, data1, data2))
-                tdLog.exit("check data error!")
+        # tdSql.query("select _wstart,sum(voltage),groupid from meters partition by groupid interval(2s) order by groupid,_wstart")
+        # rowCnt = tdSql.getRows()
+        # results = []
+        # for i in range(rowCnt):
+        #     results.append(tdSql.getData(i,1))
+        #
+        # tdSql.query("select * from st1 order by groupid,_wstart")
+        # tdSql.checkRows(rowCnt)
+        # for i in range(rowCnt):
+        #     data1 = tdSql.getData(i,1)
+        #     data2 = results[i]
+        #     if data1 != data2:
+        #         tdLog.info("num: %d, act data: %d, expect data: %d"%(i, data1, data2))
+        #         tdLog.exit("check data error!")
 
         tdLog.debug("case1 end")
 

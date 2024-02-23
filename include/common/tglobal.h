@@ -30,6 +30,7 @@ extern "C" {
 #define SLOW_LOG_TYPE_ALL    0xFFFFFFFF
 
 // cluster
+extern int      pauseStream;
 extern char     tsFirst[];
 extern char     tsSecond[];
 extern char     tsLocalFqdn[];

@@ -31,6 +31,7 @@
 
 SConfig *tsCfg = NULL;
 
+int      pauseStream = 0;
 // cluster
 char     tsFirst[TSDB_EP_LEN] = {0};
 char     tsSecond[TSDB_EP_LEN] = {0};
