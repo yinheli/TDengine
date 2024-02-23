@@ -4,7 +4,7 @@ system sh/exec.sh -n dnode1 -s start
 sql connect
 
 sql drop database if exists db1;
-sql create database if not exists db1 cachemodel 'both' cachesize 100;
+sql create database if not exists db1 cachemodel 'both' cachesize 10;
 sql use db1;
 sql create stable sta (ts timestamp, f1 double, f2 binary(200)) tags(t1 int);
 sql create table tba1 using sta tags(1);
