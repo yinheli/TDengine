@@ -69,7 +69,7 @@ int32_t rsmaSnapRead(SRSmaSnapReader* pReader, uint8_t** ppData) {
   int32_t lino = 0;
 
   *ppData = NULL;
-
+  assert(0);
   smaInfo("vgId:%d, vnode snapshot rsma read entry", SMA_VID(pReader->pSma));
   // read rsma1/rsma2 file
   for (int32_t i = 0; i < TSDB_RETENTION_L2; ++i) {
@@ -233,7 +233,7 @@ int32_t rsmaSnapWrite(SRSmaSnapWriter* pWriter, uint8_t* pData, uint32_t nData) 
   int32_t       code = 0;
   int32_t       lino = 0;
   SSnapDataHdr* pHdr = (SSnapDataHdr*)pData;
-
+  assert(0);
   // rsma1/rsma2
   if (pHdr->type == SNAP_DATA_RSMA1) {
     pHdr->type = SNAP_DATA_TSDB;

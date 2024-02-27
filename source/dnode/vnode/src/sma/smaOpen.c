@@ -156,6 +156,7 @@ _exit:
   if (code) {
     smaError("vgId:%d, %s failed at line %d since %s", TD_VID(pVnode), __func__, lino, tstrerror(code));
     terrno = code;
+    assert(0);
   }
   return code;
 }
