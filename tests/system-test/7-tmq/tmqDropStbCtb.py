@@ -157,7 +157,7 @@ class TDTestCase:
         tdLog.info("act consume rows: %d, expect consume rows: %d"%(totalConsumeRows, expectrowcnt))
 
         if self.snapshot == 0:
-            if not ((totalConsumeRows > expectrowcnt / 2) and (totalConsumeRows < expectrowcnt)):
+            if (totalConsumeRows < expectrowcnt/2*(1+3/4)) or (totalConsumeRows > expectrowcnt):
                 tdLog.exit("tmq consume rows error with snapshot = 0!")
 
         tdLog.info("wait subscriptions exit ....")
@@ -219,7 +219,7 @@ class TDTestCase:
         elif self.snapshot == 1:
             consumerId     = 3
 
-        expectrowcnt   = int(paraDict["rowsPerTbl"] * paraDict["ctbNum"] * 2)
+        expectrowcnt   = int(paraDict["rowsPerTbl"] * paraDict["ctbNum"] * (1 + 1 + 3/4))
         topicList      = topicFromDb
         ifcheckdata    = 1
         ifManualCommit = 1
@@ -249,7 +249,7 @@ class TDTestCase:
         tdLog.info("act consume rows: %d, expect consume rows: %d"%(totalConsumeRows, expectrowcnt))
 
         if self.snapshot == 0:
-            if not ((totalConsumeRows > expectrowcnt / 2) and (totalConsumeRows < expectrowcnt)):
+            if (totalConsumeRows < paraDict["rowsPerTbl"] * paraDict["ctbNum"] * (1 + 3/4)) or (totalConsumeRows > expectrowcnt):
                 tdLog.exit("tmq consume rows error with snapshot = 0!")
 
         tdLog.info("wait subscriptions exit ....")
