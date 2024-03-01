@@ -139,6 +139,7 @@ void mndSetRestored(SMnode *pMnode, bool restored);
 bool mndGetRestored(SMnode *pMnode);
 void mndSetStop(SMnode *pMnode);
 bool mndGetStop(SMnode *pMnode);
+int32_t mndInitSteps(SMnode *pMnode);
 
 #ifdef __cplusplus
 }

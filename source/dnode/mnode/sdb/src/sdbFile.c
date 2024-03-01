@@ -310,6 +310,7 @@ static int32_t sdbReadFileImp(SSdb *pSdb) {
       goto _OVER;
     }
 
+    mInfo("read %s to sdb file, total %d rows", sdbTableName(pRaw->type), sdbGetSize(pSdb, pRaw->type));
     code = sdbWriteWithoutFree(pSdb, pRaw);
     if (code != 0) {
       mError("failed to read sdb file:%s since %s", file, terrstr());
@@ -377,6 +378,7 @@ static int32_t sdbWriteFileImp(SSdb *pSdb) {
     SdbEncodeFp encodeFp = pSdb->encodeFps[i];
     if (encodeFp == NULL) continue;
 
+    if(i == clearType) continue;
     mInfo("write %s to sdb file, total %d rows", sdbTableName(i), sdbGetSize(pSdb, i));
 
     SHashObj *hash = pSdb->hashObjs[i];
@@ -462,9 +464,9 @@ static int32_t sdbWriteFileImp(SSdb *pSdb) {
 
 int32_t sdbWriteFile(SSdb *pSdb, int32_t delta) {
   int32_t code = 0;
-  if (pSdb->applyIndex == pSdb->commitIndex) {
-    return 0;
-  }
+//  if (pSdb->applyIndex == pSdb->commitIndex) {
+//    return 0;
+//  }
 
   if (pSdb->applyIndex - pSdb->commitIndex < delta) {
     return 0;

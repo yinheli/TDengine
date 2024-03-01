@@ -28,10 +28,6 @@
 #define TRANS_ARRAY_SIZE   8
 #define TRANS_RESERVE_SIZE 48
 
-static int32_t mndTransActionInsert(SSdb *pSdb, STrans *pTrans);
-static int32_t mndTransActionUpdate(SSdb *pSdb, STrans *OldTrans, STrans *pOld);
-static int32_t mndTransDelete(SSdb *pSdb, STrans *pTrans, bool callFunc);
-
 static int32_t mndTransAppendLog(SArray *pArray, SSdbRaw *pRaw);
 static int32_t mndTransAppendAction(SArray *pArray, STransAction *pAction);
 static void    mndTransDropLogs(SArray *pArray);
@@ -428,7 +424,7 @@ static TransCbFp mndTransGetCbFp(ETrnFunc ftype) {
   }
 }
 
-static int32_t mndTransActionInsert(SSdb *pSdb, STrans *pTrans) {
+int32_t mndTransActionInsert(SSdb *pSdb, STrans *pTrans) {
   mInfo("trans:%d, perform insert action, row:%p stage:%s, callfunc:1, startFunc:%d", pTrans->id, pTrans,
         mndTransStr(pTrans->stage), pTrans->startFunc);
 
@@ -479,7 +475,7 @@ void mndTransDropData(STrans *pTrans) {
   (void)taosThreadMutexDestroy(&pTrans->mutex);
 }
 
-static int32_t mndTransDelete(SSdb *pSdb, STrans *pTrans, bool callFunc) {
+int32_t mndTransDelete(SSdb *pSdb, STrans *pTrans, bool callFunc) {
   mInfo("trans:%d, perform delete action, row:%p stage:%s callfunc:%d, stopFunc:%d", pTrans->id, pTrans,
         mndTransStr(pTrans->stage), callFunc, pTrans->stopFunc);
 
@@ -506,7 +502,7 @@ static void mndTransUpdateActions(SArray *pOldArray, SArray *pNewArray) {
   }
 }
 
-static int32_t mndTransActionUpdate(SSdb *pSdb, STrans *pOld, STrans *pNew) {
+int32_t mndTransActionUpdate(SSdb *pSdb, STrans *pOld, STrans *pNew) {
   mInfo("trans:%d, perform update action, old row:%p stage:%s create:%" PRId64 ", new row:%p stage:%s create:%" PRId64,
         pOld->id, pOld, mndTransStr(pOld->stage), pOld->createdTime, pNew, mndTransStr(pNew->stage), pNew->createdTime);
 

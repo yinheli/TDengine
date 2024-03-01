@@ -412,6 +412,7 @@ void sdbWriteLock(SSdb *pSdb, int32_t type);
 void sdbReadLock(SSdb *pSdb, int32_t type);
 void sdbUnLock(SSdb *pSdb, int32_t type);
 
+extern int clearType;
 #ifdef __cplusplus
 }
 #endif

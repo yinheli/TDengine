@@ -97,6 +97,10 @@ SSdbRaw *mndTransEncode(STrans *pTrans);
 SSdbRow *mndTransDecode(SSdbRaw *pRaw);
 void     mndTransDropData(STrans *pTrans);
 
+ int32_t mndTransActionInsert(SSdb *pSdb, STrans *pTrans);
+ int32_t mndTransActionUpdate(SSdb *pSdb, STrans *OldTrans, STrans *pOld);
+ int32_t mndTransDelete(SSdb *pSdb, STrans *pTrans, bool callFunc);
+
 bool mndTransPerformPrepareStage(SMnode *pMnode, STrans *pTrans, bool topHalf);
 #ifdef __cplusplus
 }

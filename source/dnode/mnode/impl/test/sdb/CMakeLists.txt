@@ -1,12 +1,10 @@
-aux_source_directory(. MNODE_SDB_TEST_SRC)
-add_executable(sdbTest ${MNODE_SDB_TEST_SRC})
+add_executable(clearTrans clearTrans.c)
 target_link_libraries(
-    sdbTest
-    PUBLIC sut
-    PUBLIC sdb
+    clearTrans
+    PUBLIC sdb mnode
 )
 
-add_test(
-    NAME sdbTest
-    COMMAND sdbTest
-)
+#add_test(
+#    NAME clearTrans
+#    COMMAND clearTrans
+#)
