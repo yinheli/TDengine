@@ -1,0 +1,66 @@
+---
+title: 数据库
+description: 数据库的基本操作
+---
+
+export const ToSql = ()=>(<a href="../../sql-language/data-definition/database">「SQL 手册/数据库」</a>);
+export const ToIns = ()=>(<a href="../../sql-language/meta">「SQL 手册/information_schema」</a>);
+export const ToPerf = ()=>(<a href="../../sql-language/perf">「SQL 手册/performance_schema」</a>);
+
+本文主要介绍数据库的创建，关于数据库的其他操作，请参考<ToSql/>。
+
+## 创建数据库
+
+使用下列语句，创建名为 `testdb_new` 的数据库：
+
+```sql
+CREATE DATABASE testdb_new;
+```
+
+在创建数据库时，可以指定数据库配置参数：
+
+```sql
+CREATE DATABASE testdb_new_with_option BUFFER 64 KEEP 365;
+
+-- 参数说明：
+--  `BUFFER 64` 写入缓存池大小为 64 MB;
+--  `KEEP 365` 数据保留 365 天后自动删除;
+```
+
+详细的配置参数说明，请参考<ToSql/>。
+
+
+## 查看已创建数据库
+
+使用 SHOW 命令，查看已创建的数据库：
+
+```sql
+SHOW DATABASES;
+```
+
+使用如上命令，可以看到系统中自带两个特殊的数据库：
+
+- `information_schema`：储存了数据库的元数据，详见<ToIns/>
+- `performance_schema`：储存了性能相关的数据信息，详见<ToPerf/>
+
+使用查询语句，可从上述数据库中得到关键的系统信息。
+
+## USE 命令
+
+使用 USE 命令，可以切换当前数据库。在建表、查询等操作中，需要根据表名，到指定数据库中找到对应的表；如果数据库未指定，则在当前数据库中寻找：
+
+```bash
+taos> SELECT * FROM meters;  # meters 存在于数据库 test 中
+DB error: Database not specified (0.000101s)
+
+taos> USE test;  # 将 test 指定为当前数据库
+Database changed.
+
+taos> SELECT * FROM meters;  # 该命令将在 test 中寻找 meters
+           ts            |       current        |   voltage   |        phase         |   groupid   |          location          |
+=================================================================================================================================
+ 2017-07-14 02:40:00.000 |           -2.4980760 |          12 |           -0.8460250 |           3 | California.SanJose         |
+ 2017-07-14 02:40:15.000 |            2.5980849 |          14 |            0.8760280 |           3 | California.SanJose         |
+```
+
+关于上例中的 SELECT 命令，将在[后续文章介绍](../query/basics)。

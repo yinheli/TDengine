@@ -1,0 +1,153 @@
+---
+title: 基础查询
+description: 基本 SQL 查询语句
+---
+
+TDengine 支持 SQL 查询语句，在并以此为基础，进行了拓展，用户可以直接使用熟悉的 `SELECT` 语句进行查询，但在使用时，需要注意 TDengine 的特殊之处。本节以[智能电表示例数据](../../get-started/package)为例，介绍一般 SQL 语法在 TDengine 中使用时，需要注意的要点。
+
+## 投影查询
+
+无论是普通表、超级表、还是子表，都使用相同形式的 SQL 查询命令（SELECT ... FROM ...）进行查询；并且，在查询超级表时，采集列和标签列没有语法上的区别，统一用列名指称：
+
+查询子表（不会显示标签）：
+
+```sql
+SELECT * FROM test.d1005;
+```
+
+使用相同的句法，查询超级表：
+
+```sql
+SELECT * FROM test.meters;
+```
+
+一般情况下，查询子表并不会显示标签，需要显式地使用标签名来获得子表的标签：
+
+```sql
+SELECT *, groupid, location FROM test.d1005;
+```
+
+在超级表中，采集列（`current`）与标签列（`groupid`）都采用列名进行访问，无句法上的区分：
+
+```sql
+SELECT ts, current, groupid FROM test.meters;
+```
+
+如果超级表的查询结果只有标签，可以加关键字 `TAGS`，这时，重复的标签会被去掉：
+
+```sql
+SELECT TAGS location FROM test.meters;
+```
+
+## 多表聚合查询
+
+物联网场景中，往往同一个类型的数据采集点有多个。TDengine 采用超级表（STable）的概念来描述某一个类型的数据采集点，一张子表来描述一个具体的数据采集点。同时 TDengine 使用标签来描述数据采集点的静态属性，一个具体的数据采集点有具体的标签值。通过指定**标签**的过滤条件，TDengine 提供了一高效的方法将超级表（某一类型的数据采集点）所属的子表进行聚合查询。
+
+例如，下列命令查看每个区域的最大电压，它使用标签 `location` 作为分组条件，实现了多表聚合查询：
+
+```sql
+SELECT MAX(voltage), location FROM test.meters GROUP BY location;
+```
+
+从形式上看，该命令与一般的 SQL 聚合无区别。但实际上，每个 `location` 对应的数据可能分布于多张表中。通过超级表查询，TDengine 以一种简洁高效的方式，完成了多表聚合。
+
+## 伪列
+
+TDengine 的 SQL 语句，有一类特殊的关键字。这类关键字可以像列名一样使用，获取不在表中的信息。
+
+`tbname` 代表子表/普通表的名称的名称，该关键字可以返回子表的名称；下例查看了超级表 `meters` 下属所有子表的名称：
+
+```sql
+SELECT DISTINCT tbname FROM test.meters;
+```
+
+在指称时间戳主键时，除了使用列名，还可以使用伪列 `_c0` 和 `_rowts`；下例使用了不同方法获取时间戳主键：
+
+```sql
+SELECT ts, current FROM test.meters LIMIT 5;
+SELECT _C0, current FROM test.meters LIMIT 5;
+SELECT _ROWTS, current FROM test.meters LIMIT 5;
+```
+
+`_c0` 和 `_rowts` 提供了一种统一的名称，来访问时间戳主列。
+
+## 时序数据分析函数函数
+
+使用标准的 SQL 语句，很难满足求时间增量、累积量、变化率、时间平滑等时序数据常见需求。因此，除了常用的标量函数、聚合函数外，TDengine 还提供了专门用于时序数据分析的函数；下例使用 `DERIVATIVE` 计算电流的时间导数，得到电表 `d25` 的每秒电流变化率：
+
+```sql
+SELECT ts, DERIVATIVE(current, 1s, 0) FROM test.d25;
+```
+
+更多函数，请参考[SQL 手册](../../../taos-sql/function#时序数据特有函数)。
+
+## 缓存
+
+在处理时序数据时，经常需要获取最新的数据，即表中的最后一行数据，以跟踪业务场景的实时状态。这在 TDengine 中可以通过 `LAST` 和 `LAST_ROW` 函数实现：
+
+- `LAST_ROW`：获取最新插入的数据，可以使用 `LAST_ROW(col_name)` 或 `LAST_ROW(*)` 形式
+- `LAST`：获取最新的非 NULL 数据，可以使用 `LAST(col_name)` 或 `LAST(*)` 形式
+
+TDengine 可以将最新插入的值进行缓存，从而极大提高 `LAST`、`LAST_ROW` 函数的查询效率。例如，监控程序需要周期性地监测电表 `d326` 的电流、电压和相位，使用如下命令，可以快速得到信息：
+
+```sql
+SELECT LAST_ROW(*) FROM test.d326 WHERE loc="California.SanJose"
+```
+
+读缓存的开启/关闭/模式选择通过[数据库参数](../../sql/database) `cachemodel` 进行控制。
+
+## 查询范围
+
+在查询时序数据时，由于数据量巨大，一般需要对时间范围、标签进行限制，避免浪费时间查询无用信息。我们建议，在实际应用的查询中，先对数据的时间、空间范围进行预估，再通过过滤条件进行限制，以提高查询效率。
+
+下例选取了位于 California.LosAngles 的所有智能电表的 2017年7月14日，0点到12点之间的数据：
+
+```sql
+SELECT * FROM test.meters WHERE location="California.LosAngles" AND ts <= '2017-07-14 12:00:00.000' AND ts >= '2017-07-14 00:00:00.000';
+```
+
+在查询时，伪列 `_qstart`、`_qend` 、`_qduration` 分别代表了查询的起始时间、终止时间、时间长度（终止时间减起始时间），其值由 WHERE 指定；WEHRE 未指定时间范围时，这些伪列的默认值为 `NULL`。下列语句使用 `_qstart` 对查询结果的时间戳进行了处理，其中使用到的 `TIMEDIFF` 用于计算两个时间戳的间隔（默认以毫秒为单位输出）：
+
+```sql
+SELECT TIMEDIFF(ts, _qstart) as dt, current, voltage, phase FROM test.d1008 WHERE ts >= '2017-07-14 00:00:00.000';
+```
+
+## 嵌套查询
+
+查询结果可以用在 FROM 和 JOIN 中，形成嵌套查询。下列语句，将两个不同的查询结果进行合并，再进行进一步计算：
+
+```sql
+SELECT * FROM 
+    (
+        SELECT ts, voltage AS vol1 FROM test.d100
+    ) AS q1
+    INNER JOIN
+    (
+        SELECT ts, voltage AS vol2 FROM test.d101
+    ) AS q2 
+    ON q1.ts=q2.ts LIMIT 50;
+```
+
+利用嵌套查询，可以组成非常复杂的查询语句，满足多样的查询需求。
+
+## JOIN 
+
+在 TDengine 中使用 JOIN 语句，`ON` 条件必须包含 `t1.ts = t2.ts`（即左表时间戳主键等于右表时间戳主键），否则无法进行 JOIN：
+
+```sql
+SELECT t1.ts, t1.current AS current_1, t2.current AS current_2
+    FROM 
+        test.d2000 AS t1 INNER JOIN 
+        test.d2001 AS t2 
+        ON t1.ts = t2.ts AND t1.current > t2.current; 
+```
+
+现阶段，TDengine 仅支持 INNER JOIN。
+
+## 更多内容
+
+TDengine 还支持 GROUP BY、HAVING、ORDER BY、UNION ALL、LIMIT、OFFSET、运算符（LIKE、CASE、MATCH、IN 等），其使用与一般 SQL 无太大区别，详见 SQL 手册。
+
+TDengine 特有的 SQL 查询功能，将在后续章节介绍。
+
+关于 SQL 查询语法的完整用法，请参考[SQL 手册](../../../taos-sql/query)；如需在软件开发中使用查询语句，请参考[开发指南](../../../develop/query-data)。

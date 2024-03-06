@@ -1,0 +1,134 @@
+---
+title: 部署 taosadapter
+description: 如何在 TDengine 服务端部署 toasadapter
+---
+import FqdnSetting from "./_asset/_fqdn-setting.mdx";
+
+export const ToServerArchitecture = ()=>(<a href="./server-architecture">「服务端架构」</a>);
+
+是为 业务集群提供 RESTful 和 Websocket 访问接口的服务。taosadapter 无需独立安装。在安装了 TDengine server 之后，系统中就已经具备了 taosadapter。但如果想在不同的服务器上分别部署 TDengine 集群 (taosd 组件) 和 taosadapter，则需要在这些服务器上都安装 [TDengine server 安装包](../../server-installation)。关于 taosadapter 的配置和使用细节，请参考 [taosadapter](../../../tdengine-programs/taosadapter)。
+
+## 参数配置
+
+taosadapter 通过 `/usr/local/taos/cfg/taosadapter.toml` 和 `/usr/local/taos/cfg/taos.cfg` 两个文件进行配置。
+
+### 连接集群相关配置
+
+`taos.cfg` 的读取位置由配置文件 `taosadapter.toml` 中的参数 `taosConfigDir` 控制：
+
+```bash title="taosadapter.toml"
+taosConfigDir = "/usr/local/taos/cfg/"
+```
+
+这一参数的缺省值为 `/usr/local/taos/cfg/`，一般情况下无需修改，taosadatper 通过该参数找到 `toas.cfg`。
+
+taosadapter 通过 `toas.cfg` 的如下两个参数，找到所连接的集群：
+
+```bash title="toas.cfg"
+firstEp               h1.taosdata.com:6030
+secondEP              h2.taosdata.com:6030
+```
+
+taosadapter 首先连接 firstEP， 如果连接失败，则尝试连接 secondEP。
+
+### 配置 EP {# ep}
+
+taosadapter 也有 EP，应用通过 EP 访问 taosadapter，并以 taosadapter 作为代理，与集群发生数据交换。参照[taod FQDN 配置](../taosd#fqdn)中的方法，进行 FQDN 配置（如果 taosadapter 与 taosd 在同一节点上，则无需进行该操作）。完成后，通过以下 `taosadapter.toml` 参数，配置 taosadapter 的端口号：
+
+```bash title="taosadapter.toml"
+port = 6041
+```
+
+## 单节点部署
+
+使用如下命令启动 taosadapter 服务：
+
+```bash
+systemctl start taosadapter
+```
+
+如需停止 taosAdapter 服务，则运行如下命令：
+
+```bash
+systemctl stop taosadapter
+```
+
+## 多节点部署
+
+部署多个 taosAdapter 的主要目的：
+
+1. 提升系统吞吐量，避免 taosAdapter 自身成为系统瓶颈
+2. 提升系统的健壮性和高可用能力，当有一个实例因为某种故障而不能再提供服务时，进入业务系统的请求可以被自动路由到其它实例。 部署多个实例时需要解决负载均衡问题，避免某个节点过载而其它节点闲置。
+
+部署多个 taosAdapter 实例需要先分别部署成功多个实例，其步骤与部署单一实例完全相同。接下来关键的部分是配置 nginx 。如下配置是经过验证的最佳实践配置，只需要替换其中的的 end point 为实际环境中的正确地址即可。关于各参数的含义，本文档不做解释，请参考 nginx 官方文档：
+
+```
+user root;
+worker_processes auto;
+error_log /var/log/nginx_error.log;
+
+
+events {
+        use epoll;
+        worker_connections 1024;
+}
+
+http {
+
+    access_log off;
+
+    map $http_upgrade $connection_upgrade {
+        default upgrade;
+        ''      close;
+    }
+
+    server {
+        listen 6041;
+        location ~* {
+            proxy_pass http://dbserver;
+            proxy_read_timeout 600s;
+            proxy_send_timeout 600s;
+            proxy_connect_timeout 600s;
+            proxy_next_upstream error http_502 non_idempotent;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection $http_connection;
+        }
+    }
+    server {
+        listen 6043;
+        location ~* {
+            proxy_pass http://keeper;
+            proxy_read_timeout 60s;
+            proxy_next_upstream error  http_502 http_500  non_idempotent;
+        }
+    }
+
+    server {
+        listen 6060;
+        location ~* {
+            proxy_pass http://explorer;
+            proxy_read_timeout 60s;
+            proxy_next_upstream error  http_502 http_500  non_idempotent;
+        }
+    }
+    upstream dbserver {
+        least_conn;
+        server 172.16.214.201:6041 max_fails=0;
+        server 172.16.214.202:6041 max_fails=0;
+        server 172.16.214.203:6041 max_fails=0;
+    }
+    upstream keeper {
+        ip_hash;
+        server 172.16.214.201:6043 ;
+        server 172.16.214.202:6043 ;
+        server 172.16.214.203:6043 ;
+    }
+    upstream explorer{
+        ip_hash;
+        server 172.16.214.201:6060 ;
+        server 172.16.214.202:6060 ;
+        server 172.16.214.203:6060 ;
+    }
+}
+```

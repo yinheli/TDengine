@@ -1,0 +1,192 @@
+---
+title: 文档说明
+description: 关于 TDengine 文档的说明
+slug: /
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+import Xiaot from './xiaot.png'
+import Channel from './channel.webp'
+import OfficialAccount from './official-account.webp'
+
+export const ToQuick = ()=>(<a href="../get-started">「快速开始」</a>);
+export const ToIntro = ()=>(<a href="../introduction">「入门指南」</a>);
+export const ToAdmin = ()=>(<a href="../administration">「部署运维」</a>);
+export const ToDev = ()=>(<a href="../development">「开发指南」</a>);
+export const ToSql = ()=>(<a href="../sql-language">「SQL 手册」</a>);
+export const ToPrgm = ()=>(<a href="../tdengine-programs">「TDengine 程序」</a>);
+export const ToInternal = ()=>(<a href="../internals">「技术内幕」</a>);
+export const ToApi = ()=>(<a href="../api-and-connnectors">「API 与连接器」</a>);
+export const ToThird = ()=>(<a href="../third-party-connection">「第三方工具」</a>);
+export const ToApp = ()=>(<a href="../application">「应用实例」</a>);
+
+## 文档内容
+
+TDengine 是一款[开源](https://www.taosdata.com/tdengine/open_source_time-series_database)、[高性能](https://www.taosdata.com/fast)、[云原生](https://www.taosdata.com/tdengine/cloud_native_time-series_database)的<a href="https://www.taosdata.com/" data-internallinksmanager029f6b8e52c="2" title="时序数据库" target="_blank" rel="noopener">时序数据库</a>（<a href="https://www.taosdata.com/time-series-database" data-internallinksmanager029f6b8e52c="9" title="Time Series DataBase" target="_blank" rel="noopener">Time Series Database</a>, <a href="https://www.taosdata.com/tsdb" data-internallinksmanager029f6b8e52c="8" title="TSDB" target="_blank" rel="noopener">TSDB</a>）, 它专为物联网、车联网、工业互联网、金融、IT 运维等场景优化设计。同时它还带有内建的缓存、流式计算、数据订阅等系统功能，能大幅减少系统设计的复杂度，降低研发和运营成本，是一款极简的时序数据处理平台。本文档是 TDengine 的用户手册，主要是介绍 TDengine 的基本概念、安装、使用、功能、开发接口、运营维护、TDengine 内核设计等等，它主要是面向架构师、开发工程师与系统管理员的。
+
+首先，您需要通过以下文档，了解 TDengine 的基本概念和功能：
+
+- 快速上手体验 &rarr; <ToQuick/> 
+- 了解 TDengine 的基础功能 &rarr; <ToIntro/>
+
+完成上述内容后，根据您的需求，到后续文档中寻找所需内容：
+
+- 如果您是开发工程师，须在代码中使用 TDengine &rarr; <ToDev/>、<ToApi/>
+- 如果您需要部署、运维集群 &rarr; <ToAdmin/>
+- 学习 TDengine 的架构、技术细节 &rarr; <ToInternal/>
+- 如需将 TDengine 与其他系统进行集成 &rarr;  <ToThird/>、<ToApp/>
+
+在学习、使用过程中，您可能经常需要到下列文档中，查找更为详细的信息：
+
+- SQL 命令地详细使用方式 &rarr; <ToSql/>
+- 开发应用时使用到的 API、连接器 &rarr; <ToApi/>
+- TDengine 所有的服务和工具 &rarr; <ToPrgm/>
+- 连接第三方工具的配置方式 &rarr; <ToThird/>
+
+## 代码样例
+
+在 TDengine 的文档中，提供了大量代码的样例，以便用户参考学习。一般情况下，代码样例放置于代码块中，可以直接复制粘贴使用：
+
+```sql
+SELECT ts, current FROM test.meters;
+```
+
+在对代码样例进行评论、说明时，将使用 `inline code block` 格式引用代码中的名称。如果需要指涉较长的一段代码，为方便起见，在不引起歧义的情况下，使用省略号省略部分内容，例如：`FROM ...`。
+
+在引用 SQL 命令时，关键词、函数名使用大写，其他变量使用小写，并且利用缩进和换行，突出 SQL 命令的逻辑结构:
+
+```sql
+CREATE STREAM current_stream
+    TRIGGER window_close IGNORE EXPIRED 1
+    INTO test.current_stream_output_stb 
+    AS 
+        SELECT
+            _wstart AS wstart,
+            _wend AS wend,
+            MAX(current) AS max_current,
+            COUNT(*) AS point_number
+        FROM test.meters WHERE voltage <= 10 INTERVAL(10m);
+```
+
+TDengine 支持多种编程语言，当同时使用多种语言时，我们将代码放入不同的标签页：
+
+<Tabs>
+<TabItem title='C' value="c">
+```c
+// compile with
+// gcc connect_example.c -o connect_example -ltaos
+#include <stdio.h>
+#include <stdlib.h>
+#include "taos.h"
+
+int main() {
+  const char *host = "localhost";
+  const char *user = "root";
+  const char *passwd = "taosdata";
+  // if don't want to connect to a default db, set it to NULL or ""
+  const char *db = NULL;
+  uint16_t    port = 0;  // 0 means use the default port
+  TAOS       *taos = taos_connect(host, user, passwd, db, port);
+  if (taos == NULL) {
+    int   errno = taos_errno(NULL);
+    char *msg = taos_errstr(NULL);
+    printf("%d, %s\n", errno, msg);
+  } else {
+    printf("connected\n");
+    taos_close(taos);
+  }
+  taos_cleanup();
+}
+
+```
+</TabItem>
+
+<TabItem title='Java' value="java">
+```java
+package com.taos.example;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.Properties;
+
+import com.taosdata.jdbc.TSDBDriver;
+
+public class JNIConnectExample {
+    public static void main(String[] args) throws SQLException {
+        String jdbcUrl = "jdbc:TAOS://localhost:6030?user=root&password=taosdata";
+        Properties connProps = new Properties();
+        connProps.setProperty(TSDBDriver.PROPERTY_KEY_CHARSET, "UTF-8");
+        connProps.setProperty(TSDBDriver.PROPERTY_KEY_LOCALE, "en_US.UTF-8");
+        connProps.setProperty(TSDBDriver.PROPERTY_KEY_TIME_ZONE, "UTC-8");
+        Connection conn = DriverManager.getConnection(jdbcUrl, connProps);
+        System.out.println("Connected");
+        conn.close();
+    }
+}
+
+// use
+// String jdbcUrl = "jdbc:TAOS://localhost:6030/dbName?user=root&password=taosdata";
+// if you want to connect a specified database named "dbName".
+```
+</TabItem>
+
+<TabItem title='Python' value="python">
+```python
+import taos
+
+
+def test_connection():
+    # all parameters are optional.
+    # if database is specified,
+    # then it must exist.
+    conn = taos.connect(host="localhost",
+                        port=6030,
+                        user="root",
+                        password="taosdata",
+                        database="log")
+    print('client info:', conn.client_info)
+    print('server info:', conn.server_info)
+    conn.close()
+
+
+if __name__ == "__main__":
+    test_connection()
+```
+</TabItem>
+</Tabs>
+
+## 更多信息
+
+除了用户文档，还可以通过如下方式进行学习：
+
+### Github
+
+TDengine 是一款开源软件，所有核心代码都可以在 Github 上看到。使用过程中，如有遇到问题，欢迎通过 Github 提交 issue；更鼓励用户提交 PR，成为 TDengine 的开源贡献者。
+
+Github 地址：[https://github.com/taosdata/TDengine](https://github.com/taosdata/TDengine)
+
+### 博客
+
+欢迎关注 TDengine 官方博客，了解场景、学习技术、追踪行业前沿。
+
+博客地址：[https://www.taosdata.com/blog](https://www.taosdata.com/blog)
+
+### 官方社区
+
+微信扫描以下二维码，学习了解 TDengine 的最新技术，与大家共同交流物联网大数据技术应用、TDengine 使用问题和技巧：
+
+<table width="100%">
+<tr align="center">
+<td style={{padding:'1em 3em',border:0}}><img src={Xiaot} alt="小 T 的二维码" width="200" /></td>
+<td style={{padding:'1em 3em',border:0}}><img src={Channel} alt="TDengine 微信视频号" width="200" /></td>
+<td style={{padding:'1em 3em',border:0}}><img src={OfficialAccount} alt="TDengine 微信公众号" width="200" /></td>
+</tr>
+<tr align="center">
+<td style={{padding:'1em 3em',border:0}}>加入 TDengine 微信群<br/>了解学习最新物联网技术</td>
+<td style={{padding:'1em 3em',border:0}}>关注 TDengine 视频号<br/>收看技术直播与教学视频</td>
+<td style={{padding:'1em 3em',border:0}}>关注 TDengine 公众号<br/>阅读技术文章与行业案例</td>
+</tr>
+</table>

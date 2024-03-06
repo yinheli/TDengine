@@ -1,0 +1,64 @@
+---
+title: 聚合查询
+description: TDengine 中的聚合查询
+---
+
+## 聚合函数
+
+聚合函数是一类特殊的函数，它的输入参数包含多行数据，但输出结果只有一行，例如平均值函数 `AVG()`、最大值函数 `MAX()`，使用聚合函数的查询称为聚合查询。
+
+```sql
+SELECT MAX(current) FROM test.meters WHERE location="California.SanJose";
+```
+
+使用聚合查询时，需注意结果各列是否匹配：
+
+```sql
+-- 正确；此处 ts 取 current 最大值所在行的 ts
+SELECT ts, MAX(current) FROM test.meters WHERE location="California.SanJose";
+
+-- 错误；因为平均值（AVG）并不与数据的某一行对应，无法找到对应的 ts
+SELECT ts, AVG(current) FROM test.meters WHERE location="California.SanJose";
+```
+
+在上例中，`MAX(current)` 的输出结果只有一行，而 `ts` 列有多行，两者无法匹配；在此情况下，TDengine 并不会扩充 `MAX(current)` 的行数来形成结果，而是直接报错。
+
+## GROUP BY 和 HAVING
+
+GROUP BY 必须和聚合函数一起使用。GROUP BY 根据判别表达式的值，将数据分组，表达式具有相同值的数据被分为同一组。聚合函数对每个分组内的数据单独进行聚合：
+
+```sql
+-- 按照 location 的值进行分组聚合，得到每个地点的平均电流
+SELECT location, AVG(current) FROM test.meters GROUP BY location;
+
+-- 按照 groupid%3（% 为取模运算）的值进行分组聚合
+SELECT groupid%3 as mod, AVG(current) FROM test.meters GROUP BY groupid%3;
+```
+
+使用 HAVING，可以对每个分组的数据进行过滤。HAVING 与 WHERE 的最大不同点在于，HAVING 中可以使用聚合函数，以分组为单位进行过滤（而不是以单条数据为单位），而 WHERE 中不能使用聚合函数： 
+
+```sql
+-- 仅计算平均电流大于 0.0497 的地区的电流最大值
+SELECT location, MAX(current) FROM test.meters GROUP BY location HAVING AVG(current)>0.0497;
+```
+
+## SLIMIT 与 SOFFSET
+
+使用 GROUP BY 时，若要限制最终结果行数，需使用 SLIMIT：
+
+```sql
+SELECT location, AVG(current) FROM test.meters GROUP BY location SLIMIT 3;
+/*
+          location          |       avg(current)        |
+=========================================================
+ California.SantaClara      |         0.049722352199401 |
+ California.SanFrancisco    |         0.049606308428644 |
+ California.SanJose         |         0.049663856420443 |
+*/
+```
+
+与 LIMIT OFFSET 类似，在 SLIMIT 中，可以使用 SOFFSET：
+
+```sql
+SELECT location, AVG(current) FROM test.meters GROUP BY location SLIMIT 3 SOFFSET 2;
+```

@@ -1,0 +1,55 @@
+---
+sidebar_label: Docker
+title: Docker
+description: 使用 Docker 快速体验 TDengine 的高效写入和查询
+---
+
+import Try from "./_assets/_try.mdx";
+
+本文介绍如何通过 Docker 安装 TDengine。如您不熟悉 Docker，请使用 [TDengine 安装包](./package)。
+
+在开始之前，您需要[安装 Docker](https://docs.docker.com/get-docker/)。
+
+## 获取 TDengine 镜像
+
+拉取 TDengine 容器镜像：
+
+```bash
+#选项1 - 获取最新版本
+docker pull tdengine/tdengine:latest
+
+#选项2- 获取指定版本
+docker pull tdengine/tdengine:3.0.1.4
+```
+
+## 创建容器实例
+
+创建容器实例：
+
+```bash
+#选项1 - 创建容器：
+docker run -d -p 6030:6030 -p 6041:6041 -p 6043-6049:6043-6049 -p 6043-6049:6043-6049/udp tdengine/tdengine
+
+#选项2 - 创建容器，并将数据持久化储存到指定位置：
+docker run -d -v ~/data/taos/dnode/data:/var/lib/taos \
+  -v ~/data/taos/dnode/log:/var/log/taos \
+  -p 6030:6030 -p 6041:6041 -p 6043-6049:6043-6049 -p 6043-6049:6043-6049/udp tdengine/tdengine
+```
+
+使用如下命令，确定该容器已经启动并且在正常运行:
+
+```bash
+docker ps
+```
+
+进入该容器并执行 `bash`：
+
+```bash
+docker exec -it <container name> bash
+```
+
+完成上述步骤后，就可以使用 Linux 命令操作 TDengine 了。
+
+## 体验 TDengine
+
+<Try/>

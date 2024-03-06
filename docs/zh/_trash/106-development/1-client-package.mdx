@@ -1,0 +1,63 @@
+---
+title: 客户端安装包
+description: 下载、使用 TDengine 客户端安装包
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import PkgListV3 from "/components/PkgListV3";
+
+export const ToTaos = ()=>(<a href="../tdengine-programs/taos">「taos」</a>);
+export const ToTaosdump = ()=>(<a href="../tdengine-programs/taosdump">「taosdump」</a>);
+export const ToTaosBenchmark = ()=>(<a href="../tdengine-programs/taosBenchmark">「taosBenchmark」</a>);
+export const ToRelease = ()=>(<a href="../release-history">「发布历史」</a>);
+export const ToServer = ()=>(<a href="../administration/server-installation">「服务端安装包」</a>);
+
+为方便应用程序开发、远程连接等需求，TDengine 提供客户端安装包。客户端安装包包含（不同平台可能有区别）：
+
+- 命令行工具 taos（详见<ToTaos/>）
+- 驱动程序 taosc
+- 数据迁移工具 taosdump（详见<ToTaosdump/>）
+- 性能测试工具 taosBenchmark（详见<ToTaosBenchmark/>）
+
+如有需要，请参考本章内容进行下载、安装；或者到<ToRelease/>中选择合适的版本进行安装。
+
+客户端的所有程序都包含于服务端安装包，因此，也可以使用服务端安装包（详见<ToServer/>）。
+
+## 下载与安装
+
+选择适合您的方式，下载安装 TDengine 客户端（名称中含有 `client` 的选项）：
+
+<Tabs>
+
+<TabItem label="tar.gz 安装" value="tarinst">
+1. 从列表中下载获得 tar.gz 安装包；
+   <PkgListV3 type={0}/>
+2. 进入到安装包所在目录，先解压文件（将 `<version>` 替换为下载的安装包版本）：
+```bash
+tar -zxvf TDengine-server-<version>-Linux-x64.tar.gz
+```
+3. 进入目录，执行其中的 `install.sh` 安装脚本：
+
+```bash
+sudo ./install.sh
+```
+
+:::tip
+install.sh 安装脚本在执行过程中，会通过命令行交互界面询问一些配置信息。如果希望采取无交互安装方式，那么可以运行 `./install.sh -e no`。运行 `./install.sh -h` 指令可以查看所有参数的详细说明信息。
+:::
+</TabItem>
+
+<TabItem label="Windows 安装" value="windows">
+1. 从列表中下载获得 exe 安装程序；
+   <PkgListV3 type={3}/>
+2. 运行可执行程序来安装 TDengine。
+</TabItem>
+
+<TabItem label="macOS 安装" value="macos">
+1. 从列表中下载获得 pkg 安装程序；
+   <PkgListV3 type={7}/>
+2. 运行可执行程序来安装 TDengine。如果安装被阻止，可以右键或者按 Ctrl 点击安装包，选择 `打开`。
+</TabItem>
+
+</Tabs>

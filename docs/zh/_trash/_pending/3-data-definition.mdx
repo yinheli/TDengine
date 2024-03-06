@@ -1,0 +1,94 @@
+---
+title: 数据建模
+descroption: TDengine 的数据建模方式
+---
+
+TDengine 采用类关系型数据模型，需要建库、建表。因此对于一个具体的应用场景，需要考虑库、超级表和普通表的设计。
+
+## 数据库
+
+所有的表都储存在数据库中，TDengine 可以建立多个数据库，每个数据库的储存阐述都可以单独配置。不同类型的数据采集点往往具有不同的数据特征，包括数据采集频率的高低，数据保留时间的长短，副本的数目，数据块的大小，是否允许更新数据等等。将不同数据特征的表创建在不同的库里，为每个库配置不同的存储策略，最大限度地适配应用场景，提高使用性能。
+
+```sql
+CREATE DATABASE power KEEP 365 DURATION 10 BUFFER 16;
+```
+
+上述语句创建了名为 `power` 的数据库，并对以下参数进行了设置：
+
+- `KEEP 365`：将数据保留期限设置为 365 天，超过 365 天的数据将被自动删除
+- `DURATION 10`：数据储存于多个文件，每个文件储存 10 天的数据
+- `BUFFER 16`：在内存中，为每个 vnode 分配 16 MB 的写入缓存
+
+创建库之后，需要使用 SQL 命令 USE 将当前库切换过来：
+
+```sql
+USE power;
+```
+
+将当前连接里操作的库换为 power，在对具体表操作前，不再需要使用“库名.表名”的形式，而是直接使用表名即可。
+
+更为详细的语法及参数，请参考 [SQL 手册](../../sql-language/database)。
+
+## 数据类型
+
+在 TDengine 中，数据是结构化的，常用的数据类型如下：
+
+| 类型 | 说明 | 举例 |
+| --- | --- | --- |
+| TIMESTAMP | 时间戳 | `'2017-07-14 10:40:00.000'`, `'2017-07-17 22:00:00', 0.78, 10, -0.865'`, `1708219986440` |
+| INT | 整型变量 | `220`, `1` |
+| DOUBLE | 双精度浮点型 | `10.5`, `1.2e-3`, `2.3e4` |
+| BOOL | 布尔型 | `true`, `false` |
+| VARCHAR | 字符串，长度可变 | `'hello world'` |
+
+更多数据类型（例如地理位置信息、JSON 等），请参考 [SQL 手册](../../sql-language/data-type)。
+
+## 创建超级表
+
+一个物联网系统，往往存在多种类型的设备，比如对于电网，存在智能电表、变压器、母线、开关等等。为便于多表之间的聚合，使用 TDengine, 需要对每个类型的数据采集点创建一个超级表。以[智能电表](../../quick-start/package)为例，可以使用如下的 SQL 命令创建超级表：
+
+```sql
+CREATE STABLE test.meters_mirror
+    (ts TIMESTAMP, current FLOAT, voltage INT, phase FLOAT)
+    TAGS (groupid INT, location VARCHAR(24));
+```
+
+在上例中，`test.meters_mirror` 指定了超级表的名称为 `meters_mirro`，所属数据库为 `test`；`(ts TIMESTAMP ...)` 指定了采集列的结构，其中，第一列作为主键，类型必须为时间戳；`TAGS (...)` 指定了标签列的结构，其中，第一列标签自动创建[标签索引](../../sql-language/tag-index)。
+
+## 创建子表
+
+以超级表为模板创建子表，创建的同时，需指定子表的标签值：
+
+```sql
+CREATE TABLE test.d1_mirror
+    USING test.meters_mirror
+    TAGS (7, 'California.LosAngles');
+```
+
+在上例中，`test.d1_mirror` 指定了子表名称为 `d1_mirror`，所属数据库为 `test`。
+
+`USING test.meters_mirror` 规定了子表以 `test` 数据库中的超级表 `meters_mirror` 作为模板。模板超级表的采集列结构，定义了子表的列结构，因此，该子表的列结构为：`(ts TIMESTAMP, current FLOAT, voltage INT, phase FLOAT)`。
+
+`TAGS (...)` 指定了子表的标签值，括号中标签值的顺序需与超级表定义的标签列结构一致。
+
+以超级表为模板，可以批量创建子表：
+
+```sql
+CREATE TABLE 
+    test.d2_mirror
+        USING test.meters_mirror
+        TAGS (3, 'California.Sunnyvale')
+    test.d3_mirror
+        USING test.meters_mirror
+        TAGS (7, 'California.SanJose');
+```
+
+## 创建普通表
+
+超级表-子表的模型是 TDengine 的一大特点，除此之外，用户也可以建立普通表。普通表没有标签，无法像子表一样，进行批量建表、标签过滤等操作。
+
+```sql
+CREATE TABLE test.normal_tb (ts TIMESTAMP, current FLOAT, voltage INT, phase FLOAT);
+```
+
+其中，`test.normal_tb` 指定了表名称为 `normal_tb`，所属数据库为 `test`；`(current FLOAT ...)` 指定了表的列结构。

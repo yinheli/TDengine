@@ -1,0 +1,125 @@
+---
+title: 文档说明
+description: 关于文档的说明
+---
+
+import Xiaot from './xiaot.png'
+import Channel from './channel.webp'
+import OfficialAccount from './official-account.webp'
+
+## 文档内容
+
+本文档面向 TDengine 用户，提供如下内容：
+
+1. 基本概念、入门教程
+2. 开发指南
+3. 运维管理指南
+4. 底层技术详解
+5. 语法、功能方面详细的参考资料
+
+## SQL 语法表达范式
+
+[TBD: SQL 语法范式放到 SQL 手册]
+
+在文档中，我们采取形式化的方式表示 SQL 语法规则：
+
+- 注释（`--`、`/**/`）和分行用于辅助说明：
+
+```sql
+SELECT select_list  /*选择列表*/
+FROM table          /*数据源*/
+WHERE condition   -- 过滤条件
+```
+
+- 关键字大写，标识符（数据库名、表名、列名等）小写：
+
+```sql
+-- 语法表示：
+CREATE DATABASE db_name;
+
+-- 具体示例：
+CREATE DATABASE power;
+CREATE DATABASE atmosphere;
+```
+
+- `[option]`、`[option_1|option_2]` 表示可选项；`{option_1|option_2}` 表示必选项：
+
+```sql
+-- 语法表示：
+SHOW {NORMAL|CHILD} [db_name.]TABLES [LIKE tb_name_wildchar]
+
+-- 具体示例：
+SHOW NORMAL TABLES;
+SHOW CHILD power.TABLES LIKE "%e";
+```
+
+- `...` 表示前一个元素（token）可以被重复；`, ...` 表示重复元素之间需用 `,` 隔开：
+
+```sql
+-- 语法表示：
+INSERT INTO table_name VALUES (value1, value2, ...) ...
+
+-- 具体示例：
+INSERT INTO table_1 VALUE (2,100,'Beijing') (3,95,'Shanghai');
+INSERT INTO table_2 VALUE (1,2,3,4,5);
+```
+
+- 局部语法过于复杂，则用标识符代替，并在下文中展开，例如下文的 `select_list`：
+
+```sql
+-- 语法表示：
+SELECT select_list FROM table_name
+
+select_list:
+    {[tb_name.]* | expr}, ...
+
+-- 具体示例：
+SELECT * FROM meters;
+SELECT tb1.* FROM tb1;
+SELECT ts,ABS(phase) FROM meters;
+```
+
+- 标识符的文本含义具有提示作用：
+
+```sql
+-- 语法表示：
+SELECT * FROM table_name WHERE bool_expr;
+
+-- 具体示例：
+SELECT * FROM test.meters WHERE current > 5;
+```
+
+## 更多信息
+
+除了用户文档，还可以通过如下方式进行学习：
+
+### Github
+
+TDengine 是一款开源软件，所有核心代码都可以在 Github 上看到。
+
+使用过程中，如有遇到问题，欢迎通过 Github 提交 issue；更鼓励用户提交 PR，成为 TDengine 的开源贡献者。
+
+Github 地址：[https://github.com/taosdata/TDengine](https://github.com/taosdata/TDengine)
+
+### 博客
+
+欢迎关注 TDengine 官方博客，了解场景、学习技术、追踪行业前沿。
+
+博客地址：[https://www.taosdata.com/blog](https://www.taosdata.com/blog)
+
+### 官方社区
+
+微信扫描以下二维码，学习了解 TDengine 的最新技术，与大家共同交流物联网大数据技术应用、TDengine 使用问题和技巧：
+
+<table width="100%">
+<tr align="center">
+<td style={{padding:'1em 3em',border:0}}><img src={Xiaot} alt="小 T 的二维码" width="200" /></td>
+<td style={{padding:'1em 3em',border:0}}><img src={Channel} alt="TDengine 微信视频号" width="200" /></td>
+<td style={{padding:'1em 3em',border:0}}><img src={OfficialAccount} alt="TDengine 微信公众号" width="200" /></td>
+</tr>
+<tr align="center">
+<td style={{padding:'1em 3em',border:0}}>加入 TDengine 微信群<br/>了解学习最新物联网技术</td>
+<td style={{padding:'1em 3em',border:0}}>关注 TDengine 视频号<br/>收看技术直播与教学视频</td>
+<td style={{padding:'1em 3em',border:0}}>关注 TDengine 公众号<br/>阅读技术文章与行业案例</td>
+</tr>
+</table>

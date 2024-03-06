@@ -1,0 +1,30 @@
+---
+title: 普通表
+description: 普通表的基本操作
+---
+
+export const ToSql = ()=>(<a href="../../sql-language/data-definition/table">「SQL 手册/普通表」</a>);
+
+本文主要介绍普通表的创建，关于其他操作，请参考<ToSql/>。
+
+## 创建普通表
+
+每张表都属于一个数据库，因此，在创建表时，需要明确新表所属的数据库。下列命令在数据库 `testdb_new` 中创建了一张名为 `normal_tb_new` 的普通表：
+
+```sql
+CREATE TABLE testdb_new.normal_tb_new (col_1 TIMESTAMP, col_2 DOUBLE, col_3 VARCHAR(24));
+```
+
+表名后的括号，定义了表的列结构（Schema）；上述语句创建的表有三列：
+
+- 第一列用于储存时间戳主键，因此，`col_1` 的类型必须为 `TIMESTAMP`
+- 第二列 `col_2` 的类型为 `DOUBLE`，即双精度浮点数
+- 第三列 `col_3` 的类型为 `VARCHAR`；由于字符串类型的长度不固定，因此，除类型外，还需明确定义字段长度。命令中的 `VARCHAR(24)` 规定了每个字段最多储存 24 个字符
+
+## 查看已创建的普通表
+
+使用下列语句，可以查看数据库 `testdb_new` 中的所有普通表：
+
+```sql
+SHOW NORMAL testdb_new.TABLES;
+```

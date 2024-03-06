@@ -1,0 +1,87 @@
+---
+title: 超级表与子表
+description: 建立超级表与子表的基本操作
+---
+
+export const ToSqlStb = ()=>(<a href="../../sql-language/data-definition/stable">「SQL 手册/超级表」</a>);
+export const ToSqlChild = ()=>(<a href="../../sql-language/data-definition/table">「SQL 手册/子表」</a>);
+
+本文主要介绍超级表和子表的创建，关于其他操作，请参考<ToSqlStb/>和<ToSqlChild/>。
+
+## 创建超级表
+
+每张表都属于一个数据库，因此，在创建表时，需要明确新表所属的数据库。下列命令在数据库 `testdb_new` 中创建了一张名为 `stb_new` 的超级表：
+
+```sql
+CREATE STABLE testdb_new.stb_new
+    (metric_1 TIMESTAMP, metric_2 FLOAT)  /*定义了采集列的结构*/
+    TAGS (tag_1 VARCHAR(24), tag_2 INT)  /*定义了标签列的结构*/;
+```
+
+表名后的括号，定义了采集列的结构；`TAGS` 后的括号，定义了标签列的结构：
+
+- 此超级表有两个采集列，其中第一列 `metric_1` 是时间戳主键，必须为 `TIMESTAMP` 类型；第二列 `metric_2` 的类型为浮点数 `FLOAT`
+- 此超级表有两个标签列：`tag_1` 的类型为 `VARCHAR`，长度为 24，即最多存储 24 个字符；`tag_2` 的类型为整数
+
+## 查看已创建的超级表
+
+使用下列语句，可以查看数据库 `testdb_new` 中的所有超级表：
+
+```sql
+SHOW testdb_new.STABLES;
+```
+
+## 创建子表
+
+创建子表时，需要以超级表作为模板，并设置子表的标签值。以下语句，在数据库 `testdb_new` 中，以超级表 `stb_new` 作为模板，建立了一张名为 `child_new_001` 的子表。
+
+```sql
+CREATE TABLE testdb_new.child_new_001
+    USING testdb_new.stb_new
+    TAGS ('hello world.', 100);
+```
+
+USING 语句指定了超级表模板；TAGS 后的括号设置了该子表的标签值。
+
+子表的列结构与超级表的采集列结构相同，可使用 DESCRIBE 命令查看：
+
+```bash
+# highlight-next-line
+taos> DESCRIBE testdb_new.stb_new;
+             field              |          type          |   length    |        note        |
+=============================================================================================
+ metric_1                       | TIMESTAMP              |           8 |                    |
+ metric_2                       | FLOAT                  |           4 |                    |
+ tag_1                          | VARCHAR                |          24 | TAG                |
+ tag_2                          | INT                    |           4 | TAG                |
+Query OK, 4 row(s) in set (0.001857s)
+
+# highlight-next-line
+taos> DESCRIBE testdb_new.child_new_001;
+             field              |          type          |   length    |        note        |
+=============================================================================================
+ metric_1                       | TIMESTAMP              |           8 |                    |
+ metric_2                       | FLOAT                  |           4 |                    |
+ tag_1                          | VARCHAR                |          24 | TAG                |
+ tag_2                          | INT                    |           4 | TAG                |
+Query OK, 4 row(s) in set (0.001544s)
+```
+
+同一条语句可以创建多张子表，例如：
+
+```sql
+USE testdb_new; /*使用 USE 后，后续语句可以直接使用表名，不加数据库名*/
+
+CREATE TABLE
+    child_new_002 USING stb_new TAGS ('hello world.', 101)
+    child_new_003 USING stb_new TAGS ('hello earth.', 100)
+    child_new_004 USING stb_new TAGS ('hello earth.', 101);
+```
+
+## 查看已创建的子表
+
+使用下列语句，可以查看数据库 `testdb_new` 中的所有子表：
+
+```sql
+SHOW CHILD testdb_new.TABLES;
+```

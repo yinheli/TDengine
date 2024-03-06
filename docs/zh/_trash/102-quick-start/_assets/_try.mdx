@@ -1,0 +1,83 @@
+## 数据写入
+
+为了快速上手体验，使用 TDengine 程序 `taosBenchmark`，向数据库中写入数据：
+
+```bash
+taosBenchmark -S 15000  # 使用参数 `-S`，将两条记录的时间间隔设置为 15 秒（15000 毫秒）
+```
+
+该命令将一亿条记录插入数据库，在普通 PC 服务器上，整个过程仅耗时十几秒。
+
+根据提示完成上述操作，将会在 TDengine 中创建 `test` 数据库，以及一张名为 `meters` 的超级表（包含一万张下属子表名，称从 `d0` 到 `d9999`），该超级表的数据由以下字段组成：
+
+| 字段 | 含义 |
+| --- | --- |
+| ts | 时间戳主键 |
+| current | 电流 |
+| voltage | 电压 |
+| phase | 相位 |
+| groupId | 分组编号 |
+| location | 电表所在的城市 |
+
+### 数据查询
+
+### 进入命令行界面
+
+执行 `taos`，进入命令交互界面：
+
+```bash
+taos
+```
+
+成功执行 SQL 命令后，可以看到执行命令所消耗的时间：
+
+```bash
+taos> SELECT MAX(voltage),MIN(voltage) FROM test.meters;
+ max(voltage) | min(voltage) |
+==============================
+           18 |            0 |
+# highlight-next-line
+Query OK, 1 row(s) in set (0.200341s)
+taos> 
+```
+
+### 查询示例
+
+查询超级表 `meters` 下的记录总条数：
+
+```sql
+SELECT COUNT(*) FROM test.meters;
+```
+
+查询最近一条记录：
+
+```sql
+SELECT LAST_ROW(*) FROM test.meters;
+```
+
+聚合查询：
+
+```sql
+SELECT location, groupId, MAX(current), MAX(voltage), AVG(phase) FROM test.meters GROUP BY groupId, location;
+```
+
+按 5 分钟的时间窗口，进行窗口查询：
+
+```sql
+SELECT _wstart, MAX(current), MAX(voltage), AVG(phase) FROM test.meters INTERVAL(5m);
+```
+
+使用 PARTITION BY 梳理出 `meters` 中的独立时间线，并对每条时间线进行求导（电流的每秒变化率）：
+
+```sql
+SELECT ts, DERIVATIVE(current, 1s) FROM test.meters PARTITION BY tbname;
+```
+
+### 退出命令行界面
+
+完成后，输入 `exit` 退出命令交互界面：
+
+```bash
+taos> exit
+bash$ 
+```

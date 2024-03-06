@@ -1,0 +1,188 @@
+---
+sidebar_label: 安装包
+title: 安装包
+description: 使用安装包安装 TDengine
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import PkgListV3 from "/components/PkgListV3";
+
+import Try from "./_assets/_try.mdx";
+
+本文介绍如何使用安装包安装 TDengine。如您熟悉 Docker，也可以[使用 Docker](./docker)。
+
+## 运行环境要求
+
+在linux系统中，运行环境最低要求如下:
+
+- linux 内核版本：3.10.0-1160.83.1.el7.x86_64
+- glibc 版本：2.17
+
+如果通过 clone 源码进行编译安装，还需要满足:
+
+- cmake版本：3.26.4 或以上
+- gcc 版本：9.3.1 或以上
+
+
+## 下载及安装
+
+选择适合您的方式，下载安装 TDengine 服务端：
+
+<Tabs>
+
+<TabItem label="Deb 安装" value="debinst">
+1. 从列表中下载获得 Deb 安装包；
+   <PkgListV3 type={6}/>
+2. 进入到安装包所在目录，执行如下的安装命令（将 `<version>` 替换为下载的安装包版本）：
+
+```bash
+sudo dpkg -i TDengine-server-<version>-Linux-x64.deb
+```
+</TabItem>
+
+<TabItem label="RPM 安装" value="rpminst">
+1. 从列表中下载获得 RPM 安装包；
+   <PkgListV3 type={5}/>
+2. 进入到安装包所在目录，执行如下的安装命令（将 `<version>` 替换为下载的安装包版本）：
+
+```bash
+sudo rpm -ivh TDengine-server-<version>-Linux-x64.rpm
+```
+</TabItem>
+
+<TabItem label="tar.gz 安装" value="tarinst">
+1. 从列表中下载获得 tar.gz 安装包；
+   <PkgListV3 type={0}/>
+2. 进入到安装包所在目录，先解压文件（将 `<version>` 替换为下载的安装包版本）：
+```bash
+tar -zxvf TDengine-server-<version>-Linux-x64.tar.gz
+```
+3. 进入目录，执行其中的 `install.sh` 安装脚本：
+
+```bash
+sudo ./install.sh
+```
+
+:::tip
+install.sh 安装脚本在执行过程中，会通过命令行交互界面询问一些配置信息。如果希望采取无交互安装方式，那么可以运行 `./install.sh -e no`。运行 `./install.sh -h` 指令可以查看所有参数的详细说明信息。
+:::
+</TabItem>
+
+<TabItem value="apt-get" label="apt-get">
+注意：apt-get 方式只适用于 Debian 或 Ubuntu 系统。
+
+可以使用 `apt-get` 工具从官方仓库安装。
+
+**配置包仓库**
+
+```bash
+wget -qO - http://repos.taosdata.com/tdengine.key | sudo apt-key add -
+echo "deb [arch=amd64] http://repos.taosdata.com/tdengine-stable stable main" | sudo tee /etc/apt/sources.list.d/tdengine-stable.list
+```
+
+如果安装 Beta 版需要安装包仓库：
+
+```bash
+wget -qO - http://repos.taosdata.com/tdengine.key | sudo apt-key add -
+echo "deb [arch=amd64] http://repos.taosdata.com/tdengine-beta beta main" | sudo tee /etc/apt/sources.list.d/tdengine-beta.list
+```
+
+**使用 `apt-get` 命令安装**
+
+```bash
+sudo apt-get update
+apt-cache policy tdengine
+sudo apt-get install tdengine
+```
+</TabItem>
+
+<TabItem label="macOS 安装" value="macos">
+1. 从列表中下载获得 pkg 安装程序；
+   <PkgListV3 type={7}/>
+2. 运行可执行程序来安装 TDengine。如果安装被阻止，可以右键或者按 Ctrl 点击安装包，选择 `打开`。
+</TabItem>
+
+</Tabs>
+
+安装过程中出现 `Enter FQDN:` 提示时，无需输入任何内容，按回车跳过。
+
+## 启动服务
+
+<Tabs>
+
+<TabItem label="Linux 系统" value="linux">
+安装后，请使用 `systemctl` 命令来启动 TDengine 的服务进程:
+
+```bash
+systemctl start taosd
+```
+
+检查服务是否正常工作：
+
+```bash
+systemctl status taosd
+```
+
+如果显示 `Active: active (running)`，则说明运行成功：
+
+```bash
+bash$ systemctl status taosd
+● taosd.service - server service
+     Loaded: loaded (/etc/systemd/system/taosd.service; enabled; vendor preset: enabled)
+     # highlight-next-line
+     Active: active (running) since Mon 2023-12-25 09:04:47 CST; 20h ago
+    Process: 2061 ExecStartPre=/usr/local/taos/bin/startPre.sh (code=exited, status=0/SUCCESS)
+   Main PID: 2067 (taosd)
+      Tasks: 208 (limit: 19033)
+     Memory: 2.0G
+     CGroup: /system.slice/taosd.service
+             ├─2067 /usr/bin/taosd
+             └─2080 /usr/bin/udfd -c /etc/taos/
+
+Dec 25 09:04:47 taosdata systemd[1]: Starting server service...
+Dec 25 09:04:47 taosdata systemd[1]: Started server service.
+bash$
+```
+</TabItem>
+
+<TabItem label="macOS 系统" value="macos">
+安装后，在应用程序目录下，双击 TDengine 图标，或运行 `sudo launchctl start com.tdengine.taosd` 来启动 TDengine 服务进程。
+
+:::info
+- `launchctl` 命令管理 `com.tdengine.taosd` 需要管理员权限，务必在前面加 `sudo` 来增强安全性。
+- `sudo launchctl list | grep taosd` 指令返回的第一列是 `taosd` 程序的 PID，若为 `-` 则说明 TDengine 服务未运行。
+- 故障排查：
+- 如果服务异常请查看系统日志 `launchd.log` 或者 `/var/log/taos` 目录下 `taosdlog` 日志获取更多信息。
+:::
+</TabItem>
+
+</Tabs>
+
+更多 taosd 管理命令，请参考[「TDengine 程序/taosd」](../tdengine-programs/taosd)
+
+## 体验 TDengine
+
+<Try/>
+
+## 停止服务
+
+如不再需要 TDengine 服务，可使用如下命令停止：
+
+<Tabs>
+
+<TabItem label="Linux 系统" value="linux">
+```bash
+systemctl stop taosd
+```
+</TabItem>
+
+<TabItem label="macOS 系统" value="macos">
+```bash
+sudo launchctl stop com.tdengine.taosd
+```
+</TabItem>
+
+</Tabs>
+
+更多进程管理操作，请参考 [「taosd 实例管理」](../administration/server-setup-and-management/taod-instance-management)。

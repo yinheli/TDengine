@@ -1,0 +1,195 @@
+---
+title: 部署 taosd
+description: 如何在 TDengine 服务端部署 toasd
+---
+
+import FqdnSetting from "./_asset/_fqdn-setting.mdx";
+
+export const ToInstall = ()=>(<a href="../../server-installation">「服务端安装/卸载/升级」</a>);
+export const ToTaosd = ()=>(<a href="../taod-instance-management">「taosd 实例管理」</a>);
+export const ToServerArchitecture = ()=>(<a href="./../../server-architecture">「服务端架构」</a>);
+export const ToArchitecture = ()=>(<a href="../../../internals/cluster-architecture">「技术内幕/集群架构」</a>);
+export const ToSql = ()=>(<a href="../../../sql-language/node">「SQL 手册/集群管理」</a>);
+export const ToConf = ({head})=>(<a href={"../../configuration"+head}>「服务器配置」</a>);
+export const ToCloud = ()=>(<a href="../../../deployment-in-cloud">「Docker 部署」</a>);
+
+在 TDengine 集群由一至多个 dnode（数据节点）组成，每个 dnode 对于一个 taosd 实例（详见<ToServerArchitecture/>和<ToArchitecture/>）。一般而言，每个物理节点上运行一个 taosd。此处，物理节点指拥有自己的计算、存储和网络能力的计算机，比如装有操作系统的物理机、虚拟机或 Docker 容器。
+
+本章介绍如何在 Linux 环境下搭建 TDengine 服务器集群。如需在云服务部署 TDengine，请参考<ToCloud/>。
+
+部署集群，主要包括如下操作：
+
+- 配置每个 dnode 的 EP，确保 dnode 能够被访问
+- 运行 dnode 实例
+- 将运行的 dnode 加入集群
+
+## 安装
+
+在所有物理节点安装**版本一致** TDengine，安装方式请参考<ToInstall/>。
+
+如果搭建集群的物理节点中，存有之前的测试数据，或者装过其他版本的 TDengine，请先将其卸载，并清空所有数据（卸载方法请参考<ToInstall/>；如果需要保留原有数据，请联系涛思交付团队进行旧版本升级、数据迁移）。
+
+## 参数配置 {#taosd_conf}
+
+进行配置时，请勿启动 taosd 服务，若已启动，则需在配置完成后重启服务。
+
+### FQDN 配置 {#fqdn}
+
+在 TDengine 中，每个节点都通过唯一的 EP（Endpoint）进行标识，集群内部/外部通过 EP 来访问节点。EP 由 FQDN 和端口号组成，例如 `d1.tdengine.com:6030` 由 FDQN `d1.tdengine.com` 和端口号 `6030` 组成。
+
+EP 中的 FQDN 需转换为 IP 才能通过 TPC/IP 进行通信，这一工作可由 DNS（Domain Name System）完成，如使用 DNS，请联系管理员。如没有 DNS 系统，则通过配置 host 文件来完成，下面介绍 host 文件配置方式：
+
+**1 - 配置本机 FQDN**：对于**每个**服务端节点，在 `/etc/hostname` 中添加本节点的 FQDN，并重启系统。例如：
+
+```bash title="/etc/hostname"
+node1
+```
+
+如果物理节点的 `/etc/hostname` 包含多行内容，则需要同时修改 `taos.cfg` 中的参数 `fqdn` 来明确 TDengine 节点所使用的 FDQN。例如：
+
+```bash title="/etc/hostname"
+node1
+otherfqdn1
+otherfqdn2
+```
+
+```bash title="/usr/local/taos/cfg/taos.cfg"
+fqdn                  node1
+```
+
+如果 `/etc/hostname` 只有一行内容，则无需该操作。
+
+**2 - 配置 FQDN 解析规则**：对于**每个**节点（包括客户端节点），在 `/etc/hosts` 中添加集群中所有节点的 IP 与 FQDN 映射关系：
+
+```bash title="/etc/hosts"
+10.211.55.14 node1
+10.211.55.15 node2
+10.211.55.16 node3
+```
+
+使用 FQDN 进行内部/外部访问，便于维持统一的接口名称：当 IP 地址发生改变时，只需对 host 文件或 DNS 服务器进行修改，无需对集群和应用程序进行修改，便于集群服务的管理。因此，尽管可以直接使用 IP 地址进行访问，在生产环境下，我们仍然建议使用 FQDN。
+
+通过下述操作，检查以上设置是否正确：
+
+- 在每个物理节点执行 `hostname -f`，确认主机名设置正确
+- 在每个物理节点上执行 `ping <host>`（其中，`<host>` 是其他物理节点的主机名），确保节点之间相互连通。需仔细检查相关物理节点的网络配置，例如防火墙。
+
+### 配置节点端口
+
+首先，应确保集群中所有物理节点在端口 6030-6042 上的 TCP/UDP 协议能够互通。
+
+在完成 FQDN 配置后，还需配置端口号，从而组成 toasd 的 EP。在每个 taosd 运行节点的 `taos.cfg` 中，配置该节点 taosd 实例的端口号（缺省值为 6030）：
+
+```bash title="toas.cfg"
+serverPort            6030
+```
+
+### 接入集群配置
+
+尚未加入集群的 taosd，需要通过集群中的任意一个 taosd 节点，加入集群。`taos.cfg` 的如下两个参数，指定了新节点首次加入集群时，所连接的节点 EP：
+
+```bash title="toas.cfg"
+firstEp               node1:6030
+secondEP              node2:6030
+```
+
+当一个新节点需要加入集群时，首先连接 firstEP， 如果连接失败，则尝试连接 secondEP。因此，这两个参数的配置，与节点的启动顺序相关。为方便起见，可以将所有 firstEP 配置为同一个节点的 FQDN，该节点首先启动。
+
+当数据节点（taosd）成功加入集群后，该数据节点会保存 mnode 的 End Point 列表，并通过 End Point 列表访问集群中的节点，无需再依赖上述两个参数所指定的节点。
+
+### 全局参数
+
+taosd 的配置参数通过 `taos.cfg` 管理，每个节点都要进行单独设置。一般而言，配置参数仅对本节点生效（例如 `serverPort`），因此，每个节点的参数配置不完全相同。但是，以下参数的设置，**必须**在整个集群内保持相同（也可以都不设置，用默认值）：
+
+| 配置参数 | 含义 |
+| --- | --- |
+| `statusInterval` | dnode 向 mnode 报告状态时长 |
+| `timezone` | 时区 |
+| `locale` | 系统区位信息及编码格式 |
+| `charset` | 字符集编码 |
+| `ttlChangeOnWrite` | ttl 到期时间是否伴随表的修改操作改变 |
+
+### 运行首节点
+
+首节点即为配置参数 `firstEp` 所对应的节点，该节点的 taosd 应该最先启动（启动方式，请参考<ToTaosd/>）：
+
+```bash
+systemctl start taosd
+```
+
+启动后，连接命令行工具 taos，查看现有 dnode 的状态：
+
+```sql
+SHOW DNODES;
+```
+
+上述命令返回结果：
+
+```bash
+id | endpoint | vnodes | support_vnodes | status | create_time | note |
+=======================================================================
+1 | node1:6030 | 0 | 1024 | ready | 2022-07-16 10:50:42.673 | |
+Query OK, 1 rows affected (0.007984s)
+```
+
+### 部署其他节点 {#add_dnode}
+
+按照下述步骤，将后续节点添加入集群（单节点部署，则无需下述步骤）：
+
+1 - 启动节点的 taosd（启动方式，请参考<ToTaosd/>）：
+
+```bash
+systemctl start taosd
+```
+
+2 - 在**首节点**（即 `firstEP` 所指定的节点），使用命令行界面 taos，执行如下命令：
+
+```sql
+CREATE DNODE "node2:6030";
+```
+
+该命令将 EP 为 `node2:6030` 的节点加入集群。
+
+3 - 查看节点是否已加入集群：
+
+```sql
+SHOW DNODES;
+```
+
+若成功添加，可在结果中看到：
+
+```bash
+id | endpoint | vnodes | support_vnodes | status | create_time | note |
+=======================================================================
+1 | node1:6030 | 0 | 1024 | ready | 2022-07-16 10:50:42.673 | |
+1 | node2:6030 | 0 | 1024 | ready | 2022-07-16 11:00:32.182 | |
+Query OK, 2 rows affected (0.007984s)
+```
+
+4 - 确保所有数据节点都加入集群后，变更完成了部署工作，并启动了集群。
+
+## 节点管理
+
+### 添加节点
+
+向已存在集群中添加 dnode，只需按照[上文所述步骤](#add_dnode)操作即可。
+
+需注意，新加入的节点**不能包含任何数据**，且版本需与现有集群一致。
+
+### 移除节点
+
+使用以下命令，移除 dnode：
+
+```sql
+DROP DNODE dnodeId;
+```
+
+其中，`dnodeI` 为被移除 dnode 的 ID，可通过 `SHOW DNODES` 获得。执行 DROP DNODE 时，被移除 dnode 的数据会被自动迁移到其他节点上。被移除的 dnode，不能重新加入集群，如需再加入，必须清空数据文件夹（相当于重新部署节点）。
+
+DROP DNODE 成功运行后，需要手动停止被移除节点上的 dnode 进程：
+
+```bash
+systemctl stop taosd;
+```
+
+更多 dnode 相关操作（例如，信息查看、修改 debug 选项），以及其他用于集群管理的 SQL 命令，请参考<ToSql/>。

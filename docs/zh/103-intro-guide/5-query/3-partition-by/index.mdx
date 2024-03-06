@@ -1,0 +1,41 @@
+---
+title: 切分查询
+description: 使用 PARTITION BY 实现数据切分查询
+---
+
+时序数据的查询，经常需要根据空间维度划分数据，例如：计算每个风场的每小时耗电量曲线，这需要把数据按照所属风场进行分区，再对于每个分区的数据，单独进行窗口聚合计算。
+
+## 使用
+
+使用 PARTITION BY，可以像 GROUP BY 一样，可将数据切分为多个分区。与 GROUP BY 不同的是，属于不同分区的数据，可以相互独立地进行更加复杂的计算，包括：窗口查询、插值。
+
+以下语句计算了[智能电表示例数据](../../get-started/package)的每个地区内，所有电表的每小时最大/最小功率：
+
+```sql
+SELECT locationAS loc, _wend, MAX(voltage*current), MIN(voltage*current) FROM test.meters PARTITION BY location INTERVAL(1h);
+```
+
+该语可被视为两个步骤：
+
+- `PARTITION BY location`：根据 `location` ，数据被划分入多个分区
+- `SELECT ... INTERVAL ...`：对每个分区内的数据，单独执行窗口聚合计算，求得该区域的每小时最大/最小功率
+
+以下语句，使用了 `tbname` 作为数据切分条件，对 California LosAngles 地区每一个电表的所有电压值大于 10V 的时段进行了抓取，得到的该时段的起止时间、持续时长和时段内平均电压、电流：
+
+```sql
+SELECT tbname, _wstart, TWA(current), TWA(voltage)
+    FROM test.meters
+    WHERE location='California.LosAngles'
+    PARTITION BY tbname
+    EVENT_WINDOW
+        START WITH voltage >= 10
+        END WITH voltage < 10;
+```
+
+使用 PARTITION BY tbname 将每个子表的数据独立出来，形成独立时间线，对每条单独的时间线进行计算。在时序数据分析中，对多条独立时间线进行分析，是常见需求，例如，计算每个电表的电流变化率：
+
+```sql
+SELECT ts, DERIVATIVE(current, 1s, 0) FROM test.meters PARTITION BY tbname;
+```
+
+在上述例子中，`DERIVATIVE` 函数只能对独立的时间线进行计算，即只能对一个子表的某列进行计算。使用 `PARTITION BY tbname` 以及合适的标签过滤条件，将超级表中时间线一一切分出来，用一条命令，对完成了多张表的变化率计算。

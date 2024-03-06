@@ -1,0 +1,59 @@
+---
+title: 服务端架构
+description: TDengine 的服务端集群架构 
+---
+
+## 服务架构概览
+
+下图展示了整个 TDengine 产品生态的部署架构，其所有核心组件都来自于 [TDengine server 安装包](../server-installation)。
+
+![TDengine Database Architecture](./server-architecture.png)    
+
+对上图中各组件解释如下：
+
+1. **TDengine cluster (business)** 是指存储业务数据的目标集群，简称为业务集群，它也是监控数据产生的源头，同时还是 taos explorer 可视化工具管理的对象
+
+2. **taosAdapter (business)** 是为 业务集群提供 RESTful 和 Websocket 访问接口的服务，它既可以是单一实例，也可以是多个实例配合反向代理（如nginx）
+
+3. **taosKeeper** 是将监控数据产生的源头产生的监控数据转入存储监控数据的 TDengine 集群的服务
+
+4. **taosAdapter (monitoring)** 是为监控集群提供 RESTful 和 Websocket 访问接口的服务。如果监控集群与业务集群是相同集群，则与它们配套的 taosAdapter 可以是相同实例也可以是不同实例。但如果这两个是不同集群，则与它们配套的 taosAdapter 一定是不同实例。同样， taosAdapter 可以是单一实例也可以是配合反向代理的多实例
+
+5. **TDinsight (Grafana)**：存储在监控集群中的监控数据可以通过 Grafana 来呈现关键的监控指标
+
+6. **taos**：taos 是 TDengine 的命令行交互界面；用户通过 taos 执行 SQL 命令，实现集群的管理和数据操作
+
+## 逻辑架构
+
+TDengine 集群由数据节点由一致多个数据节点（DNode）组成。每个运行的 taosd 进程就是一个 DNode，一般情况下，一台服务器仅运行一个 DNode。
+
+TDengine 将数据的计算、存储能力进行了虚拟化，引入了多种虚拟化节点，例如：VNode（虚拟节点）：每个数据库包含多个 VGroup（虚拟节点组），它们共同承担数据库的数据储存和计算。数据库的每张表都属于其中一个 VGroup。一个 VGroup 可以包含一至多个 VNode，同一个 VGroup 下的 VNode 存储的数据相同（副本）。VNode 具有独立的运行线程、内存空间与持久化存储的路径，是最小的存储、计算单元。
+
+DNode 点代表资源，VNode 代表了时序数据的计算、存储负载。TDengine 通过在多个 DNode 配置不同的 VNode，实现了多副本（Replica）、水平拓展（Sharding），并可以灵活的调节 VNode 的分配，进行负载均衡：
+
+![Architecture Overview](./tech-architecture.png)
+
+除了 VNode 之外，虚拟化节点还有 MNode、SNode、QNode。TDengine 通过在不同数据节点配置不同的虚拟节点，灵活地利用计算资源，发挥系统地最大效率。相关操作，请参考[SQL 手册](../../taos-sql/node)。
+
+使用以下命令，查看数据库的数据储存状况：
+
+```sql
+SHOW test.VGROUPS;
+```
+
+注意结果中的 `vgroup_id` 列，可以看到，数据库 `test` 的数据存储由多个 VGroup 承担，每个 VGroup，每个 VGroup 包含 1200+ 张表。该集群有 3 个数据节点 DNode，`test` 数据库的数据分布于这 3 个节点，每个 VGroup 只在一个节点有 VNode，即数据无副本。
+
+```bash
+  vgroup_id  |            db_name             |   tables    | v1_dnode |  v1_status  | v2_dnode |  v2_status  | v3_dnode |  v3_status  | v4_dnode |  v4_status  |  cacheload  | cacheelements | tsma |
+======================================================================================================================================================================================================
+          14 | test                           |        1267 |        1 | leader      | NULL     | NULL        | NULL     | NULL        | NULL     | NULL        |           0 |             0 |    0 |
+          15 | test                           |        1215 |        1 | leader      | NULL     | NULL        | NULL     | NULL        | NULL     | NULL        |           0 |             0 |    0 |
+          16 | test                           |        1215 |        1 | leader      | NULL     | NULL        | NULL     | NULL        | NULL     | NULL        |           0 |             0 |    0 |
+          17 | test                           |        1307 |        2 | leader      | NULL     | NULL        | NULL     | NULL        | NULL     | NULL        |           0 |             0 |    0 |
+          18 | test                           |        1246 |        2 | leader      | NULL     | NULL        | NULL     | NULL        | NULL     | NULL        |           0 |             0 |    0 |
+          19 | test                           |        1276 |        2 | leader      | NULL     | NULL        | NULL     | NULL        | NULL     | NULL        |           0 |             0 |    0 |
+          20 | test                           |        1232 |        3 | leader      | NULL     | NULL        | NULL     | NULL        | NULL     | NULL        |           0 |             0 |    0 |
+          21 | test                           |        1245 |        3 | leader      | NULL     | NULL        | NULL     | NULL        | NULL     | NULL        |           0 |             0 |    0 |
+```
+
+TDengine 具有灵活且强大的水平拓展能力，如需深入了解 TDengine 的架构设计，请阅读[「技术内幕/集群架构」](../../tdinternal/arch/)。
