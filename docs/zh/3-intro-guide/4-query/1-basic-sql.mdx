@@ -3,7 +3,7 @@ title: 基础查询
 description: 基本 SQL 查询语句
 ---
 
-TDengine 支持 SQL 查询语句，在并以此为基础，进行了拓展，用户可以直接使用熟悉的 `SELECT` 语句进行查询，但在使用时，需要注意 TDengine 的特殊之处。本节以[智能电表示例数据](../../get-started/package)为例，介绍一般 SQL 语法在 TDengine 中使用时，需要注意的要点。
+TDengine 支持 SQL 查询语句，在并以此为基础，进行了拓展，用户可以直接使用熟悉的 `SELECT` 语句进行查询，但在使用时，需要注意 TDengine 的特殊之处。本节以[智能电表示例数据](../../../get-started/package)为例，介绍一般 SQL 语法在 TDengine 中使用时，需要注意的要点。
 
 ## 投影查询
 
@@ -94,7 +94,7 @@ TDengine 可以将最新插入的值进行缓存，从而极大提高 `LAST`、`
 SELECT LAST_ROW(*) FROM test.d326 WHERE loc="California.SanJose"
 ```
 
-读缓存的开启/关闭/模式选择通过[数据库参数](../../sql/database) `cachemodel` 进行控制。
+读缓存的开启/关闭/模式选择通过[数据库参数](../../../taos-sql/database) `cachemodel` 进行控制。
 
 ## 查询范围
 
@@ -150,4 +150,4 @@ TDengine 还支持 GROUP BY、HAVING、ORDER BY、UNION ALL、LIMIT、OFFSET、�
 
 TDengine 特有的 SQL 查询功能，将在后续章节介绍。
 
-关于 SQL 查询语法的完整用法，请参考[SQL 手册](../../../taos-sql/query)；如需在软件开发中使用查询语句，请参考[开发指南](../../../develop/query-data)。
+关于 SQL 查询语法的完整用法，请参考[SQL 手册](../../../taos-sql/select)；如需在软件开发中使用查询语句，请参考[开发指南](../../../develop/query-data)。

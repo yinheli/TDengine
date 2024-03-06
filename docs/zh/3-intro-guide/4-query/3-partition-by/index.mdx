@@ -9,7 +9,7 @@ description: 使用 PARTITION BY 实现数据切分查询
 
 使用 PARTITION BY，可以像 GROUP BY 一样，可将数据切分为多个分区。与 GROUP BY 不同的是，属于不同分区的数据，可以相互独立地进行更加复杂的计算，包括：窗口查询、插值。
 
-以下语句计算了[智能电表示例数据](../../get-started/package)的每个地区内，所有电表的每小时最大/最小功率：
+以下语句计算了[智能电表示例数据](../../../get-started/package)的每个地区内，所有电表的每小时最大/最小功率：
 
 ```sql
 SELECT locationAS loc, _wend, MAX(voltage*current), MIN(voltage*current) FROM test.meters PARTITION BY location INTERVAL(1h);

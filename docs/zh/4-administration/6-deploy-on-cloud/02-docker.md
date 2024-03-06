@@ -445,7 +445,7 @@ services:
         "sh",
         "-c",
         "while true;
-        do curl -s http://adapter:6041/-/ping >/dev/null && break;
+        do curl -s http://adapter:6041/-/ping >/develop/null && break;
         done;
         printf 'server{listen 6041;location /{proxy_pass http://adapter:6041;}}'
         > /etc/nginx/conf.d/rest.conf;

@@ -10,7 +10,7 @@ import PkgListV3 from "/components/PkgListV3";
 
 您可以[用 Docker 立即体验](../../get-started/docker/) TDengine。如果您希望对 TDengine 贡献代码或对内部实现感兴趣，请参考我们的 [TDengine GitHub 主页](https://github.com/taosdata/TDengine) 下载源码构建和安装.
 
-TDengine 完整的软件包包括服务端（taosd）、应用驱动（taosc）、用于与第三方系统对接并提供 RESTful 接口的 taosAdapter、命令行程序（CLI，taos）和一些工具软件。目前 TDinsight 仅在 Linux 系统上安装和运行，后续将支持 Windows、macOS 等系统。TDengine 除了提供多种语言的连接器之外，还通过 [taosAdapter](../../reference/taosadapter/) 提供 [RESTful 接口](../../connector/rest-api/)。
+TDengine 完整的软件包包括服务端（taosd）、应用驱动（taosc）、用于与第三方系统对接并提供 RESTful 接口的 taosAdapter、命令行程序（CLI，taos）和一些工具软件。目前 TDinsight 仅在 Linux 系统上安装和运行，后续将支持 Windows、macOS 等系统。TDengine 除了提供多种语言的连接器之外，还通过 [taosAdapter](../../service-and-executable/taosadapter/) 提供 [RESTful 接口](../../connector/rest-api/)。
 
 为方便使用，标准的服务端安装包包含了 taosd、taosAdapter、taosc、taos、taosdump、taosBenchmark、TDinsight 安装脚本和示例代码；如果您只需要用到服务端程序和客户端连接的 C/C++ 语言支持，也可以仅下载 Lite 版本的安装包。
 
@@ -136,7 +136,7 @@ apt-get 方式只适用于 Debian 或 Ubuntu 系统。
 </Tabs>
 
 :::info
-下载其他组件、最新 Beta 版及之前版本的安装包，请点击[发布历史页面](../../releases/tdengine)。
+下载其他组件、最新 Beta 版及之前版本的安装包，请点击[发布历史页面](../../release)。
 :::
 
 :::note
@@ -243,7 +243,7 @@ Active: inactive (dead)
 taos
 ```
 
-如果连接服务成功，将会打印出欢迎消息和版本信息。如果失败，则会打印错误消息出来（请参考 [FAQ](../../train-faq/faq) 来解决终端连接服务端失败的问题）。TDengine CLI 的提示符号如下：
+如果连接服务成功，将会打印出欢迎消息和版本信息。如果失败，则会打印错误消息出来（请参考 [FAQ](../../faq) 来解决终端连接服务端失败的问题）。TDengine CLI 的提示符号如下：
 
 ```cmd
 taos>
@@ -267,7 +267,7 @@ SELECT * FROM t;
 Query OK, 2 row(s) in set (0.003128s)
 ```
 
-除执行 SQL 语句外，系统管理员还可以从 TDengine CLI 进行检查系统运行状态、添加删除用户账号等操作。TDengine CLI 连同应用驱动也可以独立安装在机器上运行，更多细节请参考 [TDengine 命令行](../../reference/taos-shell/)。
+除执行 SQL 语句外，系统管理员还可以从 TDengine CLI 进行检查系统运行状态、添加删除用户账号等操作。TDengine CLI 连同应用驱动也可以独立安装在机器上运行，更多细节请参考 [TDengine 命令行](../../service-and-executable/taos-shell/)。
 
 ## 使用 taosBenchmark 体验写入速度
 
@@ -283,7 +283,7 @@ $ taosBenchmark
 
 这条命令很快完成 1 亿条记录的插入。具体时间取决于硬件性能，即使在一台普通的 PC 服务器往往也仅需十几秒。
 
-taosBenchmark 命令本身带有很多选项，配置表的数目、记录条数等等，您可以设置不同参数进行体验，请执行 `taosBenchmark --help` 详细列出。taosBenchmark 详细使用方法请参照[如何使用 taosBenchmark 对 TDengine 进行性能测试](https://www.taosdata.com/2021/10/09/3111.html)和 [taosBenchmark 参考手册](../../reference/taosbenchmark)。
+taosBenchmark 命令本身带有很多选项，配置表的数目、记录条数等等，您可以设置不同参数进行体验，请执行 `taosBenchmark --help` 详细列出。taosBenchmark 详细使用方法请参照[如何使用 taosBenchmark 对 TDengine 进行性能测试](https://www.taosdata.com/2021/10/09/3111.html)和 [taosBenchmark 参考手册](../../service-and-executable/taosbenchmark)。
 
 ## 使用 TDengine CLI 体验查询速度
 

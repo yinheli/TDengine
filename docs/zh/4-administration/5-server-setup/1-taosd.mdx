@@ -6,12 +6,11 @@ description: 如何在 TDengine 服务端部署 toasd
 import FqdnSetting from "./_asset/_fqdn-setting.mdx";
 
 export const ToInstall = ()=>(<a href="../../server-installation">「服务端安装/卸载/升级」</a>);
-export const ToTaosd = ()=>(<a href="../taod-instance-management">「taosd 实例管理」</a>);
 export const ToServerArchitecture = ()=>(<a href="./../../server-architecture">「服务端架构」</a>);
-export const ToArchitecture = ()=>(<a href="../../../internals/cluster-architecture">「技术内幕/集群架构」</a>);
-export const ToSql = ()=>(<a href="../../../sql-language/node">「SQL 手册/集群管理」</a>);
+export const ToArchitecture = ()=>(<a href="../../../tdinternal/arch">「技术内幕/集群架构」</a>);
+export const ToSql = ()=>(<a href="../../../taos-sql/node">「SQL 手册/集群管理」</a>);
 export const ToConf = ({head})=>(<a href={"../../configuration"+head}>「服务器配置」</a>);
-export const ToCloud = ()=>(<a href="../../../deployment-in-cloud">「Docker 部署」</a>);
+export const ToCloud = ()=>(<a href="../../deploy-on-cloud">「Docker 部署」</a>);
 
 在 TDengine 集群由一至多个 dnode（数据节点）组成，每个 dnode 对于一个 taosd 实例（详见<ToServerArchitecture/>和<ToArchitecture/>）。一般而言，每个物理节点上运行一个 taosd。此处，物理节点指拥有自己的计算、存储和网络能力的计算机，比如装有操作系统的物理机、虚拟机或 Docker 容器。
 
@@ -111,7 +110,7 @@ taosd 的配置参数通过 `taos.cfg` 管理，每个节点都要进行单独�
 
 ### 运行首节点
 
-首节点即为配置参数 `firstEp` 所对应的节点，该节点的 taosd 应该最先启动（启动方式，请参考<ToTaosd/>）：
+首节点即为配置参数 `firstEp` 所对应的节点，该节点的 taosd 应该最先启动：
 
 ```bash
 systemctl start taosd
@@ -136,7 +135,7 @@ Query OK, 1 rows affected (0.007984s)
 
 按照下述步骤，将后续节点添加入集群（单节点部署，则无需下述步骤）：
 
-1 - 启动节点的 taosd（启动方式，请参考<ToTaosd/>）：
+1 - 启动节点的 taosd：
 
 ```bash
 systemctl start taosd

@@ -83,7 +83,7 @@ $ taosBenchmark
 
 这条命令很快完成 1 亿条记录的插入。具体时间取决于硬件性能，即使在一台普通的 PC 服务器往往也仅需十几秒。
 
-taosBenchmark 命令本身带有很多选项，配置表的数目、记录条数等等，您可以设置不同参数进行体验，请执行 `taosBenchmark --help` 详细列出。taosBenchmark 详细使用方法请参照[如何使用 taosBenchmark 对 TDengine 进行性能测试](https://www.taosdata.com/2021/10/09/3111.html)和 [taosBenchmark 参考手册](../../reference/taosbenchmark)。
+taosBenchmark 命令本身带有很多选项，配置表的数目、记录条数等等，您可以设置不同参数进行体验，请执行 `taosBenchmark --help` 详细列出。taosBenchmark 详细使用方法请参照[如何使用 taosBenchmark 对 TDengine 进行性能测试](https://www.taosdata.com/2021/10/09/3111.html)和 [taosBenchmark 参考手册](../../service-and-executable/taosbenchmark)。
 
 ## 使用 TDengine CLI 体验查询速度
 
@@ -123,4 +123,4 @@ SELECT FIRST(ts), AVG(current), MAX(voltage), MIN(phase) FROM test.d10 INTERVAL(
 
 ## 其它
 
-更多关于在 Docker 环境下使用 TDengine 的细节，请参考 [用 Docker 部署 TDengine](../../deployment/docker)。
+更多关于在 Docker 环境下使用 TDengine 的细节，请参考 [用 Docker 部署 TDengine](../../administration/deploy-on-cloud/docker)。

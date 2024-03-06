@@ -33,7 +33,7 @@ monitor 1
 monitorFqdn localhost # taoskeeper 服务的 FQDN
 ```
 
-TDengine 监控配置相关，具体请参考：[TDengine 监控配置](../config/#监控相关)。
+TDengine 监控配置相关，具体请参考：[TDengine 监控配置](../../reference/config/#监控相关)。
 
 
 ### 启动

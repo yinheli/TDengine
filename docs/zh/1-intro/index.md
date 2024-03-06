@@ -15,7 +15,7 @@ TDengine OSS 的主要功能如下：
 
 1. 写入数据，支持
    - [SQL 写入](../develop/insert-data/sql-writing)
-   - [无模式（Schemaless）写入](../reference/schemaless/)，支持多种标准写入协议
+   - [无模式（Schemaless）写入](../develop/insert-data/schemless/)，支持多种标准写入协议
      - [InfluxDB Line 协议](../develop/insert-data/influxdb-line)
      - [OpenTSDB Telnet 协议](../develop/insert-data/opentsdb-telnet)
      - [OpenTSDB JSON 协议](../develop/insert-data/opentsdb-json)
@@ -33,23 +33,23 @@ TDengine OSS 的主要功能如下：
    - [时序数据特色函数](../taos-sql/function/#time-series-extensions)
    - [时序数据特色查询](../taos-sql/distinguished)，例如降采样、插值、累加和、时间加权平均、状态窗口、会话窗口等
    - [用户自定义函数（UDF）](../taos-sql/udf)
-3. [缓存](../develop/cache)，将每张表的最后一条记录缓存起来，这样无需 Redis 就能对时序数据进行高效处理
-4. [流式计算（Stream Processing）](../develop/stream)，TDengine 不仅支持连续查询，还支持事件驱动的流式计算，这样在处理时序数据时就无需 Flink 或 Spark 这样流式计算组件
+3. [缓存](../administration/cache)，将每张表的最后一条记录缓存起来，这样无需 Redis 就能对时序数据进行高效处理
+4. [流式计算（Stream Processing）](../intro-guide/stream-processing)，TDengine 不仅支持连续查询，还支持事件驱动的流式计算，这样在处理时序数据时就无需 Flink 或 Spark 这样流式计算组件
 5. [数据订阅](../develop/tmq)，应用程序可以订阅一张表或一组表的数据，提供与 Kafka 相同的 API，而且可以指定过滤条件
 6. 可视化
    - 支持与 [Grafana](../third-party/grafana/) 的无缝集成
    - 支持与 Google Data Studio 的无缝集成
 7. 集群
-   - [集群部署](../deployment/)，可以通过增加节点进行水平扩展以提升处理能力
-   - 可以通过 [Kubernetes 部署 TDengine](../deployment/k8s/)
+   - [集群部署](../administration/server-setup)，可以通过增加节点进行水平扩展以提升处理能力
+   - 可以通过 [Kubernetes 部署 TDengine](../administration/deploy-on-cloud)
    - 通过多副本提供高可用能力
 8. 管理
-   - [监控](../operation/monitor)运行中的 TDengine 实例
-   - 多种[数据导入](../operation/import)方式
-   - 多种[数据导出](../operation/export)方式
+   - [监控](../administration/monitor)运行中的 TDengine 实例
+   - 多种[数据导入](../administration/import)方式
+   - 多种[数据导出](../administration/export)方式
 9. 工具
-   - 提供[交互式命令行程序（CLI）](../reference/taos-shell)，便于管理集群，检查系统状态，做即席查询
-   - 提供压力测试工具 [taosBenchmark](../reference/taosbenchmark)，用于测试 TDengine 的性能
+   - 提供[交互式命令行程序（CLI）](../service-and-executable/taos-shell)，便于管理集群，检查系统状态，做即席查询
+   - 提供压力测试工具 [taosBenchmark](../service-and-executable/taosbenchmark)，用于测试 TDengine 的性能
 10. 编程
     - 提供各种语言的[连接器（Connector）](../connector): 如 [C/C++](../connector/cpp)、[Java](../connector/java)、[Go](../connector/go)、[Node.js](../connector/node)、[Rust](../connector/rust)、[Python](../connector/python)、[C#](../connector/csharp) 等
     - 支持 [REST 接口](../connector/rest-api/)
