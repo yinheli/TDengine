@@ -36,11 +36,7 @@ dotnet build -c Release
 ## Usage
 
 ```
-Usage with mono:
-$ mono taosdemo.exe [OPTION...]
-
-Usage with dotnet:
-Usage: .\bin\Release\net5.0\taosdemo.exe [OPTION...]
+Usage: mono taosdemo.exe [OPTION...]
 
         --help                   Show usage.
 

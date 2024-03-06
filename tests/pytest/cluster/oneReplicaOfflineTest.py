@@ -55,7 +55,7 @@ class ClusterTestcase:
         tdSql.execute("drop database %s" % ctest.dbName)
         
         nodes.node2.startTaosd()
-        tdSql.query("select * from information_schema.ins_databases")
+        tdSql.query("show databases")
         tdSql.checkRows(0)
         
         tdSql.close()

@@ -15,7 +15,6 @@ from util.log import *
 from util.cases import *
 from util.sql import *
 from util.dnodes import *
-from util.taosadapter import *
 
 
 class TDTestCase:
@@ -25,14 +24,11 @@ class TDTestCase:
         '''
         return
 
-    def init(self, conn, logSql, replicaVar=1):
-        self.replicaVar = int(replicaVar)
+    def init(self, conn, logSql):
         tdLog.debug("start to execute %s" % __file__)
-        tdSql.init(conn.cursor())
+        tdSql.init(conn.cursor(), logSql)
 
     def getPath(self, tool="taosBenchmark"):
-        if (platform.system().lower() == 'windows'):
-            tool = tool + ".exe"
         selfPath = os.path.dirname(os.path.realpath(__file__))
 
         if ("community" in selfPath):
@@ -55,15 +51,12 @@ class TDTestCase:
             return paths[0]
 
     def run(self):
-        tAdapter.init("")
-        tAdapter.deploy()
-        tAdapter.start()
         binPath = self.getPath()
         cmd = "%s -f ./5-taos-tools/taosbenchmark/json/taosc_auto_create_table.json" % binPath
         tdLog.info("%s" % cmd)
-        os.system(cmd)
+        os.system("%s" % cmd)
         tdSql.execute("reset query cache")
-        tdSql.query("select count(*) from (select distinct(tbname) from db.stb1)")
+        tdSql.query("select count(tbname) from db.stb1")
         tdSql.checkData(0, 0, 8)
         tdSql.query("select count(*) from db.stb1")
         tdSql.checkData(0, 0, 160)
@@ -85,7 +78,7 @@ class TDTestCase:
         tdSql.checkData(0, 0, None)
 
         tdSql.execute("reset query cache")
-        tdSql.query("select count(*) from (select distinct(tbname) from db.`stb1-2`)")
+        tdSql.query("select count(tbname) from db.`stb1-2`")
         tdSql.checkData(0, 0, 8)
         tdSql.query("select count(*) from db.`stb1-2`")
         tdSql.checkData(0, 0, 160)
@@ -110,52 +103,50 @@ class TDTestCase:
         tdLog.info("%s" % cmd)
         os.system("%s" % cmd)
         tdSql.execute("reset query cache")
-        tdSql.query("select count(*) from (select distinct(tbname) from stmt_db.stb2)")
+        tdSql.query("select count(tbname) from db.stb2")
         tdSql.checkData(0, 0, 8)
-        tdSql.query("select count(*) from stmt_db.stb2")
+        tdSql.query("select count(*) from db.stb2")
         tdSql.checkData(0, 0, 160)
-        tdSql.query("select * from information_schema.ins_databases where name='stmt_db'")
-        tdSql.checkData(0, 14, "us")
+        tdSql.query("show databases")
+        tdSql.checkData(0, 16, "us")
 
         tdSql.execute("reset query cache")
-        tdSql.query("select count(*) from (select distinct(tbname) from stmt_db.`stb2-2`)")
+        tdSql.query("select count(tbname) from db.`stb2-2`")
         tdSql.checkData(0, 0, 8)
-        tdSql.query("select count(*) from stmt_db.`stb2-2`")
+        tdSql.query("select count(*) from db.`stb2-2`")
         tdSql.checkData(0, 0, 160)
 
         cmd = "%s -f ./5-taos-tools/taosbenchmark/json/rest_auto_create_table.json" %binPath
         tdLog.info("%s" % cmd)
         os.system("%s" % cmd)
         tdSql.execute("reset query cache")
-        tdSql.query("select count(*) from (select distinct(tbname) from rest_db.stb3)")
+        tdSql.query("select count(tbname) from db.stb3")
         tdSql.checkData(0, 0, 8)
-        tdSql.query("select count(*) from rest_db.stb3")
+        tdSql.query("select count(*) from db.stb3")
         tdSql.checkData(0, 0, 160)
-        tdSql.query("select * from information_schema.ins_databases where name='rest_db'")
-        tdSql.checkData(0, 14, "ns")
+        tdSql.query("show databases")
+        tdSql.checkData(0, 16, "ns")
 
         tdSql.execute("reset query cache")
-        tdSql.query("select count(*) from (select distinct(tbname) from rest_db.`stb3-2`)")
+        tdSql.query("select count(tbname) from db.`stb3-2`")
         tdSql.checkData(0, 0, 8)
-        tdSql.query("select count(*) from rest_db.`stb3-2`")
+        tdSql.query("select count(*) from db.`stb3-2`")
         tdSql.checkData(0, 0, 160)
 
         cmd = "%s -f ./5-taos-tools/taosbenchmark/json/sml_auto_create_table.json" %binPath
         tdLog.info("%s" % cmd)
         os.system("%s" % cmd)
         tdSql.execute("reset query cache")
-        tdSql.query("select count(*) from (select distinct(tbname) from sml_db.stb4)")
+        tdSql.query("select count(tbname) from db.stb4")
         tdSql.checkData(0, 0, 8)
-        tdSql.query("select count(*) from sml_db.stb4")
+        tdSql.query("select count(*) from db.stb4")
         tdSql.checkData(0, 0, 160)
 
         tdSql.execute("reset query cache")
-        tdSql.query("select count(*) from (select distinct(tbname) from sml_db.`stb4-2`)")
+        tdSql.query("select count(tbname) from db.`stb4-2`")
         tdSql.checkData(0, 0, 8)
-        tdSql.query("select count(*) from sml_db.`stb4-2`")
+        tdSql.query("select count(*) from db.`stb4-2`")
         tdSql.checkData(0, 0, 160)
-
-        tAdapter.stop()
 
     def stop(self):
         tdSql.close()

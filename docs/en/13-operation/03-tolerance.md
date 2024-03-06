@@ -1,6 +1,6 @@
 ---
-title: Fault Tolerance and Disaster Recovery
-description: This document describes how TDengine provides fault tolerance and disaster recovery.
+sidebar_label: Fault Tolerance
+title: Fault Tolerance & Disaster Recovery
 ---
 
 ## Fault Tolerance
@@ -11,15 +11,22 @@ When a data block is received by TDengine, the original data block is first writ
 
 There are 2 configuration parameters related to WAL:
 
-- wal_level: Specifies the WAL level. 1 indicates that WAL is enabled but fsync is disabled. 2 indicates that WAL and fsync are both enabled. The default value is 1.
-- wal_fsync_period: This parameter is only valid when wal_level is set to 2. It specifies the interval, in milliseconds, of invoking fsync. If set to 0, it means fsync is invoked immediately once WAL is written.
+- walLevel：
+  - 0：wal is disabled 
+  - 1：wal is enabled without fsync 
+  - 2：wal is enabled with fsync
+- fsync：This parameter is only valid when walLevel is set to 2. It specifies the interval, in milliseconds, of invoking fsync. If set to 0, it means fsync is invoked immediately once WAL is written.
 
-To achieve absolutely no data loss, set wal_level to 2 and wal_fsync_period to 0. There is a performance penalty to the data ingestion rate. However, if the concurrent data insertion threads on the client side can reach a big enough number, for example 50, the data ingestion performance will be still good enough. Our verification shows that the drop is only 30% when wal_fsync_period is set to 3000 milliseconds.
+To achieve absolutely no data loss, walLevel should be set to 2 and fsync should be set to 1. There is a performance penalty to the data ingestion rate. However, if the concurrent data insertion threads on the client side can reach a big enough number, for example 50, the data ingestion performance will be still good enough. Our verification shows that the drop is only 30% when fsync is set to 3,000 milliseconds.
 
 ## Disaster Recovery
 
-TDengine provides disaster recovery by using taosX to replicate data between two TDengine clusters which are deployed in two distant data centers. Assume there are two TDengine clusters, A and B, A is the source and B is the target, and A takes the workload of writing and querying. You can deploy `taosX` in the data center where cluster A resides in, `taosX` consumes the data written into cluster A and writes into cluster B. If the data center of cluster A is disrupted because of disaster, you can switch to cluster B to take the workload of data writing and querying, and deploy a `taosX` in the data center of cluster B to replicate data from cluster B to cluster A if cluster A has been recovered, or another cluster C if cluster A has not been recovered. 
+TDengine uses replication to provide high availability and disaster recovery capability.
 
-You can use the data replication feature of `taosX` to build more complicated disaster recovery solution.
+A TDengine cluster is managed by mnode. To ensure the high availability of mnode, multiple replicas can be configured by the system parameter `numOfMnodes`. The data replication between mnode replicas is performed in a synchronous way to guarantee metadata consistency.
 
-taosX is only provided in TDengine enterprise edition, for more details please contact business@tdengine.com.
+The number of replicas for time series data in TDengine is associated with each database. There can be many databases in a cluster and each database can be configured with a different number of replicas. When creating a database, parameter `replica` is used to configure the number of replications. To achieve high availability, `replica` needs to be higher than 1.
+
+The number of dnodes in a TDengine cluster must NOT be lower than the number of replicas for any database, otherwise it would fail when trying to create a table.
+
+As long as the dnodes of a TDengine cluster are deployed on different physical machines and the replica number is higher than 1, high availability can be achieved without any other assistance. For disaster recovery, dnodes of a TDengine cluster should be deployed in geographically different data centers.

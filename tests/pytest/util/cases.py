@@ -17,7 +17,6 @@ import time
 import datetime
 import inspect
 import importlib
-import traceback
 from util.log import *
 
 
@@ -54,7 +53,7 @@ class TDCases:
         # TODO: load all Linux cases here
         runNum = 0
         for tmp in self.linuxCases:
-            if tmp.name.find(fileName) != -1:
+            if tmp.name.find(os.path.normcase(fileName)) != -1:
                 case = testModule.TDTestCase()
                 case.init(conn)
                 case.run()
@@ -64,29 +63,28 @@ class TDCases:
 
         tdLog.info("total %d Linux test case(s) executed" % (runNum))
 
-    def runOneLinux(self, conn, fileName, replicaVar=1):
+    def runOneLinux(self, conn, fileName):
         testModule = self.__dynamicLoadModule(fileName)
 
         runNum = 0
         for tmp in self.linuxCases:
-            if tmp.name.find(fileName) != -1:
+            if tmp.name.find(os.path.normcase(fileName)) != -1:
                 case = testModule.TDTestCase()
-                case.init(conn, self._logSql, replicaVar)
+                case.init(conn, self._logSql)
                 try:
                     case.run()
                 except Exception as e:
                     tdLog.notice(repr(e))
-                    traceback.print_exc()
                     tdLog.exit("%s failed" % (fileName))
                 case.stop()
                 runNum += 1
                 continue
 
-    def runAllWindows(self, conn):
+    def runAllWindows(self, conn, fileName):
         # TODO: load all Windows cases here
         runNum = 0
         for tmp in self.windowsCases:
-            if tmp.name.find(fileName) != -1:
+            if tmp.name.find(os.path.normcase(fileName)) != -1:
                 case = testModule.TDTestCase()
                 case.init(conn)
                 case.run()
@@ -96,14 +94,14 @@ class TDCases:
 
         tdLog.notice("total %d Windows test case(s) executed" % (runNum))
 
-    def runOneWindows(self, conn, fileName, replicaVar=1):
+    def runOneWindows(self, conn, fileName):
         testModule = self.__dynamicLoadModule(fileName)
 
         runNum = 0
         for tmp in self.windowsCases:
             if tmp.name.find(fileName) != -1:
                 case = testModule.TDTestCase()
-                case.init(conn, self._logSql,replicaVar)
+                case.init(conn, self._logSql)
                 try:
                     case.run()
                 except Exception as e:
@@ -113,13 +111,14 @@ class TDCases:
                 runNum += 1
                 continue
         tdLog.notice("total %d Windows case(s) executed" % (runNum))
+        
 
     def runAllCluster(self):
         # TODO: load all cluster case module here
 
         runNum = 0
         for tmp in self.clusterCases:
-            if tmp.name.find(fileName) != -1:
+            if tmp.name.find(os.path.normcase(fileName)) != -1:
                 tdLog.notice("run cases like %s" % (fileName))
                 case = testModule.TDTestCase()
                 case.init()
@@ -135,7 +134,7 @@ class TDCases:
 
         runNum = 0
         for tmp in self.clusterCases:
-            if tmp.name.find(fileName) != -1:
+            if tmp.name.find(os.path.normcase(fileName)) != -1:
                 tdLog.notice("run cases like %s" % (fileName))
                 case = testModule.TDTestCase()
                 case.init()

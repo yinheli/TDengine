@@ -7,11 +7,11 @@
         <id column="ts" jdbcType="TIMESTAMP" property="ts"/>
         <result column="temperature" jdbcType="FLOAT" property="temperature"/>
         <result column="humidity" jdbcType="FLOAT" property="humidity"/>
-        <result column="bytes" jdbcType="BINARY" property="bytes" />
     </resultMap>
 
     <select id="lastOne" resultType="java.util.Map">
-        select last_row(ts) as ts, last_row(temperature) as temperature, last_row(humidity) as humidity, last_row(note) as note,last_row(location) as location , last_row(groupid) as groupid from test.weather;
+        select last_row(*), location, groupid
+        from test.weather
     </select>
 
     <update id="dropDB">
@@ -34,11 +34,6 @@
             humidity
             float,
             note
-            binary
-        (
-            64
-        ),
-            bytes
             binary
         (
             64
@@ -69,8 +64,8 @@
     </select>
 
     <insert id="insert" parameterType="com.taosdata.example.springbootdemo.domain.Weather">
-        insert into test.t#{groupId} (ts, temperature, humidity, note, bytes)
-        values (#{ts}, ${temperature}, ${humidity}, #{note}, #{bytes})
+        insert into test.t#{groupId} (ts, temperature, humidity, note)
+        values (#{ts}, ${temperature}, ${humidity}, #{note})
     </insert>
 
     <select id="getSubTables" resultType="String">

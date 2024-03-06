@@ -1,14 +1,10 @@
 ---
-title: Reserved Keywords
-sidebar_label: Reserved Keywords
-description: This document describes the reserved keywords in TDengine that cannot be used in object names.
+title: Keywords
 ---
 
+There are about 200 keywords reserved by TDengine, they can't be used as the name of database, STable or table with either upper case, lower case or mixed case.
+
 ## Keyword List
-
-There are more than 200 keywords reserved by TDengine, they can't be used as the name of database, table, STable, subtable, column or tag with either upper case, lower case or mixed case. If you need to use these keywords, use the symbol `` ` `` to enclose the keywords, e.g. \`ADD\`.
-
-The following list shows all reserved keywords:
 
 ### A
 
@@ -17,21 +13,15 @@ The following list shows all reserved keywords:
 - ACCOUNTS
 - ADD
 - AFTER
-- AGGREGATE
-- ALIVE
 - ALL
 - ALTER
-- ANALYZE
 - AND
-- APPS
 - AS
 - ASC
-- AT_ONCE
 - ATTACH
 
 ### B
 
-- BALANCE
 - BEFORE
 - BEGIN
 - BETWEEN
@@ -41,27 +31,19 @@ The following list shows all reserved keywords:
 - BITNOT
 - BITOR
 - BLOCKS
-- BNODE
-- BNODES
 - BOOL
-- BUFFER
-- BUFSIZE
 - BY
 
 ### C
 
 - CACHE
-- CACHEMODEL
-- CACHESIZE
+- CACHELAST
 - CASCADE
-- CAST
 - CHANGE
-- CLIENT_VERSION
 - CLUSTER
 - COLON
 - COLUMN
 - COMMA
-- COMMENT
 - COMP
 - COMPACT
 - CONCAT
@@ -69,287 +51,265 @@ The following list shows all reserved keywords:
 - CONNECTION
 - CONNECTIONS
 - CONNS
-- CONSUMER
-- CONSUMERS
-- CONTAINS
 - COPY
-- COUNT
 - CREATE
-- CURRENT_USER
+- CTIME
 
 ### D
 
-- DATABASE
-- DATABASES
-- DBS
-- DEFERRED
-- DELETE
+- DATABASE  
+- DATABASES 
+- DAYS      
+- DBS       
+- DEFERRED  
 - DELIMITERS
-- DESC
-- DESCRIBE
-- DETACH
-- DISTINCT
-- DISTRIBUTED
-- DIVIDE
-- DNODE
-- DNODES
-- DOT
-- DOUBLE
-- DROP
-- DURATION
+- DELETE
+- DESC      
+- DESCRIBE  
+- DETACH    
+- DISTINCT  
+- DIVIDE    
+- DNODE     
+- DNODES    
+- DOT       
+- DOUBLE    
+- DROP  
 
 ### E
 
-- EACH
-- ENABLE
-- END
-- EVERY
-- EXISTS
-- EXPIRED
-- EXPLAIN
+- END     
+- EQ      
+- EXISTS  
+- EXPLAIN 
 
 ### F
 
-- FAIL
-- FILE
-- FILL
-- FIRST
-- FLOAT
-- FLUSH
-- FOR
-- FROM
-- FUNCTION
-- FUNCTIONS
+- FAIL   
+- FILE   
+- FILL   
+- FLOAT  
+- FOR    
+- FROM   
+- FSYNC  
 
 ### G
 
-- GLOB
-- GRANT
+- GE    
+- GLOB  
 - GRANTS
-- GROUP
+- GROUP 
+- GT  
 
 ### H
 
-- HAVING
+- HAVING 
 
 ### I
 
 - ID
 - IF
-- IGNORE
-- IMMEDIATE
-- IMPORT
-- IN
-- INDEX
-- INDEXES
-- INITIALLY
-- INNER
-- INSERT
+- IGNORE 
+- IMMEDIA
+- IMPORT 
+- IN     
+- INITIAL
+- INSERT 
 - INSTEAD
-- INT
+- INT    
 - INTEGER
-- INTERVAL
-- INTO
-- IS
-- ISNULL
+- INTERVA
+- INTO   
+- IS     
+- ISNULL 
 
 ### J
 
 - JOIN
-- JSON
 
 ### K
 
 - KEEP
-- KEY
+- KEY 
 - KILL
 
 ### L
 
-- LAST
-- LAST_ROW
-- LICENCES
-- LIKE
-- LIMIT
+- LE    
+- LIKE  
+- LIMIT 
 - LINEAR
-- LOCAL
+- LOCAL 
+- LP    
+- LSHIFT
+- LT 
 
 ### M
 
-- MATCH
-- MAX_DELAY
-- BWLIMIT
-- MAXROWS
-- MAX_SPEED
-- MERGE
-- META
-- MINROWS
-- MINUS
-- MNODE
-- MNODES
-- MODIFY
-- MODULES
+- MATCH    
+- MAXROWS  
+- MINROWS  
+- MINUS    
+- MNODES   
+- MODIFY   
+- MODULES  
 
 ### N
 
-- NCHAR
-- NEXT
-- NMATCH
-- NONE
-- NOT
+- NE     
+- NONE   
+- NOT    
 - NOTNULL
-- NOW
+- NOW    
 - NULL
-- NULLS
 
 ### O
 
-- OF
+- OF    
 - OFFSET
-- ON
-- OR
-- ORDER
-- OUTPUTTYPE
+- OR    
+- ORDER 
 
 ### P
 
-- PAGES
-- PAGESIZE
-- PARTITIONS
-- PASS
-- PLUS
-- PORT
-- PPS
+- PARTITION
+- PASS     
+- PLUS     
+- PPS      
 - PRECISION
-- PREV
+- PREV     
 - PRIVILEGE
 
 ### Q
 
-- QNODE
-- QNODES
-- QTIME
-- QUERIES
-- QUERY
+- QTIME 
+- QUERIE
+- QUERY 
+- QUORUM
 
 ### R
 
-- RAISE
-- RANGE
-- RATIO
-- READ
-- REDISTRIBUTE
-- RENAME
+- RAISE  
+- REM    
 - REPLACE
 - REPLICA
-- RESET
-- RESTRICT
-- RETENTIONS
-- REVOKE
-- ROLLUP
-- ROW
+- RESET  
+- RESTRIC
+- ROW    
+- RP     
+- RSHIFT
 
 ### S
 
-- SCHEMALESS
-- SCORES
-- SELECT
-- SEMI
-- SERVER_STATUS
-- SERVER_VERSION
+- SCORES 
+- SELECT 
+- SEMI   
 - SESSION
-- SET
-- SHOW
-- SINGLE_STABLE
+- SET    
+- SHOW   
+- SLASH  
 - SLIDING
-- SLIMIT
-- SMA
-- SMALLINT
-- SNODE
-- SNODES
+- SLIMIT 
+- SMALLIN
 - SOFFSET
-- SPLIT
-- STABLE
-- STABLES
-- STAR
-- STATE
-- STATE_WINDOW
-- STATEMENT
-- STORAGE
-- STREAM
-- STREAMS
-- STRICT
-- STRING
-- SUBSCRIPTIONS
-- SYNCDB
-- SYSINFO
+- STable 
+- STableS
+- STAR    
+- STATE   
+- STATEMEN
+- STATE_WI
+- STORAGE 
+- STREAM  
+- STREAMS 
+- STRING  
+- SYNCDB  
 
 ### T
 
-- TABLE
-- TABLES
-- TAG
-- TAGS
-- TBNAME
-- TIMES
-- TIMESTAMP
-- TIMEZONE
-- TINYINT
-- TO
-- TODAY
-- TOPIC
-- TOPICS
-- TRANSACTION
-- TRANSACTIONS
-- TRIGGER
-- TRIM
-- TSERIES
-- TTL
+- TABLE     
+- TABLES    
+- TAG       
+- TAGS      
+- TBNAME    
+- TIMES     
+- TIMESTAMP 
+- TINYINT   
+- TOPIC     
+- TOPICS    
+- TRIGGER   
+- TSERIES   
 
 ### U
 
-- UNION
-- UNSIGNED
-- UPDATE
-- USE
-- USER
-- USERS
-- USING
+- UMINUS   
+- UNION    
+- UNSIGNED 
+- UPDATE   
+- UPLUS    
+- USE      
+- USER     
+- USERS    
+- USING  
 
 ### V
 
-- VALUE
-- VALUES
-- VARCHAR
-- VARIABLE
+- VALUES   
+- VARIABLE 
 - VARIABLES
-- VERBOSE
-- VGROUP
-- VGROUPS
-- VIEW
-- VNODES
+- VGROUPS  
+- VIEW     
+- VNODES   
 
 ### W
 
 - WAL
-- WAL_FSYNC_PERIOD
-- WAL_LEVEL
-- WAL_RETENTION_PERIOD
-- WAL_RETENTION_SIZE
-- WATERMARK
 - WHERE
-- WINDOW_CLOSE
-- WITH
-- WRITE
 
-### \_
+### _
 
-- \_C0
-- \_IROWTS
-- \_QDURATION
-- \_QEND
-- \_QSTART
-- \_ROWTS
-- \_WDURATION
-- \_WEND
-- \_WSTART
+- _C0
+- _QSTART
+- _QSTOP
+- _QDURATION
+- _WSTART
+- _WSTOP
+- _WDURATION
+
+## Explanations
+### TBNAME
+`TBNAME` can be considered as a special tag, which represents the name of the subtable, in STable.
+
+Get the table name and tag values of all subtables in a STable.
+```mysql
+SELECT TBNAME, location FROM meters;
+```
+
+Count the number of subtables in a STable.
+```mysql
+SELECT COUNT(TBNAME) FROM meters;
+```
+
+Only filter on TAGS can be used in WHERE clause in the above two query statements.
+```mysql
+taos> SELECT TBNAME, location FROM meters;
+             tbname             |            location            |
+==================================================================
+ d1004                          | California.SanFrancisco        |
+ d1003                          | California.SanFrancisco        |
+ d1002                          | California.LosAngeles          |
+ d1001                          | California.LosAngeles          |
+Query OK, 4 row(s) in set (0.000881s)
+
+taos> SELECT COUNT(tbname) FROM meters WHERE groupId > 2;
+     count(tbname)     |
+========================
+                     2 |
+Query OK, 1 row(s) in set (0.001091s)
+```
+### _QSTART/_QSTOP/_QDURATION
+The start, stop and duration of a query time window (Since version 2.6.0.0).
+
+### _WSTART/_WSTOP/_WDURATION
+The start, stop and duration of aggegate query by time window, like interval, session window, state window (Since version 2.6.0.0).
+
+### _c0
+The first column of a table or STable.

@@ -46,7 +46,8 @@ class TDTestCase:
         tdLog.info('tdSql.checkData(0, 1, 18446744073709551614)')
         tdSql.checkData(0, 1, 18446744073709551614)
         tdLog.info('=============== step4')
-        tdLog.info("insert into tb values (now+3m, 18446744073709551615) -x step4")
+        tdLog.info(
+            "insert into tb values (now+3m, 18446744073709551615) -x step4")
         tdSql.error("insert into tb values (now+3m, 18446744073709551615)")
         tdLog.info("insert into tb values (now+3m, NULL)")
         tdSql.execute("insert into tb values (now+3m, NULL)")

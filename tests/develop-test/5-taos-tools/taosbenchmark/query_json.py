@@ -19,7 +19,6 @@ from util.log import *
 from util.cases import *
 from util.sql import *
 from util.dnodes import *
-from util.taosadapter import *
 
 
 class TDTestCase:
@@ -29,14 +28,11 @@ class TDTestCase:
         '''
         return
 
-    def init(self, conn, logSql, replicaVar=1):
-        self.replicaVar = int(replicaVar)
+    def init(self, conn, logSql):
         tdLog.debug("start to execute %s" % __file__)
         tdSql.init(conn.cursor(), logSql)
 
     def getPath(self, tool="taosBenchmark"):
-        if (platform.system().lower() == 'windows'):
-            tool = tool + ".exe"
         selfPath = os.path.dirname(os.path.realpath(__file__))
 
         if ("community" in selfPath):
@@ -59,9 +55,6 @@ class TDTestCase:
             return paths[0]
 
     def run(self):
-        tAdapter.init("")
-        tAdapter.deploy()
-        tAdapter.start()
         binPath = self.getPath()
         os.system("rm -f rest_query_specified-0 rest_query_super-0 taosc_query_specified-0 taosc_query_super-0")
         tdSql.execute("drop database if exists db")
@@ -118,11 +111,11 @@ class TDTestCase:
 
         assert times == 1, "result is %s != expect: 1" % times
 
-        tAdapter.stop()
+
 
 
     def stop(self):
-        tdSql.close()        
+        tdSql.close()
         tdLog.success("%s successfully executed" % __file__)
 
 

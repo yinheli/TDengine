@@ -24,14 +24,11 @@ class TDTestCase:
         '''
         return
 
-    def init(self, conn, logSql, replicaVar=1):
-        # comment off by Shuduo for CI       self.replicaVar = int(replicaVar)
+    def init(self, conn, logSql):
         tdLog.debug("start to execute %s" % __file__)
         tdSql.init(conn.cursor(), logSql)
 
     def getPath(self, tool="taosBenchmark"):
-        if (platform.system().lower() == 'windows'):
-            tool = tool + ".exe"
         selfPath = os.path.dirname(os.path.realpath(__file__))
 
         if ("community" in selfPath):
@@ -65,19 +62,19 @@ class TDTestCase:
         tdLog.info("%s" % cmd)
         assert (os.system("%s" % cmd) != 0)
 
-        cmd = "%s -f non_exist_file -y" %binPath
+        cmd = "%s -f non_exist_file" %binPath
         tdLog.info("%s" % cmd)
         assert (os.system("%s" % cmd) != 0)
 
-        cmd = "%s -h non_exist_host -y" %binPath
+        cmd = "%s -h non_exist_host" %binPath
         tdLog.info("%s" % cmd)
         assert (os.system("%s" % cmd) != 0)
 
-        cmd = "%s -p non_exist_pass -y" %binPath
+        cmd = "%s -p non_exist_pass" %binPath
         tdLog.info("%s" % cmd)
         assert (os.system("%s" % cmd) != 0)
 
-        cmd = "%s -u non_exist_user -y" %binPath
+        cmd = "%s -u non_exist_user" %binPath
         tdLog.info("%s" % cmd)
         assert (os.system("%s" % cmd) != 0)
 

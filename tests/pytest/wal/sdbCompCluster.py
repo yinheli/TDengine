@@ -66,11 +66,11 @@ class TwoClients:
         os.system("rm -rf  /var/lib/taos/mnode_bak/")
         os.system("rm -rf  /var/lib/taos/mnode_temp/")
         tdSql.execute("drop database if exists db2")
-        os.system("%staosdemo -f wal/insertDataDb1.json -y " % binPath)
+        os.system("%staosBenchmark -f wal/insertDataDb1.json -y " % binPath)
         tdSql.execute("drop database if exists db1") 
-        os.system("%staosdemo -f wal/insertDataDb2.json -y " % binPath)
+        os.system("%staosBenchmark -f wal/insertDataDb2.json -y " % binPath)
         tdSql.execute("drop table if exists db2.stb0") 
-        os.system("%staosdemo -f wal/insertDataDb2Newstab.json -y " % binPath)
+        os.system("%staosBenchmark -f wal/insertDataDb2Newstab.json -y " % binPath)
         query_pid1 = int(subprocess.getstatusoutput('ps aux|grep taosd |grep -v "grep"|awk \'{print $2}\'')[1])
         print(query_pid1)
         tdSql.execute("use db2")
@@ -106,7 +106,7 @@ class TwoClients:
         tdSql.init(cur2, True)
 
         # use new wal file to start up tasod 
-        tdSql.query("select * from information_schema.ins_databases")
+        tdSql.query("show databases")
         for i in range(tdSql.queryRows):
             if tdSql.queryResult[i][0]=="db2":
                 assert tdSql.queryResult[i][4]==1 , "replica is wrong"

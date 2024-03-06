@@ -5,7 +5,6 @@ import com.taosdata.example.springbootdemo.domain.Weather;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +30,6 @@ public class WeatherService {
             weather.setLocation(locations[random.nextInt(locations.length)]);
             weather.setGroupId(i % locations.length);
             weather.setNote("note-" + i);
-            weather.setBytes(locations[random.nextInt(locations.length)].getBytes(StandardCharsets.UTF_8));
             weatherMapper.createTable(weather);
             count += weatherMapper.insert(weather);
         }

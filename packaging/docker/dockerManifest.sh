@@ -1,9 +1,8 @@
 #!/bin/bash
 set -e
 #set -x
-set -v
 
-# dockerbuild.sh
+# dockerbuild.sh 
 #             -n [version number]
 #             -p [xxxx]
 #             -V [stable | beta]
@@ -12,9 +11,8 @@ set -v
 version=""
 passWord=""
 verType=""
-dockerLatest="n"
 
-while getopts "hn:p:V:a:" arg
+while getopts "hn:p:V:" arg
 do
   case $arg in
     n)
@@ -28,19 +26,13 @@ do
     V)
       #echo "verType=$OPTARG"
       verType=$(echo $OPTARG)
-      ;;
+      ;;    
     h)
       echo "Usage: `basename $0` -n [version number] "
-      echo "                     -p [password for docker hub] "
-      echo "                     -V [stable |beta] "
-      echo "                     -a [y | n ]   "
+      echo "                      -p [password for docker hub] "
       exit 0
       ;;
-    a)
-      #echo "dockerLatest=$OPTARG"
-      dockerLatest=$(echo $OPTARG)
-      ;;
-    ?) #unknow option
+    ?) #unknow option 
       echo "unkonw argument"
       exit 1
       ;;
@@ -49,55 +41,42 @@ done
 
 echo "version=${version}"
 
-if [ "$verType" == "stable" ]; then
-  verType=stable
-  dockerinput=TDengine-server-${version}-Linux-$cpuType.tar.gz
-  dockerinput_x64=TDengine-server-${version}-Linux-amd64.tar.gz
-  dockerim=tdengine/tdengine
-  dockeramd64=tdengine/tdengine-amd64
-  dockeraarch64=tdengine/tdengine-aarch64
-  dockeraarch32=tdengine/tdengine-aarch32
-elif [ "$verType" == "beta" ];then
-  verType=beta
-  tagVal=ver-${version}-beta
-  dockerinput=TDengine-server-${version}-${verType}-Linux-$cpuType.tar.gz
-  dockerinput_x64=TDengine-server-${version}-${verType}-Linux-amd64.tar.gz
-  dockerim=tdengine/tdengine-beta
-  dockeramd64=tdengine/tdengine-amd64-beta
-  dockeraarch64=tdengine/tdengine-aarch64-beta
-  dockeraarch32=tdengine/tdengine-aarch32-beta
- else
+#docker manifest rm tdengine/tdengine
+#docker manifest rm tdengine/tdengine:${version}
+if [ "$verType" == "beta" ]; then
+  docker manifest create -a tdengine/tdengine-beta:${version} tdengine/tdengine-amd64-beta:${version} tdengine/tdengine-aarch64-beta:${version} tdengine/tdengine-aarch32-beta:${version}
+  docker manifest create -a tdengine/tdengine-beta:latest tdengine/tdengine-amd64-beta:latest tdengine/tdengine-aarch64-beta:latest tdengine/tdengine-aarch32-beta:latest
+  docker manifest rm tdengine/tdengine-beta:${version}
+  docker manifest rm tdengine/tdengine-beta:latest
+  docker manifest create -a tdengine/tdengine-beta:${version} tdengine/tdengine-amd64-beta:${version} tdengine/tdengine-aarch64-beta:${version} tdengine/tdengine-aarch32-beta:${version}
+  docker manifest create -a tdengine/tdengine-beta:latest tdengine/tdengine-amd64-beta:latest tdengine/tdengine-aarch64-beta:latest tdengine/tdengine-aarch32-beta:latest
+  docker manifest inspect  tdengine/tdengine:latest 
+  docker manifest inspect  tdengine/tdengine:${version}
+  docker login -u tdengine -p ${passWord}  #replace the docker registry username and password
+  docker manifest push tdengine/tdengine-beta:${version}
+  docker manifest push tdengine/tdengine-beta:latest
+elif [ "$verType" == "stable" ]; then
+  docker manifest create -a tdengine/tdengine:${version} tdengine/tdengine-amd64:${version} tdengine/tdengine-aarch64:${version} tdengine/tdengine-aarch32:${version}
+  docker manifest create -a tdengine/tdengine:latest tdengine/tdengine-amd64:latest tdengine/tdengine-aarch64:latest tdengine/tdengine-aarch32:latest
+  docker manifest rm tdengine/tdengine:latest
+  docker manifest rm tdengine/tdengine:${version}
+  docker manifest create -a tdengine/tdengine:${version} tdengine/tdengine-amd64:${version} tdengine/tdengine-aarch64:${version} tdengine/tdengine-aarch32:${version}
+  docker manifest create -a tdengine/tdengine:latest tdengine/tdengine-amd64:latest tdengine/tdengine-aarch64:latest tdengine/tdengine-aarch32:latest
+  docker manifest inspect  tdengine/tdengine:latest 
+  docker manifest inspect  tdengine/tdengine:${version}
+  docker login -u tdengine -p ${passWord}  #replace the docker registry username and password
+  docker manifest push tdengine/tdengine:${version}
+  docker manifest push tdengine/tdengine:latest
+else
   echo "unknow verType, nor stabel or beta"
   exit 1
 fi
 
-username="tdengine"
+# docker manifest create -a tdengine/${dockername}:${version} tdengine/tdengine-amd64:${version} tdengine/tdengine-aarch64:${version} tdengine/tdengine-aarch32:${version}
+# docker manifest create -a tdengine/${dockername}:latest tdengine/tdengine-amd64:latest tdengine/tdengine-aarch64:latest tdengine/tdengine-aarch32:latest
 
-# generate docker version
-echo "generate ${dockerim}:${version}"
-docker manifest create -a ${dockerim}:${version} ${dockeramd64}:${version} ${dockeraarch64}:${version}
-docker manifest inspect  ${dockerim}:${version}
-docker manifest rm ${dockerim}:${version}
-docker manifest create -a ${dockerim}:${version} ${dockeramd64}:${version} ${dockeraarch64}:${version}
-docker manifest inspect  ${dockerim}:${version}
-docker login -u ${username} -p ${passWord}
-docker manifest push ${dockerim}:${version}
+# docker login -u tdengine -p ${passWord}  #replace the docker registry username and password
 
+# docker manifest push tdengine/tdengine:latest
 
-# generate docker latest
-echo "generate ${dockerim}:latest "
-
-if  [ ${dockerLatest} == 'y' ]  ;then
-    echo "docker manifest create -a ${dockerim}:latest ${dockeramd64}:latest ${dockeraarch64}:latest"
-    docker manifest create -a ${dockerim}:latest ${dockeramd64}:latest ${dockeraarch64}:latest
-    docker manifest inspect  ${dockerim}:latest
-    docker manifest rm ${dockerim}:latest
-    docker manifest create -a ${dockerim}:latest ${dockeramd64}:latest ${dockeraarch64}:latest
-    docker manifest inspect  ${dockerim}:latest
-    docker login -u tdengine -p ${passWord}  #replace the docker registry username and password
-    docker manifest push ${dockerim}:latest
-    docker pull tdengine/tdengine:latest
-
-fi
-
-
+# # how set latest version ???

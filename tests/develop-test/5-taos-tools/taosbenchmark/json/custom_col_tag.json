@@ -18,11 +18,18 @@
       "name": "db",
       "drop": "yes",
       "replica": 1,
+      "days": 10,
+      "cache": 16,
+      "blocks": 8,
       "precision": "ms",
       "keep": 36500,
       "minRows": 100,
       "maxRows": 4096,
-      "comp":2
+      "comp":2,
+      "cachelast":0,
+      "quorum":1,
+      "fsync":3000,
+      "update": 1
     },
     "super_tables": [{
       "name": "stb",
@@ -50,17 +57,17 @@
       "partial_col_num": 0,
       "columns": [{
         "type": "INT",
-        "name": "first_type"
+        "name": "first"
       }, {
         "type": "UINT",
-        "name": "second_type",
+        "name": "second",
         "count": 5
       },{
         "type": "double",
-        "name": "third_type"
+        "name": "third"
       },{
         "type": "float",
-        "name": "forth_type",
+        "name": "forth",
         "count": 3
       }],
       "tags": [{

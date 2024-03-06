@@ -1,0 +1,128 @@
+---
+title: 安装卸载
+description: 下载、使用 Tdengine 服务端安装包
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import PkgListV3 from "/components/PkgListV3";
+
+export const ToServer = ()=>(<a href="./server-setup-and-management">「服务器搭建与管理」</a>);
+export const ToProgram = ()=>(<a href="../tdengine-programs">「TDengine 程序」</a>);
+export const ToDir = ()=>(<a href="../reference/direcTory">「目录结构」</a>);
+export const ToPlatform = ()=>(<a href="../reference/supported-platform">「参考/支持平台」</a>);
+export const ToCloud = ()=>(<a href="../deployment-in-cloud">「云部署」</a>);
+export const ToServerArchitecture = ()=>(<a href="./server-architecture">「服务端架构」</a>);
+
+本文介绍服务端安装包的安装、卸载和升级。
+
+服务端安装包包含服务端必要的[各项服务](../server-architecture)，以及所有的组件、工具。
+
+## 运行环境要求
+
+在linux系统中，运行环境最低要求如下:
+
+- linux 内核版本：3.10.0-1160.83.1.el7.x86_64
+
+- glibc 版本：2.17
+
+如果通过 clone 源码进行编译安装，还需要满足:
+
+- cmake版本：3.26.4 或以上
+
+- gcc 版本：9.3.1 或以上
+
+关于支持的平台，请参考<ToPlatform/>。
+
+
+## 下载及安装
+
+选择适合您的方式，下载安装 TDengine 服务端（文件名应含有 `server`）：
+
+<Tabs>
+
+<TabItem label="Deb 安装" value="debinst">
+1. 从列表中下载获得 Deb 安装包；
+   <PkgListV3 type={6}/>
+2. 进入到安装包所在目录，执行如下的安装命令（将 `<version>` 替换为下载的安装包版本）：
+
+```bash
+sudo dpkg -i TDengine-server-<version>-Linux-x64.deb
+```
+</TabItem>
+
+<TabItem label="RPM 安装" value="rpminst">
+1. 从列表中下载获得 RPM 安装包；
+   <PkgListV3 type={5}/>
+2. 进入到安装包所在目录，执行如下的安装命令（将 `<version>` 替换为下载的安装包版本）：
+
+```bash
+sudo rpm -ivh TDengine-server-<version>-Linux-x64.rpm
+```
+</TabItem>
+
+<TabItem label="tar.gz 安装" value="tarinst">
+1. 从列表中下载获得 tar.gz 安装包；
+   <PkgListV3 type={0}/>
+2. 进入到安装包所在目录，先解压文件（将 `<version>` 替换为下载的安装包版本）：
+```bash
+tar -zxvf TDengine-server-<version>-Linux-x64.tar.gz
+```
+3. 进入目录，执行其中的 `install.sh` 安装脚本：
+
+```bash
+sudo ./install.sh
+```
+
+:::tip
+install.sh 安装脚本在执行过程中，会通过命令行交互界面询问一些配置信息。如果希望采取无交互安装方式，那么可以运行 `./install.sh -e no`。运行 `./install.sh -h` 指令可以查看所有参数的详细说明信息。
+:::
+</TabItem>
+
+<TabItem value="apt-get" label="apt-get">
+注意：apt-get 方式只适用于 Debian 或 Ubuntu 系统。
+
+可以使用 `apt-get` 工具从官方仓库安装。
+
+**配置包仓库**
+
+```bash
+wget -qO - http://repos.taosdata.com/tdengine.key | sudo apt-key add -
+echo "deb [arch=amd64] http://repos.taosdata.com/tdengine-stable stable main" | sudo tee /etc/apt/sources.list.d/tdengine-stable.list
+```
+
+如果安装 Beta 版需要安装包仓库：
+
+```bash
+wget -qO - http://repos.taosdata.com/tdengine.key | sudo apt-key add -
+echo "deb [arch=amd64] http://repos.taosdata.com/tdengine-beta beta main" | sudo tee /etc/apt/sources.list.d/tdengine-beta.list
+```
+
+**使用 `apt-get` 命令安装**
+
+```bash
+sudo apt-get update
+apt-cache policy tdengine
+sudo apt-get install tdengine
+```
+</TabItem>
+
+<TabItem label="macOS 安装" value="macos">
+1. 从列表中下载获得 pkg 安装程序；
+   <PkgListV3 type={7}/>
+2. 运行可执行程序来安装 TDengine。如果安装被阻止，可以右键或者按 Ctrl 点击安装包，选择 `打开`。
+</TabItem>
+
+</Tabs>
+
+安装第一个节点时，若出现 `Enter FQDN:` 提示，不需要输入任何内容。如安装更多节点，则输入该集群任何一个在线的物理节点的 EP（关于 EP，请参考<ToServer/>）。
+
+## 卸载
+
+执行命令 `rmtaos` 或运行安装目录中的脚本 `remove.sh`；执行后，TDengine 将被卸载，但如下文件夹会被保留：
+
+- `/etc/taos`：配置文件（包括 taosd、taoskeeper、taosadapter）
+- `/var/lib/taos`：数据文件
+- `/var/log/taos`：日志文件
+
+用户可以选择手动删除上述文件。

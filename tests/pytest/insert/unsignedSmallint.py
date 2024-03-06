@@ -16,7 +16,8 @@ class TDTestCase:
 
         tdLog.info('=============== step1')
         tdLog.info('create table tb (ts timestamp, speed smallint unsigned)')
-        tdSql.execute('create table tb (ts timestamp, speed smallint unsigned)')
+        tdSql.execute(
+            'create table tb (ts timestamp, speed smallint unsigned)')
         tdLog.info("insert into tb values (now, NULL)")
         tdSql.execute("insert into tb values (now, NULL)")
         tdLog.info('select * from tb order by ts desc')

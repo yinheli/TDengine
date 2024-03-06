@@ -23,35 +23,35 @@ class TDTestCase:
         """
         case1<sdsang>: [TD-14544] taosdump data inspect
         """
+        return
 
-    def init(self, conn, logSql, replicaVar=1):
+    def init(self, conn, logSql):
         tdLog.debug("start to execute %s" % __file__)
         tdSql.init(conn.cursor(), logSql)
         self.tmpdir = "tmp"
 
     def getPath(self, tool="taosdump"):
-        if (platform.system().lower() == 'windows'):
-            tool = tool + ".exe"
         selfPath = os.path.dirname(os.path.realpath(__file__))
 
-        if ("community" in selfPath):
-            projPath = selfPath[:selfPath.find("community")]
+        if "community" in selfPath:
+            projPath = selfPath[: selfPath.find("community")]
+        elif "src" in selfPath:
+            projPath = selfPath[: selfPath.find("src")]
+        elif "/tools/" in selfPath:
+            projPath = selfPath[: selfPath.find("/tools/")]
         else:
-            projPath = selfPath[:selfPath.find("tests")]
+            tdLog.exit("path: %s is not supported" % selfPath)
 
         paths = []
         for root, dirs, files in os.walk(projPath):
-            if ((tool) in files):
+            if (tool) in files:
                 rootRealPath = os.path.dirname(os.path.realpath(root))
-                if ("packaging" not in rootRealPath):
+                if "packaging" not in rootRealPath:
                     paths.append(os.path.join(root, tool))
                     break
-        if (len(paths) == 0):
-            tdLog.exit("taosBenchmark not found!")
-            return
-        else:
-            tdLog.info("taosBenchmark found in %s" % paths[0])
-            return paths[0]
+        if len(paths) == 0:
+            return ""
+        return paths[0]
 
     def run(self):
         tdSql.prepare()
@@ -78,7 +78,7 @@ class TDTestCase:
 
         #        sys.exit(1)
 
-        binPath = self.getPath()
+        binPath = self.getPath("taosdump")
         if binPath == "":
             tdLog.exit("taosdump not found!")
         else:

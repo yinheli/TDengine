@@ -51,20 +51,20 @@ class TDTestCase:
 
         #alter cache block to 3, then check alter
         tdSql.execute('alter database db blocks 3')
-        tdSql.query('select * from information_schema.ins_databases')
+        tdSql.query('show databases')
         tdSql.checkData(0,9,3)
 
         #run taosdemo to occupy all cache, need to manually check memory consumption
-        os.system("%staosdemo -f tools/taosdemoAllTest/manual_block1_comp.json" % binPath) 
+        os.system("%staosBenchmark -f tools/taosdemoAllTest/manual_block1_comp.json" % binPath) 
         input("please check memory usage for taosd. After checking, press enter")
 
         #alter cache block to 8, then check alter
         tdSql.execute('alter database db blocks 8')
-        tdSql.query('select * from information_schema.ins_databases')
+        tdSql.query('show databases')
         tdSql.checkData(0,9,8)
 
         #run taosdemo to occupy all cache, need to manually check memory consumption
-        os.system("%staosdemo -f tools/taosdemoAllTest/manual_block2.json" % binPath) 
+        os.system("%staosBenchmark -f tools/taosdemoAllTest/manual_block2.json" % binPath) 
         input("please check memory usage for taosd. After checking, press enter")
 
         ##expected result the peak memory consumption should increase by around 80MB = 5 blocks of cache

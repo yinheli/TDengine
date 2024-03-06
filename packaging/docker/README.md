@@ -18,58 +18,65 @@ TDengine is an open-sourced big data platform under [GNU AGPL v3.0](http://www.g
 
 ## How to use this image
 
-### Starting TDengine
+### Start a TDengine instance with RESTful API exposed
 
-The TDengine image starts with the HTTP service activated by default, using the following command:
+Simply, you can use `docker run` to start a TDengine instance and connect it with restful connectors(eg. [JDBC-RESTful](https://www.taosdata.com/cn/documentation/connector/java)).
 
-```shell
+```bash
 docker run -d --name tdengine -p 6041:6041 tdengine/tdengine
 ```
 
-The above command starts a container named "tdengine" and maps the HTTP service port 6041 to the host port 6041. You can verify that the HTTP service provided in this container is available using the following command.
+This command starts a docker container by name `tdengine` with TDengine server running, and maps the container's HTTP port 6041 to the host's port 6041. If you have `curl` in your host, you can list the databases by the command:
 
-```shell
+```bash
 curl -u root:taosdata -d "show databases" localhost:6041/rest/sql
 ```
 
-The TDengine client taos can be executed in this container to access TDengine using the following command.
+You can execute the `taos` shell command in the container:
 
-```shell
+```bash
 $ docker exec -it tdengine taos
 
+Welcome to the TDengine shell from Linux, Client Version:2.4.0.0
+Copyright (c) 2020 by TAOS Data, Inc. All rights reserved.
+
 taos> show databases;
-              name              |
-=================================
- information_schema             |
- performance_schema             |
-Query OK, 2 row(s) in set (0.002843s)
+              name              |      created_time       |   ntables   |   vgroups   | replica | quorum |  days  |           keep           |  cache(MB)  |   blocks    |   minrows   |   maxrows   | wallevel |    fsync    | comp | cachelast | precision | update |   status   |
+====================================================================================================================================================================================================================================================================================
+ log                            | 2022-01-17 13:57:22.270 |          10 |           1 |       1 |      1 |     10 | 30                       |           1 |           3 |         100 |        4096 |        1 |        3000 |    2 |         0 | us        |      0 | ready      |
+Query OK, 1 row(s) in set (0.002843s)
 ```
 
-The TDengine server running in the container uses the container's hostname to establish a connection. Using TDengine CLI or various connectors (such as JDBC-JNI) to access the TDengine inside the container from outside the container is more complicated. So the above is the simplest way to access the TDengine service in the container and is suitable for some simple scenarios. Please refer to the next section if you want to access the TDengine service in the container from outside the container using TDengine CLI or various connectors for complex scenarios.
+Since TDengine use container hostname to establish connections, it's a bit more complex to use taos shell and native connectors(such as JDBC-JNI) with TDengine container instance. This is the recommended way to expose ports and use TDengine with docker in simple cases. If you want to use taos shell or taosc/connectors smoothly outside the `tdengine` container, see next use cases that match you need.
 
-### Start TDengine on the host network
+### Start with host network
 
-```shell
+```bash
 docker run -d --name tdengine --network host tdengine/tdengine
 ```
 
-The above command starts TDengine on the host network and uses the host's FQDN to establish a connection instead of the container's hostname. It is the equivalent of using `systemctl` to start TDengine on the host. If the TDengine client is already installed on the host, you can access it directly with the following command.
+Starts container with `host` network will use host's hostname as fqdn instead of container id. It's much like starting natively with `systemd` in host. After installing the client, you can use `taos` shell as normal in host path.
 
-```shell
+```bash
 $ taos
+
+Welcome to the TDengine shell from Linux, Client Version:2.4.0.0
+Copyright (c) 2020 by TAOS Data, Inc. All rights reserved.
 
 taos> show dnodes;
    id   |           end_point            | vnodes | cores  |   status   | role  |       create_time       |      offline reason      |
 ======================================================================================================================================
-      1 | myhost:6030           |      1 |      8 | ready      | any   | 2022-01-17 22:10:32.619 |                          |
+      1 | host:6030           |      1 |      8 | ready      | any   | 2022-01-17 22:10:32.619 |                          |
 Query OK, 1 row(s) in set (0.003233s)
 ```
 
-### Start TDengine with the specified hostname and port
+### Start with exposed ports and specified hostname
 
-The `TAOS_FQDN` environment variable or the `fqdn` configuration item in `taos.cfg` allows TDengine to establish a connection at the specified hostname. This approach provides greater flexibility for deployment.
+Set the fqdn explicitly will help you to use in other environment or applications. We provide environment variable `TAOS_FQDN` or `fqdn` config option to explicitly set the hostname used by TDengine container instance(s).
 
-```shell
+Use `TAOS_FQDN` variable within `docker run` command:
+
+```bash
 docker run -d \
    --name tdengine \
    -e TAOS_FQDN=tdengine \
@@ -78,59 +85,80 @@ docker run -d \
    tdengine/tdengine
 ```
 
-The above command starts a TDengine service in the container, which listens to the hostname tdengine, and maps the container's port segment 6030 to 6049 to the host's port segment 6030 to 6049 (both TCP and UDP ports need to be mapped). If the port segment is already occupied on the host, you can modify the above command to specify a free port segment on the host. If `rpcForceTcp` is set to `1`, you can map only the TCP protocol.
+This command starts a docker container with TDengine server running and maps the container's TCP ports from 6030 to 6049 to the host's ports from 6030 to 6049 with TCP protocol and UDP ports range 6030-6039 to the host's UDP ports 6030-6039. If the host is already running TDengine server and occupying the same port(s), you need to map the container's port to a different unused port segment. (Please see TDengine 2.0 Port Description for details). In order to support TDengine clients accessing TDengine server services, both TCP and UDP ports need to be exposed by default(unless `rpcForceTcp` is set to `1`).
 
-Next, ensure the hostname "tdengine" is resolvable in `/etc/hosts`.
+If you want to use taos shell or native connectors([JDBC-JNI](https://www.taosdata.com/cn/documentation/connector/java), or [driver-go](https://github.com/taosdata/driver-go)), you need to make sure the `TAOS_FQDN` is resolvable at `/etc/hosts` or with custom DNS service.
 
-```shell
+If you set the `TAOS_FQDN` to host's hostname, it will works as using `hosts` network like previous use case. Otherwise, like in `-e TAOS_FQDN=tdengine`, you can add the hostname record `tdengine` into `/etc/hosts` (use `127.0.0.1` here in host path, if use TDengine client/application in other hosts, you should set the right ip to the host eg. `192.168.10.1`(check the real ip in host with `hostname -i` or `ip route list default`) to make the TDengine endpoint resolvable):
+
+```bash
 echo 127.0.0.1 tdengine |sudo tee -a /etc/hosts
 ```
 
-Finally, the TDengine service can be accessed from the TDengine CLI or any connector with "tdengine" as the server address.
+Then you can use `taos` with the host `tdengine`:
 
-```shell
-taos -h tdengine -P 6030
+```bash
+taos -h tdengine
 ```
 
-If set `TAOS_FQDN` to the same hostname, the effect is the same as "Start TDengine on host network".
+Or develop/test applications with native connectors. As in python:
 
-### Start TDengine on the specified network
+```python
+import taos;
+conn = taos.connect(host = "tdengine")
+res = conn.query("show databases")
+for row in res.fetch_all_into_dict():
+   print(row)
+```
 
-You can also start TDengine on a specific network. Perform the following steps:
+See the results:
 
-1. First, create a docker network named `td-net`
+```bash
+Python 3.8.10 (default, Nov 26 2021, 20:14:08) 
+[GCC 9.3.0] on linux
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import taos;
+>>> conn = taos.connect(host = "tdengine")
+>>> res = conn.query("show databases")
+>>> for row in res.fetch_all_into_dict():
+...    print(row)
+... 
+{'name': 'log', 'created_time': datetime.datetime(2022, 1, 17, 22, 56, 2, 490000), 'ntables': 11, 'vgroups': 1, 'replica': 1, 'quorum': 1, 'days': 10, 'keep': '30', 'cache(MB)': 1, 'blocks': 3, 'minrows': 100, 'maxrows': 4096, 'wallevel': 1, 'fsync': 3000, 'comp': 2, 'cachelast': 0, 'precision': 'us', 'update': 0, 'status': 'ready'}
+```
 
-   ```shell
-   docker network create td-net
-   ```
+### Start with specific network
 
-2. Start TDengine
+Alternatively, you can use TDengine natively by using specific network.
 
-   Start the TDengine service on the `td-net` network with the following command:
+First, create network for TDengine server and client/application.
 
-   ```shell
-   docker run -d --name tdengine --network td-net \
-      -e TAOS_FQDN=tdengine \
-      tdengine/tdengine
-   ```
+```bash
+docker network create td-net
+```
 
-3. Start the TDengine client in another container on the same network
+Start TDengine instance with service name as fqdn (explicitly set with `TAOS_FQDN`):
 
-   ```shell
-   docker run --rm -it --network td-net -e TAOS_FIRST_EP=tdengine tdengine/tdengine taos
-   # or
-   #docker run --rm -it --network td-net -e tdengine/tdengine taos -h tdengine
-   ```
+```bash
+docker run -d --name tdengine --network td-net \
+   -e TAOS_FQDN=tdengine \
+   tdengine/tdengine
+```
 
-### Launching a client application in a container
+Start TDengine client in another container with the specific network:
 
-If you want to start your application in a container, you need to add the corresponding dependencies on TDengine to the image as well, e.g.
+```bash
+docker run --rm -it --network td-net -e TAOS_FIRST_EP=tdengine tdengine/tdengine taos
+# or
+docker run --rm -it --network td-net -e tdengine/tdengine taos -h tdengine
+```
 
-```docker
+When you build your application with docker, you should add the TDengine client in the dockerfile, as based on `ubuntu:20.04` image, install the client like this:
+
+```dockerfile
 FROM ubuntu:20.04
 RUN apt-get update && apt-get install -y wget
-ENV TDENGINE_VERSION=3.0.0.0
-RUN wget -c https://www.taosdata.com/assets-download/3.0/TDengine-client-${TDENGINE_VERSION}-Linux-x64.tar.gz \
+ENV TDENGINE_VERSION=2.4.0.0
+RUN wget -c https://www.taosdata.com/assets-download/TDengine-client-${TDENGINE_VERSION}-Linux-x64.tar.gz \
    && tar xvf TDengine-client-${TDENGINE_VERSION}-Linux-x64.tar.gz \
    && cd TDengine-client-${TDENGINE_VERSION} \
    && ./install_client.sh \
@@ -141,7 +169,10 @@ RUN wget -c https://www.taosdata.com/assets-download/3.0/TDengine-client-${TDENG
 #CMD ["app"]
 ```
 
-Here is an example GO program:
+Here is an Go example app:
+
+<!-- code-spell-checker:disable -->
+<!-- markdownlint-disable MD010 -->
 
 ```go
 /*
@@ -150,19 +181,19 @@ Here is an example GO program:
 package main
 
 import (
-    "database/sql"
-    "flag"
-    "fmt"
-    "time"
+	"database/sql"
+	"flag"
+	"fmt"
+	"time"
 
-    _ "github.com/taosdata/driver-go/v3/taosSql"
+	_ "github.com/taosdata/driver-go/v2/taosSql"
 )
 
 type config struct {
-    hostName   string
-    serverPort string
-    user       string
-    password   string
+	hostName   string
+	serverPort string
+	user       string
+	password   string
 }
 
 var configPara config
@@ -170,68 +201,71 @@ var taosDriverName = "taosSql"
 var url string
 
 func init() {
-    flag.StringVar(&configPara.hostName, "h", "", "The host to connect to TDengine server.")
-    flag.StringVar(&configPara.serverPort, "p", "", "The TCP/IP port number to use for the connection to TDengine server.")
-    flag.StringVar(&configPara.user, "u", "root", "The TDengine user name to use when connecting to the server.")
-    flag.StringVar(&configPara.password, "P", "taosdata", "The password to use when connecting to the server.")
-    flag.Parse()
+	flag.StringVar(&configPara.hostName, "h", "", "The host to connect to TDengine server.")
+	flag.StringVar(&configPara.serverPort, "p", "", "The TCP/IP port number to use for the connection to TDengine server.")
+	flag.StringVar(&configPara.user, "u", "root", "The TDengine user name to use when connecting to the server.")
+	flag.StringVar(&configPara.password, "P", "taosdata", "The password to use when connecting to the server.")
+	flag.Parse()
 }
 
 func printAllArgs() {
-    fmt.Printf("============= args parse result: =============\n")
-    fmt.Printf("hostName:             %v\n", configPara.hostName)
-    fmt.Printf("serverPort:           %v\n", configPara.serverPort)
-    fmt.Printf("usr:                  %v\n", configPara.user)
-    fmt.Printf("password:             %v\n", configPara.password)
-    fmt.Printf("================================================\n")
+	fmt.Printf("============= args parse result: =============\n")
+	fmt.Printf("hostName:             %v\n", configPara.hostName)
+	fmt.Printf("serverPort:           %v\n", configPara.serverPort)
+	fmt.Printf("usr:                  %v\n", configPara.user)
+	fmt.Printf("password:             %v\n", configPara.password)
+	fmt.Printf("================================================\n")
 }
 
 func main() {
-    printAllArgs()
+	printAllArgs()
 
-    url = "root:taosdata@/tcp(" + configPara.hostName + ":" + configPara.serverPort + ")/"
+	url = "root:taosdata@/tcp(" + configPara.hostName + ":" + configPara.serverPort + ")/"
 
-    taos, err := sql.Open(taosDriverName, url)
-    checkErr(err, "open database error")
-    defer taos.Close()
+	taos, err := sql.Open(taosDriverName, url)
+	checkErr(err, "open database error")
+	defer taos.Close()
 
-    taos.Exec("create database if not exists test")
-    taos.Exec("use test")
-    taos.Exec("create table if not exists tb1 (ts timestamp, a int)")
-    _, err = taos.Exec("insert into tb1 values(now, 0)(now+1s,1)(now+2s,2)(now+3s,3)")
-    checkErr(err, "failed to insert")
-    rows, err := taos.Query("select * from tb1")
-    checkErr(err, "failed to select")
+	taos.Exec("create database if not exists test")
+	taos.Exec("use test")
+	taos.Exec("create table if not exists tb1 (ts timestamp, a int)")
+	_, err = taos.Exec("insert into tb1 values(now, 0)(now+1s,1)(now+2s,2)(now+3s,3)")
+	checkErr(err, "failed to insert")
+	rows, err := taos.Query("select * from tb1")
+	checkErr(err, "failed to select")
 
-    defer rows.Close()
-    for rows.Next() {
-        var r struct {
-            ts time.Time
-            a  int
-        }
-        err := rows.Scan(&r.ts, &r.a)
-        if err != nil {
-            fmt.Println("scan error:\n", err)
-            return
-        }
-        fmt.Println(r.ts, r.a)
-    }
+	defer rows.Close()
+	for rows.Next() {
+		var r struct {
+			ts time.Time
+			a  int
+		}
+		err := rows.Scan(&r.ts, &r.a)
+		if err != nil {
+			fmt.Println("scan error:\n", err)
+			return
+		}
+		fmt.Println(r.ts, r.a)
+	}
 }
 
 func checkErr(err error, prompt string) {
-    if err != nil {
-        fmt.Println("ERROR: %s\n", prompt)
-        panic(err)
-    }
+	if err != nil {
+		fmt.Println("ERROR: %s\n", prompt)
+		panic(err)
+	}
 }
 ```
 
-Here is the full Dockerfile:
+<!-- markdownlint-enable MD010 -->
+<!-- code-spell-checker:enable -->
 
-```docker
+Full version of dockerfile could be:
+
+```dockerfile
 FROM golang:1.17.6-buster as builder
-ENV TDENGINE_VERSION=3.0.0.0
-RUN wget -c https://www.taosdata.com/assets-download/3.0/TDengine-client-${TDENGINE_VERSION}-Linux-x64.tar.gz \
+ENV TDENGINE_VERSION=2.4.0.0
+RUN wget -c https://www.taosdata.com/assets-download/TDengine-client-${TDENGINE_VERSION}-Linux-x64.tar.gz \
    && tar xvf TDengine-client-${TDENGINE_VERSION}-Linux-x64.tar.gz \
    && cd TDengine-client-${TDENGINE_VERSION} \
    && ./install_client.sh \
@@ -240,14 +274,12 @@ RUN wget -c https://www.taosdata.com/assets-download/3.0/TDengine-client-${TDENG
 WORKDIR /usr/src/app/
 ENV GOPROXY="https://goproxy.io,direct"
 COPY ./main.go ./go.mod ./go.sum /usr/src/app/
-RUN go env
-RUN go mod tidy
-RUN go build
+RUN go env && go mod tidy && go build
 
 FROM ubuntu:20.04
 RUN apt-get update && apt-get install -y wget
-ENV TDENGINE_VERSION=3.0.0.0
-RUN wget -c https://www.taosdata.com/assets-download/3.0/TDengine-client-${TDENGINE_VERSION}-Linux-x64.tar.gz \
+ENV TDENGINE_VERSION=2.4.0.0
+RUN wget -c https://www.taosdata.com/assets-download/TDengine-client-${TDENGINE_VERSION}-Linux-x64.tar.gz \
    && tar xvf TDengine-client-${TDENGINE_VERSION}-Linux-x64.tar.gz \
    && cd TDengine-client-${TDENGINE_VERSION} \
    && ./install_client.sh \
@@ -259,9 +291,9 @@ COPY --from=builder /usr/src/app/app /usr/bin/
 CMD ["app"]
 ```
 
-Now that we have `main.go`, `go.mod`, `go.sum`, `app.dockerfile`, we can build the application and start it on the `td-net` network.
+Suppose you have `main.go`, `go.mod` `go.sum`, `app.dockerfile`, build the app and run it with network `td-net`:
 
-```shell
+```bash
 $ docker build -t app -f app.dockerfile
 $ docker run --rm --network td-net app -h tdengine -p 6030
 ============= args parse result: =============
@@ -284,18 +316,26 @@ password:             taosdata
 2022-01-18 01:43:51.029 +0000 UTC 3
 ```
 
-### Start the TDengine cluster with docker-compose
+Now you must be much familiar with developing and testing with TDengine, let's see some more complex cases.
 
-1. The following docker-compose file starts a TDengine cluster with three nodes.
+### Start with docker-compose with multiple nodes(instances)
 
-```yml
+Start a 2-replicas-2-mnodes-2-dnodes-1-arbitrator TDengine cluster with `docker-compose` is quite simple. Save the file as `docker-compose.yml`:
+
+```yaml
 version: "3"
 services:
+  arbitrator:
+    image: tdengine/tdengine:$VERSION
+    command: tarbitrator
   td-1:
     image: tdengine/tdengine:$VERSION
     environment:
       TAOS_FQDN: "td-1"
       TAOS_FIRST_EP: "td-1"
+      TAOS_NUM_OF_MNODES: "2"
+      TAOS_REPLICA: "2"
+      TAOS_ARBITRATOR: arbitrator:6042
     volumes:
       - taosdata-td1:/var/lib/taos/
       - taoslog-td1:/var/log/taos/
@@ -304,95 +344,101 @@ services:
     environment:
       TAOS_FQDN: "td-2"
       TAOS_FIRST_EP: "td-1"
+      TAOS_NUM_OF_MNODES: "2"
+      TAOS_REPLICA: "2"
+      TAOS_ARBITRATOR: arbitrator:6042
     volumes:
       - taosdata-td2:/var/lib/taos/
       - taoslog-td2:/var/log/taos/
-  td-3:
-    image: tdengine/tdengine:$VERSION
-    environment:
-      TAOS_FQDN: "td-3"
-      TAOS_FIRST_EP: "td-1"
-    volumes:
-      - taosdata-td3:/var/lib/taos/
-      - taoslog-td3:/var/log/taos/
 volumes:
   taosdata-td1:
   taoslog-td1:
   taosdata-td2:
   taoslog-td2:
-  taosdata-td3:
-  taoslog-td3:
 ```
 
-:::note
+You may notice that:
 
-- The `VERSION` environment variable is used to set the tdengine image tag
-- `TAOS_FIRST_EP` must be set on the newly created instance so that it can join the TDengine cluster; if there is a high availability requirement, `TAOS_SECOND_EP` needs to be used at the same time
-  :::
+- We use `VERSION` environment variable to set `tdengine` image tag version once.
+- **`TAOS_FIRST_EP`** **MUST** be set to join the newly created instances into an existing TDengine cluster. If you want more instances, use `TAOS_SECOND_EP` in case of HA(High Availability) concerns.
+- `TAOS_NUM_OF_MNODES` is for setting number of mnodes for the cluster.
+- `TAOS_REPLICA` set the default database replicas, `2` means there're one master and one slave copy of data. The `replica` option should be `1 <= replica <= 3`, and not greater than dnodes number.
+- `TAOS_ARBITRATOR` set the arbitrator entrypoint of the cluster for failover/election stuff. It's better to use arbitrator in a two nodes cluster.
+- The way to start an arbitrator service is as easy as abc: just add command name `tarbitrator`(which is the binary name of arbitrator daemon) in docker-compose service option: `command: tarbitrator`, and everything is ok now.
 
-2. Start the cluster
+Now run `docker-compose up -d` with version specified:
 
-   ```shell
-   $ VERSION=3.0.0.0 docker-compose up -d
-   Creating network "test_default" with the default driver
-   Creating volume "test_taosdata-td1" with default driver
-   Creating volume "test_taoslog-td1" with default driver
-   Creating volume "test_taosdata-td2" with default driver
-   Creating volume "test_taoslog-td2" with default driver
-   Creating test_td-1_1       ... done
-   Creating test_arbitrator_1 ... done
-   Creating test_td-2_1       ... done
-   ```
+```bash
+$ VERSION=2.4.0.0 docker-compose up -d
+Creating network "test_default" with the default driver
+Creating volume "test_taosdata-td1" with default driver
+Creating volume "test_taoslog-td1" with default driver
+Creating volume "test_taosdata-td2" with default driver
+Creating volume "test_taoslog-td2" with default driver
+Creating test_td-1_1       ... done
+Creating test_arbitrator_1 ... done
+Creating test_td-2_1       ... done
+```
 
-3. Check the status of each node
+Check the status:
 
-   ```shell
-   $ docker-compose ps
-         Name                     Command               State                                                                Ports
-   ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-   test_arbitrator_1   /usr/bin/entrypoint.sh tar ...   Up      6030/tcp, 6031/tcp, 6032/tcp, 6033/tcp, 6034/tcp, 6035/tcp, 6036/tcp, 6037/tcp, 6038/tcp, 6039/tcp, 6040/tcp, 6041/tcp, 6042/tcp
-   test_td-1_1         /usr/bin/entrypoint.sh taosd     Up      6030/tcp, 6031/tcp, 6032/tcp, 6033/tcp, 6034/tcp, 6035/tcp, 6036/tcp, 6037/tcp, 6038/tcp, 6039/tcp, 6040/tcp, 6041/tcp, 6042/tcp
-   test_td-2_1         /usr/bin/entrypoint.sh taosd     Up      6030/tcp, 6031/tcp, 6032/tcp, 6033/tcp, 6034/tcp, 6035/tcp, 6036/tcp, 6037/tcp, 6038/tcp, 6039/tcp, 6040/tcp, 6041/tcp, 6042/tcp
-   ```
+```bash
+$ docker-compose ps
+      Name                     Command               State                                                                Ports                                                              
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+test_arbitrator_1   /usr/bin/entrypoint.sh tar ...   Up      6030/tcp, 6031/tcp, 6032/tcp, 6033/tcp, 6034/tcp, 6035/tcp, 6036/tcp, 6037/tcp, 6038/tcp, 6039/tcp, 6040/tcp, 6041/tcp, 6042/tcp
+test_td-1_1         /usr/bin/entrypoint.sh taosd     Up      6030/tcp, 6031/tcp, 6032/tcp, 6033/tcp, 6034/tcp, 6035/tcp, 6036/tcp, 6037/tcp, 6038/tcp, 6039/tcp, 6040/tcp, 6041/tcp, 6042/tcp
+test_td-2_1         /usr/bin/entrypoint.sh taosd     Up      6030/tcp, 6031/tcp, 6032/tcp, 6033/tcp, 6034/tcp, 6035/tcp, 6036/tcp, 6037/tcp, 6038/tcp, 6039/tcp, 6040/tcp, 6041/tcp, 6042/tcp
+```
 
-4. Show dnodes via TDengine CLI
+Check dnodes with taos shell:
 
-```shell
+```bash
 $ docker-compose exec td-1 taos -s "show dnodes"
 
-taos> show dnodes
-     id      |            endpoint            | vnodes | support_vnodes |   status   |       create_time       |              note              |
-======================================================================================================================================
-           1 | td-1:6030                      |      0 |             32 | ready      | 2022-08-19 07:57:29.971 |                                |
-           2 | td-2:6030                      |      0 |             32 | ready      | 2022-08-19 07:57:31.415 |                                |
-           3 | td-3:6030                      |      0 |             32 | ready      | 2022-08-19 07:57:31.417 |                                |
-Query OK, 3 rows in database (0.021262s)
+Welcome to the TDengine shell from Linux, Client Version:2.4.0.0
+Copyright (c) 2020 by TAOS Data, Inc. All rights reserved.
 
+taos> show dnodes
+   id   |           end_point            | vnodes | cores  |   status   | role  |       create_time       |      offline reason      |
+======================================================================================================================================
+      1 | td-1:6030                      |      1 |      8 | ready      | any   | 2022-01-18 02:47:42.871 |                          |
+      2 | td-2:6030                      |      0 |      8 | ready      | any   | 2022-01-18 02:47:43.518 |                          |
+      0 | arbitrator:6042                |      0 |      0 | ready      | arb   | 2022-01-18 02:47:43.633 | -                        |
+Query OK, 3 row(s) in set (0.000811s)
 ```
 
-## taosAdapter
+### Start a TDengine cluster with scaled taosadapter service
 
-1. taosAdapter is enabled by default in the TDengine container. If you want to disable it, specify the environment variable `TAOS_DISABLE_ADAPTER=true` at startup
+In previous use case, you could see the way to start other services built with TDengine(`taosd` as the default command). There's another important service you should know:
 
-2. At the same time, for flexible deployment, taosAdapter can be started in a separate container
+> **taosAdapter** is a TDengine’s companion tool and is a bridge/adapter between TDengine cluster and application. It provides an easy-to-use and efficient way to ingest data from data collections agents(like Telegraf, StatsD, CollectD) directly. It also provides InfluxDB/OpenTSDB compatible data ingestion interface to allow InfluxDB/OpenTSDB applications to immigrate to TDengine seamlessly.
 
-   ```docker
-   services:
-     # ...
-     adapter:
-       image: tdengine/tdengine:$VERSION
-       command: taosadapter
-   ```
+`taosadapter` is running inside `tdengine` image by default, you can disable it by `TAOS_DISABLE_ADAPTER=true`. Running `taosadapter` in a separate container is like how `arbitrator` does:
 
-   Suppose you want to deploy multiple taosAdapters to improve throughput and provide high availability. In that case, the recommended configuration method uses a reverse proxy such as Nginx to offer a unified access entry. For specific configuration methods, please refer to the official documentation of Nginx. Here is an example:
+```yaml
+services:
+  # ...
+  adapter:
+    image: tdengine/tdengine:$VERSION
+    command: taosadapter
+```
 
-```yml
+`taosadapter` could be scaled with docker-compose, so that you can manage the `taosadapter` nodes easily. Here is an example shows 4-`taosadapter` instances in a TDengine cluster(much like previous use cases):
+
+```yaml
 version: "3"
 
 networks:
   inter:
+  api:
 
 services:
+  arbitrator:
+    image: tdengine/tdengine:$VERSION
+    command: tarbitrator
+    networks:
+      - inter
   td-1:
     image: tdengine/tdengine:$VERSION
     networks:
@@ -400,6 +446,9 @@ services:
     environment:
       TAOS_FQDN: "td-1"
       TAOS_FIRST_EP: "td-1"
+      TAOS_NUM_OF_MNODES: "2"
+      TAOS_REPLICA: "2"
+      TAOS_ARBITRATOR: arbitrator:6042
     volumes:
       - taosdata-td1:/var/lib/taos/
       - taoslog-td1:/var/log/taos/
@@ -410,12 +459,15 @@ services:
     environment:
       TAOS_FQDN: "td-2"
       TAOS_FIRST_EP: "td-1"
+      TAOS_NUM_OF_MNODES: "2"
+      TAOS_REPLICA: "2"
+      TAOS_ARBITRATOR: arbitrator:6042
     volumes:
       - taosdata-td2:/var/lib/taos/
       - taoslog-td2:/var/log/taos/
   adapter:
     image: tdengine/tdengine:$VERSION
-    entrypoint: "taosadapter"
+    command: taosadapter
     networks:
       - inter
     environment:
@@ -429,6 +481,7 @@ services:
       - adapter
     networks:
       - inter
+      - api
     ports:
       - 6041:6041
       - 6044:6044/udp
@@ -451,14 +504,100 @@ volumes:
   taoslog-td2:
 ```
 
-## Deploy with docker swarm
+Start the cluster:
 
-If you want to deploy a container-based TDengine cluster on multiple hosts, you can use docker swarm. First, to establish a docker swarm cluster on these hosts, please refer to the official docker documentation.
+```bash
+$ VERSION=2.4.0.0 docker-compose up -d
+Creating network "docker_inter" with the default driver
+Creating network "docker_api" with the default driver
+Creating volume "docker_taosdata-td1" with default driver
+Creating volume "docker_taoslog-td1" with default driver
+Creating volume "docker_taosdata-td2" with default driver
+Creating volume "docker_taoslog-td2" with default driver
+Creating docker_td-2_1       ... done
+Creating docker_arbitrator_1 ... done
+Creating docker_td-1_1       ... done
+Creating docker_adapter_1    ... done
+Creating docker_adapter_2    ... done
+Creating docker_adapter_3    ... done
+```
 
-The docker-compose file can refer to the previous section. Here is the command to start TDengine with docker swarm:
+It will start a TDengine cluster with two dnodes and four taosadapter instances, expose ports 6041/tcp and 6044/udp to host.
 
-```shell
-$ VERSION=3.0.0.0 docker stack deploy -c docker-compose.yml taos
+`6041` is the RESTful API endpoint port, you can verify that the RESTful interface taosAdapter provides working using the `curl` command.
+
+```bash
+$ curl -H 'Authorization: Basic cm9vdDp0YW9zZGF0YQ==' -d 'show databases;' 127.0.0.1:6041/rest/sql
+{"status":"succ","head":["name","created_time","ntables","vgroups","replica","quorum","days","keep","cache(MB)","blocks","minrows","maxrows","wallevel","fsync","comp","cachelast","precision","update","status"],"column_meta":[["name",8,32],["created_time",9,8],["ntables",4,4],["vgroups",4,4],["replica",3,2],["quorum",3,2],["days",3,2],["keep",8,24],["cache(MB)",4,4],["blocks",4,4],["minrows",4,4],["maxrows",4,4],["wallevel",2,1],["fsync",4,4],["comp",2,1],["cachelast",2,1],["precision",8,3],["update",2,1],["status",8,10]],"data":[["log","2022-01-18 04:37:42.902",16,1,1,1,10,"30",1,3,100,4096,1,3000,2,0,"us",0,"ready"]],"rows":1}
+```
+
+If you run curl in batch(here we use [hyperfine](https://github.com/sharkdp/hyperfine) - a command-line benchmarking tool), the requests are balanced into 4 adapter instances.
+
+```bash
+hyperfine -m10 'curl -u root:taosdata localhost:6041/rest/sql -d "describe log.log"'
+```
+
+View the logs with `docker-compose logs`:
+
+```bash
+$ docker-compose logs adapter
+# some logs skipped
+adapter_2     | 01/18 04:57:44.616529 00000039 TAOS_ADAPTER info "| 200 |     162.185µs |      172.21.0.9 | POST | /rest/sql " model=web sessionID=18
+adapter_1     | 01/18 04:57:44.627695 00000039 TAOS_ADAPTER info "| 200 |     145.485µs |      172.21.0.9 | POST | /rest/sql " model=web sessionID=17
+adapter_3     | 01/18 04:57:44.639165 00000040 TAOS_ADAPTER info "| 200 |     146.913µs |      172.21.0.9 | POST | /rest/sql " sessionID=17 model=web
+adapter_4     | 01/18 04:57:44.650829 00000039 TAOS_ADAPTER info "| 200 |     153.201µs |      172.21.0.9 | POST | /rest/sql " sessionID=17 model=web
+adapter_2     | 01/18 04:57:44.662422 00000039 TAOS_ADAPTER info "| 200 |     211.393µs |      172.21.0.9 | POST | /rest/sql " model=web sessionID=19
+adapter_1     | 01/18 04:57:44.673426 00000039 TAOS_ADAPTER info "| 200 |     154.714µs |      172.21.0.9 | POST | /rest/sql " model=web sessionID=18
+adapter_3     | 01/18 04:57:44.684788 00000040 TAOS_ADAPTER info "| 200 |     131.876µs |      172.21.0.9 | POST | /rest/sql " model=web sessionID=18
+adapter_4     | 01/18 04:57:44.696261 00000039 TAOS_ADAPTER info "| 200 |     162.173µs |      172.21.0.9 | POST | /rest/sql " model=web sessionID=18
+adapter_2     | 01/18 04:57:44.707414 00000039 TAOS_ADAPTER info "| 200 |     164.419µs |      172.21.0.9 | POST | /rest/sql " model=web sessionID=20
+adapter_1     | 01/18 04:57:44.720842 00000039 TAOS_ADAPTER info "| 200 |     179.374µs |      172.21.0.9 | POST | /rest/sql " model=web sessionID=19
+adapter_3     | 01/18 04:57:44.732184 00000040 TAOS_ADAPTER info "| 200 |     141.174µs |      172.21.0.9 | POST | /rest/sql " sessionID=19 model=web
+adapter_4     | 01/18 04:57:44.744024 00000039 TAOS_ADAPTER info "| 200 |     159.774µs |      172.21.0.9 | POST | /rest/sql " model=web sessionID=19
+adapter_2     | 01/18 04:57:44.773732 00000039 TAOS_ADAPTER info "| 200 |     178.993µs |      172.21.0.9 | POST | /rest/sql " model=web sessionID=21
+adapter_1     | 01/18 04:57:44.796518 00000039 TAOS_ADAPTER info "| 200 |      238.24µs |      172.21.0.9 | POST | /rest/sql " model=web sessionID=20
+adapter_3     | 01/18 04:57:44.810744 00000040 TAOS_ADAPTER info "| 200 |     176.133µs |      172.21.0.9 | POST | /rest/sql " model=web sessionID=20
+adapter_4     | 01/18 04:57:44.826395 00000039 TAOS_ADAPTER info "| 200 |     149.215µs |      172.21.0.9 | POST | /rest/sql " model=web sessionID=20
+```
+
+`6044/udp` is the [StatsD](https://github.com/statsd/statsd)-compatible port, you can verify this feature with `nc` command(usually provided by `netcat` package).
+
+```bash
+echo "foo:1|c" | nc -u -w0 127.0.0.1 6044
+```
+
+Check the result in `taos` shell with `docker-compose exec`:
+
+```bash
+$ dc exec td-1 taos
+
+Welcome to the TDengine shell from Linux, Client Version:2.4.0.0
+Copyright (c) 2020 by TAOS Data, Inc. All rights reserved.
+
+taos> show databases;
+              name              |      created_time       |   ntables   |   vgroups   | replica | quorum |  days  |           keep           |  cache(MB)  |   blocks    |   minrows   |   maxrows   | wallevel |    fsync    | comp | cachelast | precision | update |   status   |
+====================================================================================================================================================================================================================================================================================
+ log                            | 2022-01-18 04:37:42.902 |          17 |           1 |       1 |      1 |     10 | 30                       |           1 |           3 |         100 |        4096 |        1 |        3000 |    2 |         0 | us        |      0 | ready      |
+ statsd                         | 2022-01-18 04:45:02.563 |           1 |           1 |       2 |      1 |     10 | 3650                     |          16 |           6 |         100 |        4096 |        1 |        3000 |    2 |         0 | ns        |      2 | ready      |
+Query OK, 2 row(s) in set (0.001838s)
+
+taos> select * from statsd.foo;
+              ts               |         value         |         metric_type          |
+=======================================================================================
+ 2022-01-18 04:45:02.563422822 |                     1 | counter                      |
+Query OK, 1 row(s) in set (0.003854s)
+```
+
+Use `docker-compose up -d adapter=1 to reduce the instances to 1
+
+### Deploy TDengine cluster in Docker Swarm with `docker-compose.yml`
+
+If you use docker swarm mode, it will schedule arbitrator/taosd/taosadapter services into different hosts automatically. If you've no experience with k8s/kubernetes, this is the most convenient way to scale out the TDengine cluster with multiple hosts/servers.
+
+Use the `docker-compose.yml` file in previous use case, and deploy with `docker stack` or `docker deploy`:
+
+```bash
+$ VERSION=2.4.0 docker stack deploy -c docker-compose.yml taos
 Creating network taos_inter
 Creating network taos_api
 Creating service taos_arbitrator
@@ -468,40 +607,58 @@ Creating service taos_adapter
 Creating service taos_nginx
 ```
 
-Checking status:
+Now you've created a TDengine cluster with multiple host servers.
 
-```shell
+Use `docker service` or `docker stack` to manage the cluster:
+
+<!-- code-spell-checker:disable -->
+
+```bash
 $ docker stack ps taos
 ID                  NAME                IMAGE                     NODE                DESIRED STATE       CURRENT STATE                ERROR               PORTS
-79ni8temw59n        taos_nginx.1        nginx:latest              TM1701     Running             Running about a minute ago
-3e94u72msiyg        taos_adapter.1      tdengine/tdengine:3.0.0.0   TM1702     Running             Running 56 seconds ago
-100amjkwzsc6        taos_td-2.1         tdengine/tdengine:3.0.0.0   TM1703     Running             Running about a minute ago
-pkjehr2vvaaa        taos_td-1.1         tdengine/tdengine:3.0.0.0   TM1704     Running             Running 2 minutes ago
-tpzvgpsr1qkt        taos_arbitrator.1   tdengine/tdengine:3.0.0.0   TM1705     Running             Running 2 minutes ago
-rvss3g5yg6fa        taos_adapter.2      tdengine/tdengine:3.0.0.0   TM1706     Running             Running 56 seconds ago
-i2augxamfllf        taos_adapter.3      tdengine/tdengine:3.0.0.0   TM1707     Running             Running 56 seconds ago
-lmjyhzccpvpg        taos_adapter.4      tdengine/tdengine:3.0.0.0   TM1708     Running             Running 56 seconds ago
+79ni8temw59n        taos_nginx.1        nginx:latest              TM1701     Running             Running about a minute ago                       
+3e94u72msiyg        taos_adapter.1      tdengine/tdengine:2.4.0   TM1702     Running             Running 56 seconds ago                           
+100amjkwzsc6        taos_td-2.1         tdengine/tdengine:2.4.0   TM1703     Running             Running about a minute ago                       
+pkjehr2vvaaa        taos_td-1.1         tdengine/tdengine:2.4.0   TM1704     Running             Running 2 minutes ago                            
+tpzvgpsr1qkt        taos_arbitrator.1   tdengine/tdengine:2.4.0   TM1705     Running             Running 2 minutes ago                            
+rvss3g5yg6fa        taos_adapter.2      tdengine/tdengine:2.4.0   TM1706     Running             Running 56 seconds ago                           
+i2augxamfllf        taos_adapter.3      tdengine/tdengine:2.4.0   TM1707     Running             Running 56 seconds ago                           
+lmjyhzccpvpg        taos_adapter.4      tdengine/tdengine:2.4.0   TM1708     Running             Running 56 seconds ago
 $ docker service ls
 ID                  NAME                MODE                REPLICAS            IMAGE                     PORTS
-561t4lu6nfw6        taos_adapter        replicated          4/4                 tdengine/tdengine:3.0.0.0
-3hk5ct3q90sm        taos_arbitrator     replicated          1/1                 tdengine/tdengine:3.0.0.0
+561t4lu6nfw6        taos_adapter        replicated          4/4                 tdengine/tdengine:2.4.0   
+3hk5ct3q90sm        taos_arbitrator     replicated          1/1                 tdengine/tdengine:2.4.0   
 d8qr52envqzu        taos_nginx          replicated          1/1                 nginx:latest              *:6041->6041/tcp, *:6044->6044/udp
-2isssfvjk747        taos_td-1           replicated          1/1                 tdengine/tdengine:3.0.0.0
-9pzw7u02ichv        taos_td-2           replicated          1/1                 tdengine/tdengine:3.0.0.0
+2isssfvjk747        taos_td-1           replicated          1/1                 tdengine/tdengine:2.4.0   
+9pzw7u02ichv        taos_td-2           replicated          1/1                 tdengine/tdengine:2.4.0
 ```
 
-From the above output, you can see two dnodes, two taosAdapters, and one Nginx reverse proxy service.
+<!-- code-spell-checker:enable -->
 
-Next, we can reduce the number of taosAdapter services.
+It shows that there are two dnodes, one arbitrator, four taosadapter and one nginx reverse-forward service in this cluster.
 
-```shell
+You can scale down the taosadapter replicas to `1` by `docker service`:
+
+```bash
 $ docker service scale taos_adapter=1
 taos_adapter scaled to 1
-overall progress: 1 out of 1 tasks
-1/1: running   [==================================================>]
+overall progress: 1 out of 1 tasks 
+1/1: running   [==================================================>] 
 verify: Service converged
 
 $ docker service ls -f name=taos_adapter
 ID                  NAME                MODE                REPLICAS            IMAGE                     PORTS
-561t4lu6nfw6        taos_adapter        replicated          1/1                 tdengine/tdengine:3.0.0.0
+561t4lu6nfw6        taos_adapter        replicated          1/1                 tdengine/tdengine:2.4.0
 ```
+
+Now it remains only 1 taosadapter instance in the cluster.
+
+When you want to remove the cluster, just type:
+
+```bash
+docker stack rm taos
+```
+
+### Environment Variables
+
+When you start `tdengine` image, you can adjust the configuration of TDengine by passing environment variables on the `docker run` command line or in the docker compose file. You can use all of the environment variables that passed to taosd or taosadapter.

@@ -1,49 +1,19 @@
 ---
-title: Caching
-sidebar_label: Caching
-description: This document describes the caching component of TDengine.
+sidebar_label: Cache
+title: Cache
+description: "The latest row of each table is kept in cache to provide high performance query of latest state."
 ---
 
-TDengine uses various kinds of caching techniques to efficiently write and query data. This document describes the caching component of TDengine.
+The cache management policy in TDengine is First-In-First-Out (FIFO). FIFO is also known as insert driven cache management policy and it is different from read driven cache management, which is more commonly known as Least-Recently-Used (LRU). FIFO simply stores the latest data in cache and flushes the oldest data in cache to disk, when the cache usage reaches a threshold. In IoT use cases, it is the current state i.e. the latest or most recent data that is important. The cache policy in TDengine, like much of the design and architecture of TDengine, is based on the nature of IoT data.
 
-## Write Cache
+Caching the latest data provides the capability of retrieving data in milliseconds. With this capability, TDengine can be configured properly to be used as a caching system without deploying another separate caching system. This simplifies the system architecture and minimizes operational costs. The cache is emptied after TDengine is restarted. TDengine does not reload data from disk into cache, like a key-value caching system.
 
-TDengine uses an insert-driven cache management policy, known as first in, first out (FIFO). This policy differs from read-driven "least recently used (LRU)" cache management. A FIFO policy stores the latest data in cache and flushes the oldest data from cache to disk when the cache usage reaches a threshold. In IoT use cases, the most recent data or the current state is most important. The cache policy in TDengine, like much of the design and architecture of TDengine, is based on the nature of IoT data.
+The memory space used by the TDengine cache is fixed in size and configurable. It should be allocated based on application requirements and system resources. An independent memory pool is allocated for and managed by each vnode (virtual node) in TDengine. There is no sharing of memory pools between vnodes. All the tables belonging to a vnode share all the cache memory of the vnode.
 
-When you create a database, you can configure the size of the write cache on each vnode. The **vgroups** parameter determines the number of vgroups that process data in the database, and the **buffer** parameter determines the size of the write cache for each vnode. The unit of buffer is MB.
+The memory pool is divided into blocks and data is stored in row format in memory and each block follows FIFO policy. The size of each block is determined by configuration parameter `cache` and the number of blocks for each vnode is determined by the parameter `blocks`. For each vnode, the total cache size is `cache * blocks`.  A cache block needs to ensure that each table can store at least dozens of records, to be efficient.
 
-```sql
-create database db0 vgroups 100 buffer 16
-```
-
-In theory, larger cache sizes are always better. However, at a certain point, it becomes impossible to improve performance by increasing cache size. In most scenarios, you can retain the default cache settings.
-
-## Read Cache
-
-When you create a database, you can configure whether the latest data from every subtable is cached. To do so, set the *cachemodel* parameter as follows:
-- none: Caching is disabled.
-- last_row: The latest row of data in each subtable is cached. This option significantly improves the performance of the `LAST_ROW` function
-- last_value: The latest non-null value in each column of each subtable is cached. This option significantly improves the performance of the `LAST` function in normal situations, such as WHERE, ORDER BY, GROUP BY, and INTERVAL statements.
-- both: Rows and columns are both cached. This option is equivalent to simultaneously enabling option last_row and last_value.
-
-## Metadata Cache
-
-To improve query and write performance, each vnode caches the metadata that it receives. When you create a database, you can configure the size of the metadata cache through the *pages* and *pagesize* parameters. The unit of pagesize is kb.
+`last_row` function can be used to retrieve the last row of a table or a STable to quickly show the current state of devices on monitoring screen. For example the below SQL statement retrieves the latest voltage of all meters in San Francisco, California.
 
 ```sql
-create database db0 pages 128 pagesize 16
+select last_row(voltage) from meters where location='California.SanFrancisco';
 ```
-
-The preceding SQL statement creates 128 pages on each vnode in the `db0` database. Each page has a 16 KB metadata cache.
-
-## File System Cache
-
-TDengine implements data reliability by means of a write-ahead log (WAL). Writing data to the WAL is essentially writing data to the disk in an ordered, append-only manner. For this reason, the file system cache plays an important role in write performance. When you create a database, you can use the *wal* parameter to choose higher performance or higher reliability.
-- 1: This option writes to the WAL but does not enable fsync. New data written to the WAL is stored in the file system cache but not written to disk. This provides better performance.
-- 2: This option writes to the WAL and enables fsync. New data written to the WAL is immediately written to disk. This provides better data reliability.
-
-## Client Cache
-
-In addition to the server-side caching discussed previously, the core client library `libtaos.so` also makes use of caching. TDengine Client caches the metadata of all databases, supertables, and subtables that it has accessed, as well as the cluster topology.
-
-If a client modifies certain metadata while multiple clients are simultaneously accessing a TDengine cluster, the metadata caches on each client may fail or become out of sync. If this occurs, run the `reset query cache` command on the affected clientsto force them to obtain fresh metadata and reset their caches.

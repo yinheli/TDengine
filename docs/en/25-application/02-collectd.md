@@ -1,7 +1,6 @@
 ---
-title: Quickly build an IT DevOps visualization system using TDengine + collectd/StatsD + Grafana
 sidebar_label: TDengine + collectd/StatsD + Grafana
-description: This document describes how to build an IT visualization system by integrating TDengine with Grafana and collectd or StatsD.
+title: Quickly build an IT DevOps visualization system using TDengine + collectd/StatsD + Grafana
 ---
 
 ## Background
@@ -38,13 +37,19 @@ Please refer to the [official documentation](https://grafana.com/grafana/downloa
 
 ### Install TDengine
 
-Download and install the [latest version of TDengine](https://docs.tdengine.com/releases/tdengine/).
+Download the latest TDengine-server 2.4.0.x or above from the [Downloads](http://taosdata.com/cn/all-downloads/) page on the TAOSData website and install it.
 
 ## Data Connection Setup
 
-### Install Grafana Plugin and Configure Data Source
+### Copy the TDengine plugin to the grafana plugin directory
 
-Please refer to [Install Grafana Plugin and Configure Data Source](../../third-party/grafana/#install-grafana-plugin-and-configure-data-source)
+```bash
+1. wget -c https://github.com/taosdata/grafanaplugin/releases/download/v3.1.3/tdengine-datasource-3.1.3.zip
+2. sudo unzip tdengine-datasource-3.1.3.zip -d /var/lib/grafana/plugins/
+3. sudo chown grafana:grafana -R /var/lib/grafana/plugins/tdengine
+4. echo -e "[plugins]\nallow_loading_unsigned_plugins = tdengine-datasource\n" | sudo tee -a /etc/grafana/grafana.ini
+5. sudo systemctl restart grafana-server.service
+```
 
 ### Configure collectd
 
@@ -94,6 +99,6 @@ Download the dashboard json from `https://github.com/taosdata/grafanaplugin/blob
 
 ## Wrap-up
 
-TDengine, as an emerging time-series big data platform, has the advantages of high performance, high reliability, easy management and easy maintenance. Thanks to the new schemaless protocol parsing feature in TDengine and ability to integrate easily with a large software ecosystem, users can build an efficient and easy-to-use IT DevOps visualization system, or adapt an existing system, in just a few minutes.
+TDengine, as an emerging time-series big data platform, has the advantages of high performance, high reliability, easy management and easy maintenance. Thanks to the new schemaless protocol parsing feature in TDengine version 2.4.0.0 and ability to integrate easily with a large software ecosystem, users can build an efficient and easy-to-use IT DevOps visualization system, or adapt an existing system, in just a few minutes.
 
 For TDengine's powerful data writing and querying performance and other features, please refer to the official documentation and successful product implementation cases.

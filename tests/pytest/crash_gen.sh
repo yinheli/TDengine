@@ -45,15 +45,10 @@ fi
 
 # Now getting ready to execute Python
 # The following is the default of our standard dev env (Ubuntu 20.04), modify/adjust at your own risk
-PYTHON_EXEC=python3
+PYTHON_EXEC=python3.8
 
 # First we need to set up a path for Python to find our own TAOS modules, so that "import" can work.
-# export PYTHONPATH=$(pwd)/../../src/connector/python:$(pwd)
-# NOTE: we are now pointing outside the current github, per Wade on 7/7/2022, we'll be keeping connectors outside
-# and there does not seem to be a module to reference that.
-PROJECT_PARENT=$(pwd)/../../..
-TAOS_PYTHON_PROJECT_DIR=$PROJECT_PARENT/taos-connector-python 
-export PYTHONPATH=$TAOS_PYTHON_PROJECT_DIR:$(pwd)
+export PYTHONPATH=$(pwd)/../../src/connector/python:$(pwd)
 
 # Then let us set up the library path so that our compiled SO file can be loaded by Python
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LIB_DIR

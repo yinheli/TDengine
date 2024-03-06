@@ -1,7 +1,6 @@
 ---
-title: StatsD Writing
 sidebar_label: StatsD
-description: This document describes how to integrate TDengine with StatsD.
+title: StatsD writing
 ---
 
 import StatsD from "../14-reference/_statsd.mdx"
@@ -13,8 +12,8 @@ You can write StatsD data to TDengine by simply modifying the configuration file
 ## Prerequisites
 
 To write StatsD data to TDengine requires the following preparations.
-1. The TDengine cluster is deployed and functioning properly
-2. taosAdapter is installed and running properly. Please refer to the taosAdapter manual for details.
+- The TDengine cluster has been deployed and is working properly
+- taosAdapter is installed and running properly. Please refer to the [taosAdapter manual](../../reference/taosadapter) for details.
 - StatsD has been installed. To install StatsD, please refer to [official documentation](https://github.com/statsd/statsd)
 
 ## Configuration steps
@@ -27,7 +26,7 @@ Start StatsD:
 ```
 $ node stats.js config.js &
 [1] 8546
-$ 20 Apr 09:54:41 - [8546] reading config file: config.js
+$ 20 Apr 09:54:41 - [8546] reading config file: exampleConfig.js
 20 Apr 09:54:41 - server is up INFO
 ```
 
@@ -40,21 +39,23 @@ $ echo "foo:1|c" | nc -u -w0 127.0.0.1 8125
 Use the TDengine CLI to verify that StatsD data is written to TDengine and can read out correctly.
 
 ```
+Welcome to the TDengine shell from Linux, Client Version:2.4.0.0
+Copyright (c) 2020 by TAOS Data, Inc. All rights reserved.
+
 taos> show databases;
-              name              |
-=================================
- information_schema             |
- performance_schema             |
- statsd                         |
-Query OK, 3 row(s) in set (0.003142s)
+              name              |      created_time       |   ntables   |   vgroups   | replica | quorum |  days  |           keep           |  cache(MB)  |   blocks    |   minrows   |   maxrows   | wallevel |    fsync    | comp | cachelast | precision | update |   status   |
+====================================================================================================================================================================================================================================================================================
+ log                            | 2022-04-20 07:19:50.260 |          11 |           1 |       1 |      1 |     10 | 3650                     |          16 |           6 |         100 |        4096 |        1 |        3000 |    2 |         0 | ms        |      0 | ready      |
+ statsd                         | 2022-04-20 09:54:51.220 |           1 |           1 |       1 |      1 |     10 | 3650                     |          16 |           6 |         100 |        4096 |        1 |        3000 |    2 |         0 | ns        |      2 | ready      |
+Query OK, 2 row(s) in set (0.003142s)
 
 taos> use statsd;
 Database changed.
 
 taos> show stables;
-              name              |
-=================================
- foo                            |
+              name              |      created_time       | columns |  tags  |   tables    |
+============================================================================================
+ foo                            | 2022-04-20 09:54:51.234 |       2 |      1 |           1 |
 Query OK, 1 row(s) in set (0.002161s)
 
 taos> select * from foo;
@@ -65,8 +66,3 @@ Query OK, 1 row(s) in set (0.004179s)
 
 taos>
 ```
-
-:::note
-
-- TDengine will automatically create unique IDs for sub-table names by the rule.
-:::

@@ -1,9 +1,9 @@
 package main
 
 import (
-	"log"
+	"fmt"
 
-	"github.com/taosdata/driver-go/v3/af"
+	"github.com/taosdata/driver-go/v2/af"
 )
 
 func prepareDatabase(conn *af.Connector) {
@@ -20,7 +20,7 @@ func prepareDatabase(conn *af.Connector) {
 func main() {
 	conn, err := af.Open("localhost", "root", "taosdata", "", 6030)
 	if err != nil {
-		log.Fatalln("fail to connect, err:", err)
+		fmt.Println("fail to connect, err:", err)
 	}
 	defer conn.Close()
 	prepareDatabase(conn)
@@ -37,6 +37,6 @@ func main() {
 
 	err = conn.OpenTSDBInsertTelnetLines(lines)
 	if err != nil {
-		log.Fatalln("insert error:", err)
+		fmt.Println("insert error:", err)
 	}
 }

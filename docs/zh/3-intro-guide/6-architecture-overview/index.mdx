@@ -1,0 +1,35 @@
+---
+title: 架构概览
+description: TDengine 的基础架构简介
+---
+
+本文对 TDengine 的服务架构进行简单介绍。
+
+## 主要服务
+
+TDengine 服务由以 taosd 为核心的一个到多个进程组成：
+
+![服务概览](./server-client.png)
+
+TDengine 服务端、客户端的主要组成部分如下：
+
+- taosd：TDengine 服务端主进程；多个 taosd 可以[组成 TDengine 集群](../../deploy)
+- toasadapter：用于提供 [WebSocket、RESTful 接口](../../dev/connect)的服务端进程
+- taosc：客户端驱动程序，应用程序需要通过 taosc 连接 TDengine
+- APP：客户端应用程序，例如 Grafana、Power BI、用户自己开发的代码等
+- taos：客户端[命令行工具](../)，是用户与 TDengine 最简单、直接的交互方式
+
+客户端可以通过两种类型的接口，与服务端连接：
+
+- 原生接口（Native）：应用程序，通过 taosc 与 taosd 进行连接
+- RESTful/WebSocket 接口：采用 RESTful 或 WebSocket 与 taosadapter 通信，间接地与 taosd 进行数据传输
+
+TDengine 提供[服务端安装包](../../administration/server-installation)和[客户端安装包](../../develop/connect)。客户端安装包没有服务进程，仅包含必要的驱动和工具，以满足客户端的需求。服务端安装包含所有内容。
+
+## FQDN & Endpoint
+
+FQDN（Fully Qualified Domain Name，完全限定域名）是 Internet 上特定计算机或主机的完整域名。FQDN 由两部分组成:主机名和域名。例如，假设邮件服务器的 FQDN 可能是 mail.tdengine.com。主机名是 mail，主机位于域名 tdengine.com 中。DNS（Domain Name System），负责将 FQDN 翻译成 IP，是互联网应用的寻址方式。对于没有 DNS 的系统，可以通过配置 hosts 文件来解决。
+
+TDengine 集群的每个数据节点是由 Endpoint 来唯一标识的，Endpoint 是由 FQDN 外加 Port 组成，比如 h1.tdengine.com:6030。这样当 IP 发生变化的时候，我们依然可以使用 FQDN 来动态找到节点，不需要更改集群的任何配置。而且采用 FQDN，便于内网和外网对同一个集群的统一访问。
+
+TDengine 不建议采用直接的 IP 地址访问集群，不利于管理。不了解 FQDN 概念，请看博文[《一篇文章说清楚 TDengine 的 FQDN》](https://www.taosdata.com/blog/2020/09/11/1824.html)。

@@ -1,87 +1,65 @@
 package com.taos.example;
 
-import com.taosdata.jdbc.tmq.ConsumerRecord;
-import com.taosdata.jdbc.tmq.ConsumerRecords;
-import com.taosdata.jdbc.tmq.TMQConstants;
-import com.taosdata.jdbc.tmq.TaosConsumer;
+import com.taosdata.jdbc.TSDBConnection;
+import com.taosdata.jdbc.TSDBDriver;
+import com.taosdata.jdbc.TSDBResultSet;
+import com.taosdata.jdbc.TSDBSubscribe;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.time.Duration;
-import java.util.Collections;
 import java.util.Properties;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.TimeUnit;
 
 public class SubscribeDemo {
-    private static final String TOPIC = "tmq_topic";
-    private static final String DB_NAME = "meters";
-    private static final AtomicBoolean shutdown = new AtomicBoolean(false);
+    private static final String topic = "topic-meter-current-bg-10";
+    private static final String sql = "select * from meters where current > 10";
 
     public static void main(String[] args) {
-        Timer timer = new Timer();
-        timer.schedule(new TimerTask() {
-            public void run() {
-                shutdown.set(true);
-            }
-        }, 3_000);
+        Connection connection = null;
+        TSDBSubscribe subscribe = null;
+
         try {
-            // prepare
             Class.forName("com.taosdata.jdbc.TSDBDriver");
-            String jdbcUrl = "jdbc:TAOS://127.0.0.1:6030/?user=root&password=taosdata";
-            Connection connection = DriverManager.getConnection(jdbcUrl);
-            try (Statement statement = connection.createStatement()) {
-                statement.executeUpdate("drop topic if exists " + TOPIC);
-                statement.executeUpdate("drop database if exists " + DB_NAME);
-                statement.executeUpdate("create database " + DB_NAME + " wal_retention_period 3600");
-                statement.executeUpdate("use " + DB_NAME);
-                statement.executeUpdate(
-                        "CREATE TABLE `meters` (`ts` TIMESTAMP, `current` FLOAT, `voltage` INT) TAGS (`groupid` INT, `location` BINARY(24))");
-                statement.executeUpdate("CREATE TABLE `d0` USING `meters` TAGS(0, 'California.LosAngles')");
-                statement.executeUpdate("INSERT INTO `d0` values(now - 10s, 0.32, 116)");
-                statement.executeUpdate("INSERT INTO `d0` values(now - 8s, NULL, NULL)");
-                statement.executeUpdate(
-                        "INSERT INTO `d1` USING `meters` TAGS(1, 'California.SanFrancisco') values(now - 9s, 10.1, 119)");
-                statement.executeUpdate(
-                        "INSERT INTO `d1` values (now-8s, 10, 120) (now - 6s, 10, 119) (now - 4s, 11.2, 118)");
-                // create topic
-                statement.executeUpdate("create topic " + TOPIC + " as select * from meters");
-            }
-
-            // create consumer
             Properties properties = new Properties();
-            properties.getProperty(TMQConstants.CONNECT_TYPE, "jni");
-            properties.setProperty(TMQConstants.BOOTSTRAP_SERVERS, "127.0.0.1:6030");
-            properties.setProperty(TMQConstants.CONNECT_USER, "root");
-            properties.setProperty(TMQConstants.CONNECT_PASS, "taosdata");
-            properties.setProperty(TMQConstants.MSG_WITH_TABLE_NAME, "true");
-            properties.setProperty(TMQConstants.ENABLE_AUTO_COMMIT, "true");
-            properties.setProperty(TMQConstants.AUTO_COMMIT_INTERVAL, "1000");
-            properties.setProperty(TMQConstants.GROUP_ID, "test1");
-            properties.setProperty(TMQConstants.CLIENT_ID, "1");
-            properties.setProperty(TMQConstants.AUTO_OFFSET_RESET, "earliest");
-            properties.setProperty(TMQConstants.VALUE_DESERIALIZER,
-                    "com.taos.example.MetersDeserializer");
-            properties.setProperty(TMQConstants.VALUE_DESERIALIZER_ENCODING, "UTF-8");
-
-            // poll data
-            try (TaosConsumer<Meters> consumer = new TaosConsumer<>(properties)) {
-                consumer.subscribe(Collections.singletonList(TOPIC));
-                while (!shutdown.get()) {
-                    ConsumerRecords<Meters> meters = consumer.poll(Duration.ofMillis(100));
-                    for (ConsumerRecord<Meters> r : meters) {
-                        Meters meter = r.value();
-                        System.out.println(meter);
-                    }
+            properties.setProperty(TSDBDriver.PROPERTY_KEY_CHARSET, "UTF-8");
+            properties.setProperty(TSDBDriver.PROPERTY_KEY_TIME_ZONE, "UTC-8");
+            String jdbcUrl = "jdbc:TAOS://127.0.0.1:6030/power?user=root&password=taosdata";
+            connection = DriverManager.getConnection(jdbcUrl, properties);
+            // create subscribe
+            subscribe = ((TSDBConnection) connection).subscribe(topic, sql, true); 
+            int count = 0;
+            while (count < 10) {
+                // wait 1 second to avoid frequent calls to consume
+                TimeUnit.SECONDS.sleep(1); 
+                // consume
+                TSDBResultSet resultSet = subscribe.consume();
+                if (resultSet == null) {
+                    continue;
                 }
-                consumer.unsubscribe();
+                ResultSetMetaData metaData = resultSet.getMetaData();
+                while (resultSet.next()) {
+                    int columnCount = metaData.getColumnCount();
+                    for (int i = 1; i <= columnCount; i++) {
+                        System.out.print(metaData.getColumnLabel(i) + ": " + resultSet.getString(i) + "\t");
+                    }
+                    System.out.println();
+                    count++;
+                }
             }
-        } catch (ClassNotFoundException | SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            try {
+                if (null != subscribe)
+                    // close subscribe
+                    subscribe.close(true);
+                if (connection != null)
+                    connection.close();
+            } catch (SQLException throwable) {
+                throwable.printStackTrace();
+            }
         }
-        timer.cancel();
     }
 }

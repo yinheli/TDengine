@@ -1,6 +1,5 @@
 ---
 title: Data Import
-description: This document describes how to import data into TDengine.
 ---
 
 There are multiple ways of importing data provided by TDengine: import with script, import from data file, import using `taosdump`.
@@ -59,4 +58,4 @@ Query OK, 9 row(s) affected (0.004763s)
 
 ## Import using taosdump
 
-A convenient tool for importing and exporting data is provided by TDengine, `taosdump`, which can be used to export data from one TDengine cluster and import into another one. For the details of using `taosdump` please refer to the taosdump documentation.
+A convenient tool for importing and exporting data is provided by TDengine, `taosdump`, which can be used to export data from one TDengine cluster and import into another one. For the details of using `taosdump` please refer to [Tool for exporting and importing data: taosdump](../../reference/taosdump).

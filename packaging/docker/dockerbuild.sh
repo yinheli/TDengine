@@ -5,7 +5,7 @@ set -e
 #set -x
 
 # dockerbuild.sh 
-#             -c [aarch32 | aarch64 | amd64 | x86 | mips64 | loongarch64...]
+#             -c [aarch32 | aarch64 | amd64 | x86 | mips64 ...]  
 #             -n [version number]
 #             -p [password for docker hub]
 #             -V [stable | beta]
@@ -19,9 +19,8 @@ passWord=""
 pkgFile=""
 verType="stable"
 dockerLatest="n"
-cloudBuild="n"
 
-while getopts "hc:n:p:f:V:a:b:d:" arg
+while getopts "hc:n:p:f:V:a:b:" arg
 do
   case $arg in
     c)
@@ -48,22 +47,17 @@ do
       #echo "verType=$OPTARG"
       verType=$(echo $OPTARG)
       ;;
-    d)
-      #echo "cloudBuild=$OPTARG"
-      cloudBuild=$(echo $OPTARG)
-      ;;
     a)
       #echo "dockerLatest=$OPTARG"
       dockerLatest=$(echo $OPTARG)
       ;;
     h)
-      echo "Usage: `basename $0`  -c [aarch32 | aarch64 | amd64 | x86 | mips64 | loongarch64...] "
+      echo "Usage: `basename $0`  -c [aarch32 | aarch64 | amd64 | x86 | mips64 ...] "
       echo "                      -n [version number] "
       echo "                      -p [password for docker hub] "
       echo "                      -V [stable | beta] "
       echo "                      -f [pkg file] "
       echo "                      -a [y | n ]   "
-      echo "                      -d [cloud build ] "
       exit 0
       ;;
     ?) #unknow option 
@@ -74,7 +68,7 @@ do
 done
 
 
-# Check_version()
+# Check_verison()
 # {
 # }
 
@@ -89,9 +83,6 @@ else
   echo "unknow verType, nor stabel or beta"
   exit 1
 fi
-if [ "$cloudBuild" == "y" ]; then
-  dockername=cloud-${dockername}
-fi
 
 
 echo "cpuType=${cpuType} version=${version} pkgFile=${pkgFile} verType=${verType} "
@@ -99,17 +90,12 @@ echo "$(pwd)"
 echo "====NOTES: ${pkgFile} must be in the same directory as dockerbuild.sh===="
 
 scriptDir=$(dirname $(readlink -f $0))
+comunityArchiveDir=/nas/TDengine/v$version/community   # community version’package directory
 communityDir=${scriptDir}/../../../community
 DockerfilePath=${communityDir}/packaging/docker/
-if [ "$cloudBuild" == "y" ]; then
-  communityArchiveDir=/nas/TDengine/v$version/cloud
-  Dockerfile=${communityDir}/packaging/docker/DockerfileCloud
-else
-  communityArchiveDir=/nas/TDengine/v$version/community
-  Dockerfile=${communityDir}/packaging/docker/Dockerfile
-fi
+Dockerfile=${communityDir}/packaging/docker/Dockerfile
 cd ${scriptDir}
-cp -f ${communityArchiveDir}/${pkgFile}  .
+cp -f ${comunityArchiveDir}/${pkgFile}  .
 
 echo "dirName=${dirName}"
 
@@ -123,27 +109,66 @@ else
     echo "Unknown cpuType: ${cpuType}"
     exit 1
 fi
-# check the tdengine cloud base image existed or not
-if [ "$cloudBuild" == "y" ]; then
-  CloudBase=$(docker images | grep tdengine/tdengine-cloud-base ||:)
-  if [[ "$CloudBase" == "" ]]; then
-    echo "Rebuild tdengine cloud base image..."
-    docker build --rm -f "${communityDir}/packaging/docker/DockerfileCloud.base" -t tdengine/tdengine-cloud-base "." --build-arg cpuType=${cpuTypeAlias}
-  else
-    echo "Already found tdengine cloud base image"
-  fi
-fi
 
 docker build --rm -f "${Dockerfile}"  --network=host -t tdengine/tdengine-${dockername}:${version} "." --build-arg pkgFile=${pkgFile} --build-arg dirName=${dirName} --build-arg cpuType=${cpuTypeAlias}
-if [ "$cloudBuild" != "y" ]; then
-  docker login -u tdengine -p ${passWord}  #replace the docker registry username and password
-  docker push tdengine/tdengine-${dockername}:${version}
+docker login -u tdengine -p ${passWord}  #replace the docker registry username and password
+docker push tdengine/tdengine-${dockername}:${version}
+
+if [ -n "$(docker ps -aq)" ] ;then 
+  echo "delete docker process"
+  docker stop $(docker ps -aq)
+  docker rm $(docker ps -aq)
 fi
+
+if [  -n "$(pidof taosd)" ] ;then
+   echo "kill taosd "
+   kill -9 $(pidof taosd)
+fi
+
+if [ -n "$(pidof power)" ]  ;then
+  echo "kill power "
+  kill -9 $(pidof power)
+fi
+
+
+echo ">>>>>>>>>>>>> check whether  tdengine/tdengine-${dockername}:${version}  has been published"
+docker run -d --name doctest -p 6030-6049:6030-6049 -p 6030-6049:6030-6049/udp  tdengine/tdengine-${dockername}:${version}
+sleep 2
+curl -u root:taosdata -d 'show variables;'  127.0.0.1:6041/rest/sql > temp1.data
+data_version=$( cat temp1.data |jq .data| jq '.[]' |grep "version" -A 2 -B 1  | jq ".[1]")
+echo "${data_version}" 
+if [ "${data_version}" == "\"${version}\"" ] ; then
+    echo  "docker version is right "
+else
+    echo  "docker version is wrong "
+    exit 1
+fi
+rm -rf  temp1.data
 
 # set this version to latest version 
-if  [ "$cloudBuild" != "y" ] && [ ${dockerLatest} == 'y' ]  ;then
+if  [ ${dockerLatest} == 'y' ]  ;then
   docker tag tdengine/tdengine-${dockername}:${version} tdengine/tdengine-${dockername}:latest
   docker push tdengine/tdengine-${dockername}:latest
+  echo ">>>>>>>>>>>>> check whether  tdengine/tdengine-${dockername}:latest has been published correctly"
+  docker run -d --name doctestla -p 7030-7049:6030-6049 -p 7030-7049:6030-6049/udp   tdengine/tdengine-${dockername}:latest 
+  sleep 2
+  curl -u root:taosdata -d 'show variables;'  127.0.0.1:7041/rest/sql >  temp2.data
+  version_latest=` cat temp2.data |jq .data| jq '.[]' |grep "version" -A 2 -B 1  | jq ".[1]" `
+  echo "${version_latest}" 
+  if [ "${version_latest}" == "\"${version}\"" ] ; then
+      echo  "docker version is right "
+  else 
+      echo  "docker version is wrong "
+      exit 1 
+  fi
+fi
+rm -rf  temp2.data
+
+if [ -n "$(docker ps -aq)" ] ;then 
+  echo "delte docker process"
+  docker stop $(docker ps -aq)
+  docker rm $(docker ps -aq)
 fi
 
+cd ${scriptDir}
 rm -f ${pkgFile}

@@ -1,0 +1,3547 @@
+---
+title: 错误码
+description: "TDengine 的错误码"
+---
+
+<table>
+    <thead style={{fontWeight: 'bold'}}>
+        <tr>
+        <td>模块</td>
+        <td>错误</td>
+        <td>错误代码</td>
+        <td>说明</td>
+        <td>可能原因</td>
+        <td>建议操作</td>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>RPC</td>
+            <td>TSDB_CODE_RPC_NETWORK_UNAVAIL</td>
+            <td>0x8000000B</td>
+            <td>无法正常收发请求</td>
+            <td>网络不通多次重试、依然不能执行REQ</td>
+            <td>检查网络 分析日志，具体原因比较复杂</td>
+        </tr>
+        <tr>
+            <td>RPC</td>
+            <td>TSDB_CODE_TIME_UNSYNCED</td>
+            <td>0x80000013</td>
+            <td>客户端和服务端之间的时间相差太大, 默认900s </td>
+            <td>客户端和服务端不在同一个时区客户端和服务端在同一个时区，但是两者的时间不同步、相差太大</td>
+            <td>调整到同一个时区校准客户端和服务端的时间</td>
+        </tr>
+        <tr>
+            <td>RPC</td>
+            <td>TSDB_CODE_RPC_FQDN_ERROR</td>
+            <td>0x80000015</td>
+            <td>无法解析FQDN</td>
+            <td> 设置了无效的fqdn </td>
+            <td>检查fqdn 的设置</td>
+        </tr>
+        <tr>
+            <td>RPC</td>
+            <td>TSDB_CODE_RPC_PORT_EADDRINUSE</td>
+            <td>0x80000017</td>
+            <td>当前端口被占用</td>
+            <td> 端口P已经被某个服务占用的情况下，新启的服务依然尝试绑定端口P</td>
+            <td>改动新服务的服务端口杀死之前占用端口的服务</td>
+        </tr>
+        <tr>
+            <td>RPC</td>
+            <td>TSDB_CODE_RPC_BROKEN_LINK</td>
+            <td>0x80000018</td>
+            <td>由于网络抖动/ REQ 请求时间过长导致系统主动摘掉REQ 所使用的conn </td>
+            <td>网络抖动REQ 请求时间过长，大于900s </td>
+            <td>设置系统的最大超时时长检查REQ的请求时长 </td>
+        </tr>
+        <tr>
+            <td>RPC</td>
+            <td>TSDB_CODE_RPC_TIMEOUT </td>
+            <td>0x80000019</td>
+            <td>暂时没有用到这个错误码</td>
+            <td>-</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td>RPC</td>
+            <td>TSDB_CODE_RPC_SOMENODE_NOT_CONNECTED</td>
+            <td>0x80000020</td>
+            <td>多次重试之后，所有dnode 依然都链接不上</td>
+            <td>所有的节点都挂了有节点挂了，但是存活的节点都不是master 节点</td>
+            <td>查看taosd 的状态、分析taosd 挂掉的原因或者分析存活的taosd 为什么不是主</td>
+        </tr>
+        <tr>
+            <td>RPC</td>
+            <td>TSDB_CODE_RPC_SOMENODE_BROKEN_LINK</td>
+            <td>0x80000021</td>
+            <td>多次重试之后，所有dnode 依然都链接不上</td>
+            <td>网络异常req请求时间太长，服务端可能发生死锁等问题。系统自己断开了链接</td>
+            <td>检查网络检查req 的执行时间 </td>
+        </tr>
+        <tr>
+            <td>RPC</td>
+            <td>TSDB_CODE_RPC_MAX_SESSIONS</td>
+            <td>0x80000022</td>
+            <td>达到了可用链接上线。</td>
+            <td>并发太高、占用链接已经到达上线。服务端的BUG，导致conn 一直不释放， </td>
+            <td>提高tsNumOfRpcSessions这个值。 tsTimeToGetAvailableConn分析服务端不释放的conn 的原因</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_OPS_NOT_SUPPORT </td>
+            <td>0x80000100</td>
+            <td>Operation not supported</td>
+            <td>操作不被支持、不允许的场景</td>
+            <td>检查操作是否有误，确认该功能是否被支持</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_OUT_OF_MEMORY</td>
+            <td>0x80000102</td>
+            <td>Out of Memory</td>
+            <td>客户端或服务端内存分配失败的场景</td>
+            <td>检查客户端、服务端内存是否充足</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_FILE_CORRUPTED</td>
+            <td>0x80000104</td>
+            <td>Data file corrupted</td>
+            <td>存储数据文件损坏udf文件无法创建</td>
+            <td>联系涛思客户支持确认服务端对临时目录有读写创建文件权限</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_REF_FULL </td>
+            <td>0x80000106</td>
+            <td>too many Ref Objs</td>
+            <td>无可用ref资源</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_REF_ID_REMOVED </td>
+            <td>0x80000107</td>
+            <td>Ref ID is removed</td>
+            <td>引用的ref资源已经释放</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_REF_INVALID_ID </td>
+            <td>0x80000108</td>
+            <td>Invalid Ref ID</td>
+            <td>无效ref ID</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_REF_NOT_EXIST </td>
+            <td>0x8000010A</td>
+            <td>Ref is not there</td>
+            <td>ref信息不存在</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_APP_ERROR </td>
+            <td>0x80000110</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_ACTION_IN_PROGRESS</td>
+            <td>0x80000111</td>
+            <td>Action in progress</td>
+            <td>操作进行中</td>
+            <td>等待操作完成根据需要取消操作当超出合理时间仍然未完成可保留现场和日志，或联系客户支持</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_OUT_OF_RANGE</td>
+            <td>0x80000112</td>
+            <td>Out of range</td>
+            <td>配置参数超出允许值范围</td>
+            <td>更改参数</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_INVALID_MSG</td>
+            <td>0x80000115</td>
+            <td>Invalid message</td>
+            <td>消息错误</td>
+            <td>检查是否存在节点间版本不一致保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_INVALID_MSG_LEN</td>
+            <td>0x80000116</td>
+            <td>Invalid message len</td>
+            <td>消息长度错误</td>
+            <td>检查是否存在节点间版本不一致保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_INVALID_PTR</td>
+            <td>0x80000117</td>
+            <td>Invalid pointer</td>
+            <td>无效指针</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_INVALID_PARA</td>
+            <td>0x80000118</td>
+            <td>Invalid parameters</td>
+            <td>无效参数</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_INVALID_CFG</td>
+            <td>0x80000119</td>
+            <td>Invalid config option</td>
+            <td>无效配置</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_INVALID_OPTION</td>
+            <td>0x8000011A</td>
+            <td>Invalid option</td>
+            <td>无效选项</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_INVALID_JSON_FORMAT</td>
+            <td>0x8000011B</td>
+            <td>Invalid json format</td>
+            <td>JSON格式错误</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_INVALID_VERSION_NUMBER</td>
+            <td>0x8000011C</td>
+            <td>Invalid version number</td>
+            <td>无效版本格式</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_INVALID_VERSION_STRING</td>
+            <td>0x8000011D</td>
+            <td>Invalid version string</td>
+            <td>无效版本格式</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_VERSION_NOT_COMPATIBLE</td>
+            <td>0x8000011E</td>
+            <td>Version not compatible</td>
+            <td>节点间版本不兼容</td>
+            <td>检查各节点版本（包括服务端与客户端），确保节点间版本一致或兼容</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_CHECKSUM_ERROR</td>
+            <td>0x8000011F</td>
+            <td>Checksum error</td>
+            <td>文件checksum校验失败</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_COMPRESS_ERROR</td>
+            <td>0x80000120</td>
+            <td>Failed to compress msg</td>
+            <td>压缩失败</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_MSG_NOT_PROCESSED</td>
+            <td>0x80000121</td>
+            <td>Message not processed</td>
+            <td>消息未被正确处理</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_CFG_NOT_FOUND</td>
+            <td>0x80000122</td>
+            <td>Config not found</td>
+            <td>未找到配置项</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_REPEAT_INIT</td>
+            <td>0x80000123</td>
+            <td>Repeat initialization</td>
+            <td>重复初始化</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_DUP_KEY</td>
+            <td>0x80000124</td>
+            <td>Cannot add duplicate keys to hash</td>
+            <td>添加重复key数据到哈希表中</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_NEED_RETRY</td>
+            <td>0x80000125</td>
+            <td>Retry needed</td>
+            <td>需要应用进行重试</td>
+            <td>应用按照API使用规范进行重试</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_OUT_OF_RPC_MEMORY_QUEUE</td>
+            <td>0x80000126</td>
+            <td>Out of memory in rpc queue</td>
+            <td>rpc消息队列内存使用达到上限</td>
+            <td>检查确认系统负载是否过大（如必要）通过配置rpcQueueMemoryAllowed增大rpc消息队列内存上限如果问题还未解决，保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_INVALID_TIMESTAMP</td>
+            <td>0x80000127</td>
+            <td>Invalid timestamp format</td>
+            <td>时间戳格式错误</td>
+            <td>检查并确认输入的时间戳格式正确</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_MSG_DECODE_ERROR</td>
+            <td>0x80000128</td>
+            <td>Msg decode error</td>
+            <td>消息解码错误</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_NOT_FOUND</td>
+            <td>0x8000012A</td>
+            <td>Not found</td>
+            <td>未找到内部缓存信息</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_NO_DISKSPACE</td>
+            <td>0x8000012B</td>
+            <td>Out of disk space</td>
+            <td>磁盘空间不足</td>
+            <td>检查并确保数据目录、临时文件夹目录有足够磁盘空间定期检查维护上述目录，确保空间足够</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_APP_IS_STARTING</td>
+            <td>0x80000130</td>
+            <td>Database is starting up</td>
+            <td>数据库启动中，暂无法提供服务</td>
+            <td>检查数据库状态，待系统完成启动后继续或重试</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_APP_IS_STOPPING</td>
+            <td>0x80000131</td>
+            <td>Database is closing down</td>
+            <td>数据库正在或已经关闭，无法提供服务</td>
+            <td>检查数据库状态，确保系统工作在正常状态</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_INVALID_DATA_FMT</td>
+            <td>0x80000132</td>
+            <td>Invalid data format</td>
+            <td>数据格式错误</td>
+            <td>保留现场和日志，github上报issue联系涛思客户支持</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_INVALID_OPERATION</td>
+            <td>0x80000133</td>
+            <td>Invalid operation</td>
+            <td>无效的或不支持的操作</td>
+            <td>修改确认当前操作为合法有效支持的操作，检查参数有效性如果问题还未解决，保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_INVALID_VALUE</td>
+            <td>0x80000134</td>
+            <td>Invalid value</td>
+            <td>无效值</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>common</td>
+            <td>TSDB_CODE_INVALID_FQDN</td>
+            <td>0x80000135</td>
+            <td>Invalid fqdn</td>
+            <td>无效FQDN</td>
+            <td>检查配置或输入的FQDN值是否正确</td>
+        </tr>
+        <tr>
+            <td>tsc</td>
+            <td>TSDB_CODE_TSC_INVALID_USER_LENGTH</td>
+            <td>0x80000207</td>
+            <td>Invalid user name</td>
+            <td>数据库用户名不合法</td>
+            <td>检查数据库用户名是否正确</td>
+        </tr>
+        <tr>
+            <td>tsc</td>
+            <td>TSDB_CODE_TSC_INVALID_PASS_LENGTH</td>
+            <td>0x80000208</td>
+            <td>Invalid password</td>
+            <td>数据库密码不合法</td>
+            <td>检查数据库密码是否正确</td>
+        </tr>
+        <tr>
+            <td>tsc</td>
+            <td>TSDB_CODE_TSC_INVALID_DB_LENGTH</td>
+            <td>0x80000209</td>
+            <td>Database name too long</td>
+            <td>数据库名称不合法</td>
+            <td>检查数据库名称是否正确</td>
+        </tr>
+        <tr>
+            <td>tsc</td>
+            <td>TSDB_CODE_TSC_INVALID_TABLE_ID_LENGTH</td>
+            <td>0x8000020A</td>
+            <td>Table name too long</td>
+            <td>表名不合法</td>
+            <td>检查表名是否正确</td>
+        </tr>
+        <tr>
+            <td>tsc</td>
+            <td>TSDB_CODE_TSC_QUERY_CANCELLED</td>
+            <td>0x8000020F</td>
+            <td>Query terminated</td>
+            <td>查询被中止</td>
+            <td>检查是否有用户中止了查询</td>
+        </tr>
+        <tr>
+            <td>tsc</td>
+            <td>TSDB_CODE_TSC_DISCONNECTED</td>
+            <td>0x80000213</td>
+            <td>Disconnected from server</td>
+            <td>连接已中断</td>
+            <td>检查连接是否被人为中断或客户端正在退出</td>
+        </tr>
+        <tr>
+            <td>tsc</td>
+            <td>TSDB_CODE_TSC_SQL_SYNTAX_ERROR</td>
+            <td>0x80000216</td>
+            <td>Syntax error in SQL</td>
+            <td>SQL语法错误</td>
+            <td>检查SQL语句并修正错误</td>
+        </tr>
+        <tr>
+            <td>tsc</td>
+            <td>TSDB_CODE_TSC_EXCEED_SQL_LIMIT</td>
+            <td>0x80000219</td>
+            <td>SQL statement too long</td>
+            <td>SQL长度超出限制</td>
+            <td>检查SQL语句并修正错误</td>
+        </tr>
+        <tr>
+            <td>tsc</td>
+            <td>TSDB_CODE_TSC_FILE_EMPTY</td>
+            <td>0x8000021A</td>
+            <td>File is empty</td>
+            <td>文件内容为空</td>
+            <td>检查输入文件内容</td>
+        </tr>
+        <tr>
+            <td>tsc</td>
+            <td>TSDB_CODE_TSC_INVALID_COLUMN_LENGTH</td>
+            <td>0x8000021F</td>
+            <td>Invalid column length</td>
+            <td>列长度错误</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>tsc</td>
+            <td>TSDB_CODE_TSC_INVALID_JSON_TYPE</td>
+            <td>0x80000222</td>
+            <td>Invalid JSON data type</td>
+            <td>JSON数据类型错误</td>
+            <td>检查输入JSON内容</td>
+        </tr>
+        <tr>
+            <td>tsc</td>
+            <td>TSDB_CODE_TSC_VALUE_OUT_OF_RANGE</td>
+            <td>0x80000224</td>
+            <td>Value out of range</td>
+            <td>数据大小超过类型范围</td>
+            <td>检查输入的数据值</td>
+        </tr>
+        <tr>
+            <td>tsc</td>
+            <td>TSDB_CODE_TSC_INVALID_INPUT</td>
+            <td>0x80000229</td>
+            <td>Invalid tsc input</td>
+            <td>API输入错误</td>
+            <td>检查应用调用API时传递的参数</td>
+        </tr>
+        <tr>
+            <td>tsc</td>
+            <td>TSDB_CODE_TSC_STMT_API_ERROR</td>
+            <td>0x8000022A</td>
+            <td>Stmt API usage error</td>
+            <td>STMT API使用错误</td>
+            <td>检查STMT API调用的顺序、适用场景、错误处理</td>
+        </tr>
+        <tr>
+            <td>tsc</td>
+            <td>TSDB_CODE_TSC_STMT_TBNAME_ERROR</td>
+            <td>0x8000022B</td>
+            <td>Stmt table name not set</td>
+            <td>STMT未正确设置table name</td>
+            <td>检查是否调用了设置table name接口</td>
+        </tr>
+        <tr>
+            <td>tsc</td>
+            <td>TSDB_CODE_TSC_QUERY_KILLED</td>
+            <td>0x8000022D</td>
+            <td>Query killed</td>
+            <td>查询被中止</td>
+            <td>检查是否有用户中止了查询</td>
+        </tr>
+        <tr>
+            <td>tsc</td>
+            <td>TSDB_CODE_TSC_NO_EXEC_NODE</td>
+            <td>0x8000022E</td>
+            <td>No available execution node</td>
+            <td>没有可用的查询执行节点</td>
+            <td>检查当前query policy配置，如果需要有Qnode参与确保系统中存在可用的Qnode节点</td>
+        </tr>
+        <tr>
+            <td>tsc</td>
+            <td>TSDB_CODE_TSC_NOT_STABLE_ERROR</td>
+            <td>0x8000022F</td>
+            <td>Table is not a super table</td>
+            <td>当前语句中的表名不是超级表</td>
+            <td>检查当前语句中所用表名是否是超级表</td>
+        </tr>
+        <tr>
+            <td>tsc</td>
+            <td>TSDB_CODE_TSC_STMT_CACHE_ERROR</td>
+            <td>0x80000230</td>
+            <td>Stmt cache error</td>
+            <td>STMT内部缓存出错</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>tsc</td>
+            <td>TSDB_CODE_TSC_INTERNAL_ERROR</td>
+            <td>0x80000231</td>
+            <td>Tsc internal error</td>
+            <td>TSC内部错误</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_NO_RIGHTS </td>
+            <td>0x0303</td>
+            <td>Insufficient privilege for operation</td>
+            <td>无权限</td>
+            <td>赋权</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_SHOWOBJ </td>
+            <td>0x030B</td>
+            <td>Data expired</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_QUERY_ID </td>
+            <td>0x030C</td>
+            <td>Invalid query id</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_CONN_ID</td>
+            <td>0x030E</td>
+            <td>Invalid connection id</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_USER_DISABLED </td>
+            <td>0x0315</td>
+            <td>User is disabled</td>
+            <td>该用户不可用</td>
+            <td>赋权</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_SDB_OBJ_ALREADY_THERE </td>
+            <td>0x0320</td>
+            <td>Object already there</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_SDB_INVALID_TABLE_TYPE </td>
+            <td>0x0322</td>
+            <td>Invalid table type</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_SDB_OBJ_NOT_THERE </td>
+            <td>0x0323</td>
+            <td>Object not there</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_SDB_INVALID_ACTION_TYPE </td>
+            <td>0x0326</td>
+            <td>Invalid action type</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_SDB_INVALID_DATA_VER </td>
+            <td>0x0328</td>
+            <td>Invalid raw data version</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_SDB_INVALID_DATA_LEN </td>
+            <td>0x0329</td>
+            <td>Invalid raw data len</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_SDB_INVALID_DATA_CONTENT </td>
+            <td>0x032A</td>
+            <td>Invalid raw data content</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_SDB_OBJ_CREATING </td>
+            <td>0x032C</td>
+            <td>Object is creating</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_SDB_OBJ_DROPPING </td>
+            <td>0x032D</td>
+            <td>Object is dropping</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_DNODE_ALREADY_EXIST </td>
+            <td>0x0330</td>
+            <td>Dnode already exists</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_DNODE_NOT_EXIST </td>
+            <td>0x0331</td>
+            <td>Dnode does not exist</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_VGROUP_NOT_EXIST </td>
+            <td>0x0332</td>
+            <td>Vgroup does not exist</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_CANT_DROP_LEADER </td>
+            <td>0x0333</td>
+            <td>Cannot drop mnode which is leader</td>
+            <td>操作节点为leader</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_NO_ENOUGH_DNODES </td>
+            <td>0x0334</td>
+            <td>Out of dnodes</td>
+            <td>dnode节点数量不够</td>
+            <td>增加dnode节点</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_CLUSTER_CFG </td>
+            <td>0x0335</td>
+            <td>Cluster cfg inconsistent</td>
+            <td>配置不一致</td>
+            <td>检查dnode节点与mnode节点配置是否一致。检查方式：1.节点启动时，在日志中输出2.使用show variables</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_VGROUP_NOT_IN_DNODE </td>
+            <td>0x0338</td>
+            <td>Vgroup not in dnode</td>
+            <td>Not used</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_VGROUP_ALREADY_IN_DNODE</td>
+            <td>0x0339</td>
+            <td>Vgroup already in dnode</td>
+            <td>Not used</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_CLUSTER_ID </td>
+            <td>0x033B</td>
+            <td>Cluster id not match</td>
+            <td>节点配置数据不一致</td>
+            <td>检查各节点data/dnode/dnodes.json文件中的clusterid</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_ACCT_ALREADY_EXIST </td>
+            <td>0x0340</td>
+            <td>Account already exists</td>
+            <td>（仅企业版）内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_ACCT_OPTION</td>
+            <td>0x0342</td>
+            <td>Invalid account options</td>
+            <td>（仅企业版）操作不zh</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_ACCT_EXPIRED </td>
+            <td>0x0343</td>
+            <td>Account authorization has expired</td>
+            <td>Not used</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_ACCT_NOT_EXIST </td>
+            <td>0x0344</td>
+            <td>Invalid account</td>
+            <td>账户不存在</td>
+            <td>确认账户是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_TOO_MANY_ACCTS </td>
+            <td>0x0345</td>
+            <td>Too many accounts</td>
+            <td>Not used</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_USER_ALREADY_EXIST </td>
+            <td>0x0350</td>
+            <td>User already exists</td>
+            <td>Create user, 重复创建</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_USER_NOT_EXIST </td>
+            <td>0x0351</td>
+            <td>Invalid user</td>
+            <td>用户不存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_USER_FORMAT</td>
+            <td>0x0352</td>
+            <td>Invalid user format</td>
+            <td>格式不正确</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_PASS_FORMAT</td>
+            <td>0x0353</td>
+            <td>Invalid password format</td>
+            <td>格式不正确</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_NO_USER_FROM_CONN </td>
+            <td>0x0354</td>
+            <td>Can not get user from conn</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_TOO_MANY_USERS </td>
+            <td>0x0355</td>
+            <td>Too many users</td>
+            <td>（仅企业版）用户数量超限</td>
+            <td>调整配置</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>v</td>
+            <td>0x0356</td>
+            <td>Invalid alter operation</td>
+            <td>Not used</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_AUTH_FAILURE </td>
+            <td>0x0357</td>
+            <td>Authentication failure</td>
+            <td>密码不正确</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_USER_NOT_AVAILABLE </td>
+            <td>0x0358</td>
+            <td>User not available</td>
+            <td>用户不存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_STB_ALREADY_EXIST </td>
+            <td>0x0360</td>
+            <td>STable already exists</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_STB_NOT_EXIST </td>
+            <td>0x0361</td>
+            <td>STable not exist</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_TOO_MANY_TAGS </td>
+            <td>0x0364</td>
+            <td>Too many tags</td>
+            <td>tag数量太多</td>
+            <td>不能修改，代码级别限制</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_TOO_MANY_COLUMNS </td>
+            <td>0x0365</td>
+            <td>Too many columns</td>
+            <td>columns数量太多</td>
+            <td>不能修改，代码级别限制</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_TAG_ALREADY_EXIST </td>
+            <td>0x0369</td>
+            <td>Tag already exists</td>
+            <td>tag已存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_TAG_NOT_EXIST </td>
+            <td>0x036A</td>
+            <td>Tag does not exist</td>
+            <td>tag不存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_COLUMN_ALREADY_EXIST</td>
+            <td>0x036B</td>
+            <td>Column already exists</td>
+            <td>Column 已存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_COLUMN_NOT_EXIST </td>
+            <td>0x036C</td>
+            <td>Column does not exist</td>
+            <td>Column 不存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_STB_OPTION </td>
+            <td>0x036E</td>
+            <td>Invalid stable options</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_ROW_BYTES </td>
+            <td>0x036F</td>
+            <td>Invalid row bytes</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_FUNC_NAME </td>
+            <td>0x0370</td>
+            <td>Invalid func name</td>
+            <td>name长度错误</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_FUNC_CODE </td>
+            <td>0x0372</td>
+            <td>Invalid func code</td>
+            <td>code长度错误</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_FUNC_ALREADY_EXIST </td>
+            <td>0x0373</td>
+            <td>Func already exists</td>
+            <td>Func已存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_FUNC_NOT_EXIST </td>
+            <td>0x0374</td>
+            <td>Func not exists</td>
+            <td>Func不存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_FUNC_BUFSIZE </td>
+            <td>0x0375</td>
+            <td>Invalid func bufSize</td>
+            <td>bufSize长度错误，或者超过限制</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_FUNC_COMMENT </td>
+            <td>0x0378</td>
+            <td>Invalid func comment</td>
+            <td>长度错误，或者超过限制</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_FUNC_RETRIEVE</td>
+            <td>0x0379</td>
+            <td>Invalid func retrieve msg</td>
+            <td>长度错误，或者超过限制</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_DB_NOT_SELECTED </td>
+            <td>0x0380</td>
+            <td>Database not specified or available</td>
+            <td>未指定database</td>
+            <td>使用 use database;</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_DB_ALREADY_EXIST </td>
+            <td>0x0381</td>
+            <td>Database already exists</td>
+            <td>Database已存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_DB_OPTION </td>
+            <td>0x0382</td>
+            <td>Invalid database options</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_DB </td>
+            <td>0x0383</td>
+            <td>Invalid database name</td>
+            <td>长度错误</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_TOO_MANY_DATABASES </td>
+            <td>0x0385</td>
+            <td>Too many databases for account</td>
+            <td>数量超限</td>
+            <td>调整配置</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_DB_IN_DROPPING </td>
+            <td>0x0386</td>
+            <td>Database in dropping status</td>
+            <td>数据库正在被删除</td>
+            <td>重试，长时间保持该状态上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_DB_NOT_EXIST </td>
+            <td>0x0388</td>
+            <td>Database not exist</td>
+            <td>不存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_DB_ACCT </td>
+            <td>0x0389</td>
+            <td>Invalid database account</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_DB_OPTION_UNCHANGED </td>
+            <td>0x038A</td>
+            <td>Database options not changed</td>
+            <td>操作无变化</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_DB_INDEX_NOT_EXIST </td>
+            <td>0x038B</td>
+            <td>Index not exist</td>
+            <td>不存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_DB_IN_CREATING </td>
+            <td>0x0396</td>
+            <td>Database in creating status</td>
+            <td>数据库正在被创建</td>
+            <td>重试</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_SYS_TABLENAME</td>
+            <td>0x039A</td>
+            <td>Invalid system table name</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_MNODE_ALREADY_EXIST </td>
+            <td>0x03A0</td>
+            <td>Mnode already exists</td>
+            <td>已存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_MNODE_NOT_EXIST </td>
+            <td>0x03A1</td>
+            <td>Mnode not there</td>
+            <td>已存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_QNODE_ALREADY_EXIST </td>
+            <td>0x03A2</td>
+            <td>Qnode already exists</td>
+            <td>已存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_QNODE_NOT_EXIST </td>
+            <td>0x03A3</td>
+            <td>Qnode not there</td>
+            <td>不存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_SNODE_ALREADY_EXIST </td>
+            <td>0x03A4</td>
+            <td>Snode already exists</td>
+            <td>已存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_SNODE_NOT_EXIST </td>
+            <td>0x03A5</td>
+            <td>Snode not there</td>
+            <td>不存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_BNODE_ALREADY_EXIST </td>
+            <td>0x03A6</td>
+            <td>-</td>
+            <td>Not used</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_BNODE_NOT_EXIST </td>
+            <td>0x03A7</td>
+            <td>-</td>
+            <td>Not used</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_TOO_FEW_MNODES </td>
+            <td>0x03A8</td>
+            <td>The replica of mnode cannot less than 1</td>
+            <td>mnode少于1</td>
+            <td>操作不允许</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_TOO_MANY_MNODES </td>
+            <td>0x03A9</td>
+            <td>The replica of mnode cannot exceed 3</td>
+            <td>mnode多于1</td>
+            <td>操作不允许</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_TOO_MANY_DNODES </td>
+            <td>0x03B0</td>
+            <td>Too many dnodes</td>
+            <td>Not used</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_NO_ENOUGH_MEM_IN_DNODE</td>
+            <td>0x03B1</td>
+            <td>No enough memory in dnode</td>
+            <td>内存不足</td>
+            <td>调整配置</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_DNODE_CFG </td>
+            <td>0x03B2</td>
+            <td>Invalid dnode cfg</td>
+            <td>Not used</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_DNODE_EP </td>
+            <td>0x03B3</td>
+            <td>Invalid dnode end point</td>
+            <td>ep配置不正确</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_DNODE_ID </td>
+            <td>0x03B4</td>
+            <td>Invalid dnode id</td>
+            <td>Not used</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_VGROUP_UN_CHANGED </td>
+            <td>0x03B5</td>
+            <td>Vgroup distribution has not changed</td>
+            <td>Not used</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_HAS_OFFLINE_DNODE </td>
+            <td>0x03B6</td>
+            <td>Offline dnode exists</td>
+            <td>Dnode offline</td>
+            <td>检查节点状态</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_REPLICA </td>
+            <td>0x03B7</td>
+            <td>Invalid vgroup replica</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_DNODE_IN_CREATING </td>
+            <td>0x03B8</td>
+            <td>Dnode in creating status</td>
+            <td>正在创建</td>
+            <td>重试</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_DNODE_IN_DROPPING </td>
+            <td>0x03B9</td>
+            <td>Dnode in dropping status</td>
+            <td>正在删除</td>
+            <td>重试</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_NAME_CONFLICT_WITH_TOPIC </td>
+            <td>0x03C0</td>
+            <td>STable confilct with topic</td>
+            <td>Not used</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_TOO_MANY_STBS </td>
+            <td>0x03C1</td>
+            <td>Too many stables</td>
+            <td>Not used</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_STB_ALTER_OPTION </td>
+            <td>0x03C2</td>
+            <td>Invalid stable alter options</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_STB_OPTION_UNCHNAGED </td>
+            <td>0x03C3</td>
+            <td>STable option unchanged</td>
+            <td>操作无变化</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_FIELD_CONFLICT_WITH_TOPIC</td>
+            <td>0x03C4</td>
+            <td>Field used by topic</td>
+            <td>被使用</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_SINGLE_STB_MODE_DB </td>
+            <td>0x03C5</td>
+            <td>Database is single stable mode</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_SCHEMA_VER </td>
+            <td>0x03C6</td>
+            <td>Invalid schema version while alter stb</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_STABLE_UID_NOT_MATCH </td>
+            <td>0x03C7</td>
+            <td>Invalid stable uid while alter stb</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_FIELD_CONFLICT_WITH_TSMA</td>
+            <td>0x03C8</td>
+            <td>Field used by tsma</td>
+            <td>被使用</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_TRANS_ALREADY_EXIST </td>
+            <td>0x03D0</td>
+            <td>Transaction already exists</td>
+            <td>Not used</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_TRANS_NOT_EXIST </td>
+            <td>0x03D1</td>
+            <td>Transaction not exists</td>
+            <td>不存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_TRANS_INVALID_STAGE </td>
+            <td>0x03D2</td>
+            <td>Invalid stage to kill</td>
+            <td>事务处在不能被kill的节点（比如 在commit阶段）</td>
+            <td>等待事务结束，如长时间不结束，上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_TRANS_CONFLICT </td>
+            <td>0x03D3</td>
+            <td>Conflict transaction not completed</td>
+            <td>事务冲突，不能执行该操作</td>
+            <td>使用show transactions命令查看冲突的事务，等待冲突事务结束，如长时间不结束，上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_TRANS_CLOG_IS_NULL </td>
+            <td>0x03D4</td>
+            <td>Transaction commitlog is null</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_TRANS_NETWORK_UNAVAILL </td>
+            <td>0x03D5</td>
+            <td>Unable to establish connection While execute transaction and will continue in the background</td>
+            <td>网络错误</td>
+            <td>检查网络是否正常</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_LAST_TRANS_NOT_FINISHED </td>
+            <td>0x03D6</td>
+            <td>Last Transaction not finished</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_TRNAS_SYNC_TIMEOUT </td>
+            <td>0x03D7</td>
+            <td>Sync timeout While execute transaction and will continue in the background</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_TRANS_UNKNOW_ERROR </td>
+            <td>0x03DF</td>
+            <td>Unknown transaction error</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_TOPIC_ALREADY_EXIST </td>
+            <td>0x03E0</td>
+            <td>Topic already exists</td>
+            <td>已存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_TOPIC_NOT_EXIST </td>
+            <td>0x03E1</td>
+            <td>Topic not exist</td>
+            <td>不存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_TOO_MANY_TOPICS </td>
+            <td>0x03E2</td>
+            <td>Too many Topics</td>
+            <td>Not used</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_TOPIC </td>
+            <td>0x03E3</td>
+            <td>Invalid topic</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_TOPIC_QUERY </td>
+            <td>0x03E4</td>
+            <td>Topic with invalid query</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_TOPIC_OPTION </td>
+            <td>0x03E5</td>
+            <td>Topic with invalid option</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_CONSUMER_NOT_EXIST </td>
+            <td>0x03E6</td>
+            <td>Consumer not exist</td>
+            <td>不存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_TOPIC_OPTION_UNCHNAGED</td>
+            <td>0x03E7</td>
+            <td>Topic unchanged</td>
+            <td>无变化</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_SUBSCRIBE_NOT_EXIST </td>
+            <td>0x03E8</td>
+            <td>Subcribe not exist</td>
+            <td>不存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_OFFSET_NOT_EXIST </td>
+            <td>0x03E9</td>
+            <td>Offset not exist</td>
+            <td>不存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_CONSUMER_NOT_READY </td>
+            <td>0x03EA</td>
+            <td>Consumer not ready</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_TOPIC_SUBSCRIBED </td>
+            <td>0x03EB</td>
+            <td>Topic subscribed cannot be dropped</td>
+            <td>被使用</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_CGROUP_USED </td>
+            <td>0x03EC</td>
+            <td>Consumer group being used by some consumer</td>
+            <td>被使用</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_TOPIC_MUST_BE_DELETED </td>
+            <td>0x03ED</td>
+            <td>Topic must be dropped first</td>
+            <td>被使用</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_SUB_OPTION </td>
+            <td>0x03EE</td>
+            <td>Invalid subscribe option</td>
+            <td>内部错误</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_IN_REBALANCE </td>
+            <td>0x03EF</td>
+            <td>Topic being rebalanced</td>
+            <td>操作中</td>
+            <td>重试</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_STREAM_ALREADY_EXIST </td>
+            <td>0x03F0</td>
+            <td>Stream already exists</td>
+            <td>已存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_STREAM_NOT_EXIST </td>
+            <td>0x03F1</td>
+            <td>Stream not exist</td>
+            <td>不存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_STREAM_OPTION </td>
+            <td>0x03F2</td>
+            <td>Invalid stream option</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_STREAM_MUST_BE_DELETED</td>
+            <td>0x03F3</td>
+            <td>Stream must be dropped first</td>
+            <td>被使用</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_STREAM_TASK_DROPPED </td>
+            <td>0x03F4</td>
+            <td>-</td>
+            <td>Not used</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_MULTI_REPLICA_SOURCE_DB</td>
+            <td>0x03F5</td>
+            <td>Stream temporarily does not support source db having replica > 1</td>
+            <td>超过限制</td>
+            <td>操作不被允许</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_TOO_MANY_STREAMS </td>
+            <td>0x03F6</td>
+            <td>Too many streams</td>
+            <td>超过限制</td>
+            <td>不能修改，代码级别限制</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_TARGET_TABLE </td>
+            <td>0x03F7</td>
+            <td>Cannot write the same stable as other stream</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_SMA_ALREADY_EXIST </td>
+            <td>0x0480</td>
+            <td>index already exists</td>
+            <td>已存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_SMA_NOT_EXIST </td>
+            <td>0x0481</td>
+            <td>index not exist</td>
+            <td>不存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_INVALID_SMA_OPTION </td>
+            <td>0x0482</td>
+            <td>Invalid sma index option</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_TAG_INDEX_ALREADY_EXIST</td>
+            <td>0x0483</td>
+            <td>index already exists</td>
+            <td>已存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>mnode</td>
+            <td>TSDB_CODE_MND_TAG_INDEX_NOT_EXIST </td>
+            <td>0x0484</td>
+            <td>index not exist</td>
+            <td>不存在</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>dnode</td>
+            <td>TSDB_CODE_DNODE_OFFLINE </td>
+            <td>0x0408</td>
+            <td>Dnode is offline</td>
+            <td>不在线</td>
+            <td>检查节点状态</td>
+        </tr>
+        <tr>
+            <td>dnode</td>
+            <td>TSDB_CODE_MNODE_ALREADY_DEPLOYED</td>
+            <td>0x0409</td>
+            <td>Mnode already deployed</td>
+            <td>已部署</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>dnode</td>
+            <td>TSDB_CODE_MNODE_NOT_FOUND </td>
+            <td>0x040A</td>
+            <td>Mnode not found</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>dnode</td>
+            <td>TSDB_CODE_MNODE_NOT_DEPLOYED </td>
+            <td>0x040B</td>
+            <td>Mnode not deployed</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>dnode</td>
+            <td>TSDB_CODE_QNODE_ALREADY_DEPLOYED</td>
+            <td>0x040C</td>
+            <td>Qnode already deployed</td>
+            <td>已部署</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>dnode</td>
+            <td>TSDB_CODE_QNODE_NOT_FOUND </td>
+            <td>0x040D</td>
+            <td>Qnode not found</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>dnode</td>
+            <td>TSDB_CODE_QNODE_NOT_DEPLOYED </td>
+            <td>0x040E</td>
+            <td>Qnode not deployed</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>dnode</td>
+            <td>TSDB_CODE_SNODE_ALREADY_DEPLOYED</td>
+            <td>0x040F</td>
+            <td>Snode already deployed</td>
+            <td>已部署</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>dnode</td>
+            <td>TSDB_CODE_SNODE_NOT_FOUND </td>
+            <td>0x0410</td>
+            <td>Snode not found</td>
+            <td>内部错误</td>
+            <td>上报issue</td>
+        </tr>
+        <tr>
+            <td>dnode</td>
+            <td>TSDB_CODE_SNODE_NOT_DEPLOYED </td>
+            <td>0x0411</td>
+            <td>Snode not deployed</td>
+            <td>已部署</td>
+            <td>确认操作是否正确</td>
+        </tr>
+        <tr>
+            <td>vnode</td>
+            <td>TSDB_CODE_VND_INVALID_VGROUP_ID </td>
+            <td>0x0503</td>
+            <td>Invalid vgroup ID</td>
+            <td>老客户端未更新 cache，内部错误</td>
+            <td>上报问题</td>
+        </tr>
+        <tr>
+            <td>vnode</td>
+            <td>TSDB_CODE_VND_NO_WRITE_AUTH </td>
+            <td>0x0512</td>
+            <td>No writing previlege</td>
+            <td>无写权限</td>
+            <td>寻求授权</td>
+        </tr>
+        <tr>
+            <td>vnode</td>
+            <td>TSDB_CODE_VND_NOT_EXIST </td>
+            <td>0x0520</td>
+            <td>Vnode does not exist</td>
+            <td>内部错误</td>
+            <td>上报问题</td>
+        </tr>
+        <tr>
+            <td>vnode</td>
+            <td>TSDB_CODE_VND_ALREADY_EXIST </td>
+            <td>0x0521</td>
+            <td>Vnode already exists</td>
+            <td>内部错误</td>
+            <td>上报问题</td>
+        </tr>
+        <tr>
+            <td>vnode</td>
+            <td>TSDB_CODE_VND_HASH_MISMATCH </td>
+            <td>0x0522</td>
+            <td>Hash value of table is not in the vnode hash range</td>
+            <td>表不属于 vnode</td>
+            <td>上报问题</td>
+        </tr>
+        <tr>
+            <td>vnode</td>
+            <td>TSDB_CODE_VND_INVALID_TABLE_ACTION</td>
+            <td>0x0524</td>
+            <td>Invalid table operation</td>
+            <td>表非法操作</td>
+            <td>上报问题</td>
+        </tr>
+        <tr>
+            <td>vnode</td>
+            <td>TSDB_CODE_VND_COL_ALREADY_EXISTS </td>
+            <td>0x0525</td>
+            <td>Column already exists</td>
+            <td>修改表是列已存在</td>
+            <td>上报问题</td>
+        </tr>
+        <tr>
+            <td>vnode</td>
+            <td>TSDB_CODE_VND_COL_NOT_EXISTS </td>
+            <td>0x0526</td>
+            <td>Column does not exists</td>
+            <td>修改表时，表不存在</td>
+            <td>上报问题</td>
+        </tr>
+        <tr>
+            <td>vnode</td>
+            <td>TSDB_CODE_VND_COL_SUBSCRIBED </td>
+            <td>0x0527</td>
+            <td>Column is subscribed</td>
+            <td>列被订阅，不能操作</td>
+            <td>上报问题</td>
+        </tr>
+        <tr>
+            <td>vnode</td>
+            <td>TSDB_CODE_VND_NO_AVAIL_BUFPOOL </td>
+            <td>0x0528</td>
+            <td>Not used</td>
+            <td>-</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td>vnode</td>
+            <td>TSDB_CODE_VND_STOPPED </td>
+            <td>0x0529</td>
+            <td>Vnode is stopped</td>
+            <td>Vnode 已经关闭</td>
+            <td>上报问题</td>
+        </tr>
+        <tr>
+            <td>vnode</td>
+            <td>TSDB_CODE_VND_DUP_REQUEST </td>
+            <td>0x0530</td>
+            <td>Duplicate write request</td>
+            <td>重复写入请求，内部错误</td>
+            <td>上报问题</td>
+        </tr>
+        <tr>
+            <td>vnode</td>
+            <td>TSDB_CODE_VND_QUERY_BUSY </td>
+            <td>0x0531</td>
+            <td>Vnode query is busy</td>
+            <td>查询忙碌</td>
+            <td>上报问题</td>
+        </tr>
+        <tr>
+            <td>tsdb</td>
+            <td>TSDB_CODE_TDB_INVALID_TABLE_ID </td>
+            <td>0x0600</td>
+            <td>Invalid table ID to write</td>
+            <td>写表不存在</td>
+            <td>重启客户端</td>
+        </tr>
+        <tr>
+            <td>tsdb</td>
+            <td>TSDB_CODE_TDB_INVALID_TABLE_TYPE </td>
+            <td>0x0601</td>
+            <td>Not used</td>
+            <td>N/A</td>
+            <td>N/A</td>
+        </tr>
+        <tr>
+            <td>tsdb</td>
+            <td>TSDB_CODE_TDB_IVD_TB_SCHEMA_VERSION </td>
+            <td>0x0602</td>
+            <td>Invalid table schema version</td>
+            <td>表的 schema 版本号过期，内部错误</td>
+            <td>无需处理，内部自动更新</td>
+        </tr>
+        <tr>
+            <td>tsdb</td>
+            <td>TSDB_CODE_TDB_TABLE_ALREADY_EXIST </td>
+            <td>0x0603</td>
+            <td>Table already exists</td>
+            <td>表已存在</td>
+            <td>上报问题</td>
+        </tr>
+        <tr>
+            <td>tsdb</td>
+            <td>TSDB_CODE_TDB_INVALID_CONFIG </td>
+            <td>0x0604</td>
+            <td>Invalid configuration</td>
+            <td>内部错误</td>
+            <td>上报问题</td>
+        </tr>
+        <tr>
+            <td>tsdb</td>
+            <td>TSDB_CODE_TDB_INIT_FAILED </td>
+            <td>0x0605</td>
+            <td>Init failed</td>
+            <td>启动失败</td>
+            <td>上报问题</td>
+        </tr>
+        <tr>
+            <td>tsdb</td>
+            <td>TSDB_CODE_TDB_NO_DISK_PERMISSIONS </td>
+            <td>0x0607</td>
+            <td>Not used</td>
+            <td>N/A</td>
+            <td>N/A</td>
+        </tr>
+        <tr>
+            <td>tsdb</td>
+            <td>TSDB_CODE_TDB_TAG_VER_OUT_OF_DATE </td>
+            <td>0x060A</td>
+            <td>Not Used</td>
+            <td>N/A</td>
+            <td>N/A</td>
+        </tr>
+        <tr>
+            <td>tsdb</td>
+            <td>TSDB_CODE_TDB_TIMESTAMP_OUT_OF_RANGE</td>
+            <td>0x060B</td>
+            <td>Timestamp is out of range</td>
+            <td>写入时间范围越界</td>
+            <td>上报问题，检查应用写入时间逻辑</td>
+        </tr>
+        <tr>
+            <td>tsdb</td>
+            <td>TSDB_CODE_TDB_SUBMIT_MSG_MSSED_UP </td>
+            <td>0x060C</td>
+            <td>Submit message is messed up</td>
+            <td>消息错误，可能由于客户端和服务端不兼容导致</td>
+            <td>上报问题</td>
+        </tr>
+        <tr>
+            <td>tsdb</td>
+            <td>TSDB_CODE_TDB_INVALID_ACTION </td>
+            <td>0x060D</td>
+            <td>Not Used</td>
+            <td>N/A</td>
+            <td>N/A</td>
+        </tr>
+        <tr>
+            <td>tsdb</td>
+            <td>TSDB_CODE_TDB_INVALID_CREATE_TB_MSG </td>
+            <td>0x060E</td>
+            <td>Not Used</td>
+            <td>N/A</td>
+            <td>N/A</td>
+        </tr>
+        <tr>
+            <td>tsdb</td>
+            <td>TSDB_CODE_TDB_NO_TABLE_DATA_IN_MEM </td>
+            <td>0x060F</td>
+            <td>Not Used</td>
+            <td>N/A</td>
+            <td>N/A</td>
+        </tr>
+        <tr>
+            <td>tsdb</td>
+            <td>TSDB_CODE_TDB_FILE_ALREADY_EXISTS </td>
+            <td>0x0610</td>
+            <td>Not Used</td>
+            <td>N/A</td>
+            <td>N/A</td>
+        </tr>
+        <tr>
+            <td>tsdb</td>
+            <td>TSDB_CODE_TDB_TABLE_RECONFIGURE </td>
+            <td>0x0611</td>
+            <td>Not Used</td>
+            <td>N/A</td>
+            <td>N/A</td>
+        </tr>
+        <tr>
+            <td>tsdb</td>
+            <td>TSDB_CODE_TDB_IVD_CREATE_TABLE_INFO </td>
+            <td>0x0612</td>
+            <td>Not Used</td>
+            <td>N/A</td>
+            <td>N/A</td>
+        </tr>
+        <tr>
+            <td>tsdb</td>
+            <td>TSDB_CODE_TDB_NO_AVAIL_DISK </td>
+            <td>0x0613</td>
+            <td>Not Used</td>
+            <td>N/A</td>
+            <td>N/A</td>
+        </tr>
+        <tr>
+            <td>tsdb</td>
+            <td>TSDB_CODE_TDB_MESSED_MSG </td>
+            <td>0x0614</td>
+            <td>Not Used</td>
+            <td>N/A</td>
+            <td>N/A</td>
+        </tr>
+        <tr>
+            <td>tsdb</td>
+            <td>TSDB_CODE_TDB_IVLD_TAG_VAL </td>
+            <td>0x0615</td>
+            <td>Not Used</td>
+            <td>N/A</td>
+            <td>N/A</td>
+        </tr>
+        <tr>
+            <td>tsdb</td>
+            <td>TSDB_CODE_TDB_NO_CACHE_LAST_ROW </td>
+            <td>0x0616</td>
+            <td>Not Used</td>
+            <td>N/A</td>
+            <td>N/A</td>
+        </tr>
+        <tr>
+            <td>tsdb</td>
+            <td>TSDB_CODE_TDB_TABLE_NOT_EXIST </td>
+            <td>0x0618</td>
+            <td>Table does not exists</td>
+            <td>表已经存在</td>
+            <td>上报问题</td>
+        </tr>
+        <tr>
+            <td>tsdb</td>
+            <td>TSDB_CODE_TDB_STB_ALREADY_EXIST </td>
+            <td>0x0619</td>
+            <td>Super table already exists</td>
+            <td>超级表已经存在</td>
+            <td>上报问题</td>
+        </tr>
+        <tr>
+            <td>tsdb</td>
+            <td>TSDB_CODE_TDB_STB_NOT_EXIST </td>
+            <td>0x061A</td>
+            <td>Super table does not exist</td>
+            <td>超级表不存在</td>
+            <td>上报问题</td>
+        </tr>
+        <tr>
+            <td>tsdb</td>
+            <td>TSDB_CODE_TDB_INVALID_TABLE_SCHEMA_VER</td>
+            <td>0x061B</td>
+            <td>Invalid table schema version</td>
+            <td>同 TSDB_CODE_TDB_IVD_TB_SCHEMA_VERSION </td>
+            <td>上报问题</td>
+        </tr>
+        <tr>
+            <td>tsdb</td>
+            <td>TSDB_CODE_TDB_TDB_ENV_OPEN_ERROR </td>
+            <td>0x061C</td>
+            <td>Not Used</td>
+            <td>-</td>
+            <td>-</td>
+        </tr>
+        <tr>
+            <td>tsdb</td>
+            <td>TSDB_CODE_TDB_TABLE_IN_OTHER_STABLE </td>
+            <td>0x061D</td>
+            <td>Table already exists in other super table</td>
+            <td>表已存在，但属于其他超级表</td>
+            <td>检查写入应用逻辑</td>
+        </tr>
+        <tr>
+            <td>query</td>
+            <td>TSDB_CODE_QRY_INVALID_QHANDLE </td>
+            <td>0x80000700</td>
+            <td>Invalid query handle</td>
+            <td>当前查询句柄不存在</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>query</td>
+            <td>TSDB_CODE_QRY_IN_EXEC </td>
+            <td>0x80000709</td>
+            <td>Multiple retrieval of this query</td>
+            <td>当前子查询已经正在进行中</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>query</td>
+            <td>TSDB_CODE_QRY_TOO_MANY_TIMEWINDOW </td>
+            <td>0x8000070A</td>
+            <td>Too many groups/time window in query</td>
+            <td>当前查询结果中的分组或窗口个数超过限制个数</td>
+            <td>调整查询语句，确保查询条件中的分组和窗口个数不超过上限</td>
+        </tr>
+        <tr>
+            <td>query</td>
+            <td>TSDB_CODE_QRY_SYS_ERROR </td>
+            <td>0x8000070D</td>
+            <td>System error</td>
+            <td>底层系统API返回错误</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>query</td>
+            <td>TSDB_CODE_QRY_SCH_NOT_EXIST </td>
+            <td>0x80000720</td>
+            <td>Scheduler not exist</td>
+            <td>当前子查询对应的客户端信息不存在</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>query</td>
+            <td>TSDB_CODE_QRY_TASK_NOT_EXIST </td>
+            <td>0x80000721</td>
+            <td>Task not exist</td>
+            <td>子查询不存在</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>query</td>
+            <td>TSDB_CODE_QRY_TASK_ALREADY_EXIST </td>
+            <td>0x80000722</td>
+            <td>Task already exist</td>
+            <td>子查询已经存在</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>query</td>
+            <td>TSDB_CODE_QRY_TASK_MSG_ERROR </td>
+            <td>0x80000729</td>
+            <td>Task message error</td>
+            <td>查询消息错误</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>query</td>
+            <td>TSDB_CODE_QRY_TASK_STATUS_ERROR </td>
+            <td>0x8000072B</td>
+            <td>Task status error</td>
+            <td>子查询状态错误</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>query</td>
+            <td>TSDB_CODE_QRY_JOB_NOT_EXIST </td>
+            <td>0x8000072F</td>
+            <td>Job not exist</td>
+            <td>查询JOB已经不存在</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>grant</td>
+            <td>TSDB_CODE_GRANT_EXPIRED </td>
+            <td>0x80000800</td>
+            <td>License expired</td>
+            <td>授权时间过期</td>
+            <td>检查授权信息，联系交付更新授权码</td>
+        </tr>
+        <tr>
+            <td>grant</td>
+            <td>TSDB_CODE_GRANT_DNODE_LIMITED </td>
+            <td>0x80000801</td>
+            <td>DNode creation limited by license</td>
+            <td>Dnode 数量超过授权限制</td>
+            <td>检查授权信息，联系交付更新授权码</td>
+        </tr>
+        <tr>
+            <td>grant</td>
+            <td>TSDB_CODE_GRANT_ACCT_LIMITED </td>
+            <td>0x80000802</td>
+            <td>Account creation limited by license</td>
+            <td>账号数量超过授权限制 </td>
+            <td>检查授权信息，联系交付更新授权码</td>
+        </tr>
+        <tr>
+            <td>grant</td>
+            <td>TSDB_CODE_GRANT_TIMESERIES_LIMITED</td>
+            <td>0x80000803</td>
+            <td>Time series limited by license</td>
+            <td>测点数量超过授权限制</td>
+            <td>检查授权信息，联系交付更新授权码</td>
+        </tr>
+        <tr>
+            <td>grant</td>
+            <td>TSDB_CODE_GRANT_DB_LIMITED </td>
+            <td>0x80000804</td>
+            <td>DB creation limited by license</td>
+            <td>数据库数量超过授权限制</td>
+            <td>检查授权信息，联系交付更新授权码</td>
+        </tr>
+        <tr>
+            <td>grant</td>
+            <td>TSDB_CODE_GRANT_USER_LIMITED </td>
+            <td>0x80000805</td>
+            <td>User creation limited by license</td>
+            <td>用户数量超过授权限制</td>
+            <td>检查授权信息，联系交付更新授权码</td>
+        </tr>
+        <tr>
+            <td>grant</td>
+            <td>TSDB_CODE_GRANT_CONN_LIMITED </td>
+            <td>0x80000806</td>
+            <td>Conn creation limited by license</td>
+            <td>连接数量超过授权限制</td>
+            <td>暂未限制，联系交付进行检查</td>
+        </tr>
+        <tr>
+            <td>grant</td>
+            <td>TSDB_CODE_GRANT_STREAM_LIMITED </td>
+            <td>0x80000807</td>
+            <td>Stream creation limited by license</td>
+            <td>流数量超过授权限制</td>
+            <td>暂未限制，联系交付进行检查</td>
+        </tr>
+        <tr>
+            <td>grant</td>
+            <td>TSDB_CODE_GRANT_SPEED_LIMITED </td>
+            <td>0x80000808</td>
+            <td>Write speed limited by license</td>
+            <td>写入速度超过授权限制</td>
+            <td>暂未限制，联系交付进行检查</td>
+        </tr>
+        <tr>
+            <td>grant</td>
+            <td>TSDB_CODE_GRANT_STORAGE_LIMITED </td>
+            <td>0x80000809</td>
+            <td>Storage capacity limited by license</td>
+            <td>存储空间超过授权限制</td>
+            <td>检查授权信息，联系交付更新授权码</td>
+        </tr>
+        <tr>
+            <td>grant</td>
+            <td>TSDB_CODE_GRANT_QUERYTIME_LIMITED </td>
+            <td>0x8000080A</td>
+            <td>Query time limited by license</td>
+            <td>查询次数超过授权限制</td>
+            <td>暂未限制，联系交付进行检查</td>
+        </tr>
+        <tr>
+            <td>grant</td>
+            <td>TSDB_CODE_GRANT_CPU_LIMITED </td>
+            <td>0x8000080B</td>
+            <td>CPU cores limited by license</td>
+            <td>CPU 核数超过授权限制</td>
+            <td>暂未限制，联系交付进行检查</td>
+        </tr>
+        <tr>
+            <td>grant</td>
+            <td>TSDB_CODE_GRANT_STABLE_LIMITED </td>
+            <td>0x8000080C</td>
+            <td>STable creation limited by license</td>
+            <td>超级表数量超过授权限制</td>
+            <td>检查授权信息，联系交付更新授权码</td>
+        </tr>
+        <tr>
+            <td>grant</td>
+            <td>TSDB_CODE_GRANT_TABLE_LIMITED </td>
+            <td>0x8000080D</td>
+            <td>Table creation limited by license</td>
+            <td>子表/普通表数量超过授权限制</td>
+            <td>检查授权信息，联系交付更新授权码</td>
+        </tr>
+        <tr>
+            <td>sync</td>
+            <td>TSDB_CODE_SYN_TIMEOUT </td>
+            <td>0x0903</td>
+            <td>Sync timeout</td>
+            <td>协商超时场景1：发生了切主；旧主节点上已经开始协商但尚未达成一致的请求将超时。场景2：从节点响应超时，导致协商超时。</td>
+            <td>检查集群状态， 例如：show vgroups；查看服务端日志，以及服务端节点之间的网络状况</td>
+        </tr>
+        <tr>
+            <td>sync</td>
+            <td>TSDB_CODE_SYN_NOT_LEADER </td>
+            <td>0x090C</td>
+            <td>Sync leader is unreachable</td>
+            <td>主节点不可达场景1：选主过程中场景2：客户端请求路由到了从节点，且重定向失败场景3：客户端或服务端网络配置错误</td>
+            <td>检查集群状态、网络配置、应用程序访问状态等。查看服务端日志，以及服务端节点之间的网络状况</td>
+        </tr>
+        <tr>
+            <td>sync</td>
+            <td>TSDB_CODE_SYN_NEW_CONFIG_ERROR </td>
+            <td>0x090F</td>
+            <td>Sync new config error</td>
+            <td>成员变更新配置错误</td>
+            <td>预留</td>
+        </tr>
+        <tr>
+            <td>sync</td>
+            <td>TSDB_CODE_SYN_PROPOSE_NOT_READY </td>
+            <td>0x0911</td>
+            <td>Sync not ready to propose</td>
+            <td>协商请求处理处理未就绪场景1：恢复未完成</td>
+            <td>检查集群状态， 例如：show vgroups查看服务端日志，以及服务端节点之间的网络状况</td>
+        </tr>
+        <tr>
+            <td>sync</td>
+            <td>TSDB_CODE_SYN_RESTORING </td>
+            <td>0x0914</td>
+            <td>Sync leader is restoring</td>
+            <td>主节点恢复中场景1：发生了切主；选主后，日志重演中</td>
+            <td>检查集群状态， 例如：show vgroups。查看服务端日志，观察恢复进度。</td>
+        </tr>
+        <tr>
+            <td>sync</td>
+            <td>TSDB_CODE_SYN_INVALID_SNAPSHOT_MSG</td>
+            <td>0x0915</td>
+            <td>Sync invalid snapshot msg</td>
+            <td>快照复制消息错误</td>
+            <td>服务端内部错误</td>
+        </tr>
+        <tr>
+            <td>sync</td>
+            <td>TSDB_CODE_SYN_BUFFER_FULL </td>
+            <td>0x0916</td>
+            <td>Sync buffer is full</td>
+            <td>日志写入缓冲区满场景1：客户端请求并发数特别大，超过了服务端处理能力，或者因为网络和CPU资源严重不足，或者网络连接问题等。</td>
+            <td>检查集群状态，系统资源使用率（例如磁盘IO、CPU、网络通信等），以及节点之间网络连接状况。</td>
+        </tr>
+        <tr>
+            <td>sync</td>
+            <td>TSDB_CODE_SYN_WRITE_STALL </td>
+            <td>0x0917</td>
+            <td>Sync write stall</td>
+            <td>状态机写入停滞场景1：状态机执行被阻塞，例如因系统繁忙，磁盘IO资源严重不足，或落盘失败等</td>
+            <td>检查集群状态，系统资源使用率（例如磁盘IO和CPU等），以及是否发生了落盘失败等</td>
+        </tr>
+        <tr>
+            <td>sync</td>
+            <td>TSDB_CODE_SYN_NEGOTIATION_WIN_FULL</td>
+            <td>0x0918</td>
+            <td>Sync negotiation win is full</td>
+            <td>协商窗口满场景1：客户端请求并发数特别大，超过了服务端处理能力，或者因为网络和CPU资源严重不足，或者网络连接问题等。</td>
+            <td>检查集群状态，系统资源使用率（例如磁盘IO、CPU、网络通信等），以及节点之间网络连接状况</td>
+        </tr>
+        <tr>
+            <td>sync</td>
+            <td>TSDB_CODE_SYN_INTERNAL_ERROR </td>
+            <td>0x09FF</td>
+            <td>Sync internal error</td>
+            <td>其它内部错误</td>
+            <td>检查集群状态， 例如：show vgroups</td>
+        </tr>
+        <tr>
+            <td>tq</td>
+            <td>TSDB_CODE_TQ_TABLE_SCHEMA_NOT_FOUND</td>
+            <td>0x0A0C</td>
+            <td>TQ table schema not found</td>
+            <td>消费数据时表不存在</td>
+            <td>内部错误，不透传给用户</td>
+        </tr>
+        <tr>
+            <td>tq</td>
+            <td>TSDB_CODE_TQ_NO_COMMITTED_OFFSET </td>
+            <td>0x0A0D</td>
+            <td>TQ no committed offset</td>
+            <td>消费时设置offset reset = none，并且server端没有之前消费的offset</td>
+            <td>设置offset reset为earliest 或者 latest</td>
+        </tr>
+        <tr>
+            <td>WAL</td>
+            <td>TSDB_CODE_WAL_FILE_CORRUPTED </td>
+            <td>0x1001</td>
+            <td>WAL file is corrupted</td>
+            <td>WAL文件损坏</td>
+            <td>服务端内部错误</td>
+        </tr>
+        <tr>
+            <td>WAL</td>
+            <td>TSDB_CODE_WAL_INVALID_VER </td>
+            <td>0x1003</td>
+            <td>WAL invalid version</td>
+            <td>WAL日志版本无效请求日志版本，超过了当前日志范围</td>
+            <td>服务端内部错误</td>
+        </tr>
+        <tr>
+            <td>WAL</td>
+            <td>TSDB_CODE_WAL_LOG_NOT_EXIST </td>
+            <td>0x1005</td>
+            <td>WAL log not exist</td>
+            <td>WAL日志不存在请求日志记录，不存在</td>
+            <td>服务端内部错误</td>
+        </tr>
+        <tr>
+            <td>WAL</td>
+            <td>TSDB_CODE_WAL_CHKSUM_MISMATCH</td>
+            <td>0x1006</td>
+            <td>WAL checksum mismatch</td>
+            <td>WAL日志检验码不匹配场景：发生了WAL文件损坏</td>
+            <td>服务端内部错误</td>
+        </tr>
+        <tr>
+            <td>WAL</td>
+            <td>TSDB_CODE_WAL_LOG_INCOMPLETE </td>
+            <td>0x1007</td>
+            <td>WAL log incomplete</td>
+            <td>WAL日志不完整日志文件发生了丢失或损坏</td>
+            <td>服务端内部错误</td>
+        </tr>
+        <tr>
+            <td>tfs</td>
+            <td>TSDB_CODE_FS_INVLD_CFG </td>
+            <td>0x2201</td>
+            <td>TFS invalid configuration</td>
+            <td>多级存储配置错误</td>
+            <td>检查配置是否正确</td>
+        </tr>
+        <tr>
+            <td>tfs</td>
+            <td>TSDB_CODE_FS_TOO_MANY_MOUNT </td>
+            <td>0x2202</td>
+            <td>TFS too many disks on one level</td>
+            <td>多级存储配置错误</td>
+            <td>检查一级硬盘上的配置个数是否超过最大限制</td>
+        </tr>
+        <tr>
+            <td>tfs</td>
+            <td>TSDB_CODE_FS_DUP_PRIMARY </td>
+            <td>0x2203</td>
+            <td>TFS duplicate primary mount disk</td>
+            <td>多级存储配置错误</td>
+            <td>检查配置是否正确</td>
+        </tr>
+        <tr>
+            <td>tfs</td>
+            <td>TSDB_CODE_FS_NO_PRIMARY_DISK </td>
+            <td>0x2204</td>
+            <td>TFS no primary mount disk</td>
+            <td>多级存储配置错误</td>
+            <td>检查配置是否正确</td>
+        </tr>
+        <tr>
+            <td>tfs</td>
+            <td>TSDB_CODE_FS_NO_MOUNT_AT_TIER </td>
+            <td>0x2205</td>
+            <td>TFS no disk mount on tire</td>
+            <td>多级存储配置错误</td>
+            <td>检查配置是否正确</td>
+        </tr>
+        <tr>
+            <td>tfs</td>
+            <td>TSDB_CODE_FS_FILE_ALREADY_EXISTS</td>
+            <td>0x2206</td>
+            <td>NOT USED</td>
+            <td>N/A</td>
+            <td>N/A</td>
+        </tr>
+        <tr>
+            <td>tfs</td>
+            <td>TSDB_CODE_FS_INVLD_LEVEL </td>
+            <td>0x2207</td>
+            <td>NOT USED</td>
+            <td>N/A</td>
+            <td>N/A</td>
+        </tr>
+        <tr>
+            <td>tfs</td>
+            <td>TSDB_CODE_FS_NO_VALID_DISK </td>
+            <td>0x2208</td>
+            <td>No disk available on a tier.</td>
+            <td>TFS内部错误，多发生在硬盘满的场景下</td>
+            <td>增加硬盘，扩充容量</td>
+        </tr>
+        <tr>
+            <td>Catalog Scheduler qworker</td>
+            <td>TSDB_CODE_CTG_INTERNAL_ERROR </td>
+            <td>0x2400</td>
+            <td>catalog internal error</td>
+            <td>catalog内部错误</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>Catalog Scheduler qworker</td>
+            <td>TSDB_CODE_CTG_INVALID_INPUT </td>
+            <td>0x2401</td>
+            <td>catalog invalid input parameters</td>
+            <td>catalog输入参数错误</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>Catalog Scheduler qworker</td>
+            <td>TSDB_CODE_CTG_NOT_READY </td>
+            <td>0x2402</td>
+            <td>catalog is not ready</td>
+            <td>catalog未初始化完成</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>Catalog Scheduler qworker</td>
+            <td>TSDB_CODE_CTG_SYS_ERROR </td>
+            <td>0x2403</td>
+            <td>catalog system error</td>
+            <td>catalog系统错误</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>Catalog Scheduler qworker</td>
+            <td>TSDB_CODE_CTG_DB_DROPPED </td>
+            <td>0x2404</td>
+            <td>Database is dropped</td>
+            <td>db缓存被删除</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>Catalog Scheduler qworker</td>
+            <td>TSDB_CODE_CTG_OUT_OF_SERVICE </td>
+            <td>0x2405</td>
+            <td>catalog is out of service</td>
+            <td>catalog模块已经退出</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>Catalog Scheduler qworker</td>
+            <td>TSDB_CODE_QW_MSG_ERROR </td>
+            <td>0x2550</td>
+            <td>Invalid msg order</td>
+            <td>消息顺序错误</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>Catalog Scheduler qworker</td>
+            <td>TSDB_CODE_SCH_STATUS_ERROR </td>
+            <td>0x2501</td>
+            <td>Job status error</td>
+            <td>任务状态错误</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>Catalog Scheduler qworker</td>
+            <td>TSDB_CODE_SCH_INTERNAL_ERROR </td>
+            <td>0x2502</td>
+            <td>scheduler internal error</td>
+            <td>scheduler内部错误</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>Catalog Scheduler qworker</td>
+            <td>TSDB_CODE_SCH_TIMEOUT_ERROR </td>
+            <td>0x2504</td>
+            <td>Task timeout</td>
+            <td>子任务超时</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>Catalog Scheduler qworker</td>
+            <td>TSDB_CODE_SCH_JOB_IS_DROPPING </td>
+            <td>0x2505</td>
+            <td>Job is dropping</td>
+            <td>任务正在或已经被取消</td>
+            <td>检查是否有手动或应用中断当前任务</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_SYNTAX_ERROR </td>
+            <td>0x2600</td>
+            <td>syntax error near</td>
+            <td>SQL语法错误</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INCOMPLETE_SQL </td>
+            <td>0x2601</td>
+            <td>Incomplete SQL statement</td>
+            <td>不完整的SQL语句</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_COLUMN</td>
+            <td>0x2602</td>
+            <td>Invalid column name</td>
+            <td>不合法或不存在的列名</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_TABLE_NOT_EXIST </td>
+            <td>0x2603</td>
+            <td>Table does not exist</td>
+            <td>表不存在</td>
+            <td>检查并确认SQL语句中的表是否存在</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_AMBIGUOUS_COLUMN </td>
+            <td>0x2604</td>
+            <td>Column ambiguously defined</td>
+            <td>列名（别名）重复定义</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_WRONG_VALUE_TYPE </td>
+            <td>0x2605</td>
+            <td>Invalid value type</td>
+            <td>常量值非法</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_ILLEGAL_USE_AGG_FUNCTION</td>
+            <td>0x2608</td>
+            <td>There mustn't be aggregation</td>
+            <td>聚合函数出现在非法子句中</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_WRONG_NUMBER_OF_SELECT </td>
+            <td>0x2609</td>
+            <td>ORDER BY item must be the number of a SELECT-list expression</td>
+            <td>Order by指定的位置不合法</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_GROUPBY_LACK_EXPRESSION </td>
+            <td>0x260A</td>
+            <td>Not a GROUP BY expression</td>
+            <td>非法group by语句</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_NOT_SELECTED_EXPRESSION </td>
+            <td>0x260B</td>
+            <td>Not SELECTed expression</td>
+            <td>非法表达式</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_NOT_SINGLE_GROUP </td>
+            <td>0x260C</td>
+            <td>Not a single-group group function</td>
+            <td>非法使用列与函数</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_TAGS_NOT_MATCHED </td>
+            <td>0x260D</td>
+            <td>Tags number not matched</td>
+            <td>tag列个数不匹配</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_TAG_NAME </td>
+            <td>0x260E</td>
+            <td>Invalid tag name</td>
+            <td>无效或不存在的tag名</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_VALUE_TOO_LONG </td>
+            <td>0x2610</td>
+            <td>Value is too long</td>
+            <td>值长度超出限制</td>
+            <td>检查并修正SQL语句或API参数</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_PASSWD_EMPTY </td>
+            <td>0x2611</td>
+            <td>Password can not be empty</td>
+            <td>密码为空</td>
+            <td>使用合法的密码</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_PORT </td>
+            <td>0x2612</td>
+            <td>Port should be an integer that is less than 65535 and greater than 0</td>
+            <td>端口号非法</td>
+            <td>检查并修正端口号</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_ENDPOINT </td>
+            <td>0x2613</td>
+            <td>Endpoint should be in the format of 'fqdn:port'</td>
+            <td>地址格式错误</td>
+            <td>检查并修正地址信息</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_EXPRIE_STATEMENT </td>
+            <td>0x2614</td>
+            <td>This statement is no longer supported</td>
+            <td>功能已经废弃</td>
+            <td>参考功能文档说明</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INTER_VALUE_TOO_SMALL </td>
+            <td>0x2615</td>
+            <td>Interval too small</td>
+            <td>interval值超过允许的最小值</td>
+            <td>更改INTERVAL值</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_DB_NOT_SPECIFIED </td>
+            <td>0x2616</td>
+            <td>Database not specified</td>
+            <td>未指定数据库</td>
+            <td>指定当前操作的数据库</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_IDENTIFIER_NAME </td>
+            <td>0x2617</td>
+            <td>Invalid identifier name</td>
+            <td>ID非法或长度不合法</td>
+            <td>检查语句中相关的库、表、列、TAG等名称</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_CORRESPONDING_STABLE_ERR</td>
+            <td>0x2618</td>
+            <td>Corresponding super table not in this db</td>
+            <td>超级表不存在</td>
+            <td>检查库中是否存在对应的超级表</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_DB_OPTION </td>
+            <td>0x2619</td>
+            <td>Invalid database option</td>
+            <td>数据库选项值非法</td>
+            <td>检查并修正数据库选项值</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_TABLE_OPTION </td>
+            <td>0x261A</td>
+            <td>Invalid table option</td>
+            <td>表选项值非法</td>
+            <td>检查并修正数据表选项值</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_GROUPBY_WINDOW_COEXIST </td>
+            <td>0x2624</td>
+            <td>GROUP BY and WINDOW-clause can't be used together</td>
+            <td>Group by和窗口不能同时使用</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_AGG_FUNC_NESTING </td>
+            <td>0x2627</td>
+            <td>Aggregate functions do not support nesting</td>
+            <td>函数不支持嵌套使用</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_STATE_WIN_TYPE </td>
+            <td>0x2628</td>
+            <td>Only support STATE_WINDOW on integer/bool/varchar column</td>
+            <td>不支持的STATE_WINDOW数据类型</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_STATE_WIN_COL </td>
+            <td>0x2629</td>
+            <td>Not support STATE_WINDOW on tag column</td>
+            <td>不支持TAG列的STATE_WINDOW</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_STATE_WIN_TABLE </td>
+            <td>0x262A</td>
+            <td>STATE_WINDOW not support for super table query</td>
+            <td>不支持超级表的STATE_WINDOW</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INTER_SESSION_GAP </td>
+            <td>0x262B</td>
+            <td>SESSION gap should be fixed time window, and greater than 0</td>
+            <td>SESSION窗口值非法</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INTER_SESSION_COL </td>
+            <td>0x262C</td>
+            <td>Only support SESSION on primary timestamp column</td>
+            <td>SESSION窗口列非法</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INTER_OFFSET_NEGATIVE </td>
+            <td>0x262D</td>
+            <td>Interval offset cannot be negative</td>
+            <td>INTERVAL offset值非法</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INTER_OFFSET_UNIT </td>
+            <td>0x262E</td>
+            <td>Cannot use 'year' as offset when interval is 'month'</td>
+            <td>INTERVAL offset单位非法</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INTER_OFFSET_TOO_BIG </td>
+            <td>0x262F</td>
+            <td>Interval offset should be shorter than interval</td>
+            <td>INTERVAL offset值非法</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INTER_SLIDING_UNIT </td>
+            <td>0x2630</td>
+            <td>Does not support sliding when interval is natural month/year</td>
+            <td>sliding单位非法</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INTER_SLIDING_TOO_BIG </td>
+            <td>0x2631</td>
+            <td>sliding value no larger than the interval value</td>
+            <td>sliding值非法</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INTER_SLIDING_TOO_SMALL</td>
+            <td>0x2632</td>
+            <td>sliding value can not less than 1%% of interval value</td>
+            <td>sliding值非法</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_ONLY_ONE_JSON_TAG </td>
+            <td>0x2633</td>
+            <td>Only one tag if there is a json tag</td>
+            <td>只支持单个JSON TAG列</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INCORRECT_NUM_OF_COL </td>
+            <td>0x2634</td>
+            <td>Query block has incorrect number of result columns</td>
+            <td>列个数不匹配</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INCORRECT_TIMESTAMP_VAL</td>
+            <td>0x2635</td>
+            <td>Incorrect TIMESTAMP value</td>
+            <td>主键时间戳列值非法</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_OFFSET_LESS_ZERO </td>
+            <td>0x2637</td>
+            <td>soffset/offset can not be less than 0</td>
+            <td>soffset/offset值非法</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_SLIMIT_LEAK_PARTITION_GROUP_BY</td>
+            <td>0x2638</td>
+            <td>slimit/soffset only available for PARTITION/GROUP BY query</td>
+            <td>slimit/soffset只支持PARTITION BY/GROUP BY语句</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_TOPIC_QUERY </td>
+            <td>0x2639</td>
+            <td>Invalid topic query</td>
+            <td>不支持的TOPIC查询语句</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_DROP_STABLE </td>
+            <td>0x263A</td>
+            <td>Cannot drop super table in batch</td>
+            <td>不支持批量删除超级表</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_FILL_TIME_RANGE</td>
+            <td>0x263B</td>
+            <td>Start(end) time of query range required or time range too large</td>
+            <td>窗口个数超出限制</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_DUPLICATED_COLUMN </td>
+            <td>0x263C</td>
+            <td>Duplicated column names</td>
+            <td>列名称重复</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_TAGS_LENGTH </td>
+            <td>0x263D</td>
+            <td>Tags length exceeds max length</td>
+            <td>TAG值长度超出最大支持范围</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_ROW_LENGTH </td>
+            <td>0x263E</td>
+            <td>Row length exceeds max length</td>
+            <td>行长度检查并修正SQL语句</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_COLUMNS_NUM </td>
+            <td>0x263F</td>
+            <td>Illegal number of columns</td>
+            <td>列个数错误</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_TOO_MANY_COLUMNS </td>
+            <td>0x2640</td>
+            <td>Too many columns</td>
+            <td>列个数超出上限</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_FIRST_COLUMN </td>
+            <td>0x2641</td>
+            <td>First column must be timestamp</td>
+            <td>第一列必须是主键时间戳列</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_VAR_COLUMN_LEN </td>
+            <td>0x2642</td>
+            <td>Invalid binary/nchar column/tag length</td>
+            <td>binary/nchar长度错误</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_TAGS_NUM </td>
+            <td>0x2643</td>
+            <td>Invalid number of tag columns</td>
+            <td>TAG列个数错误</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_PERMISSION_DENIED </td>
+            <td>0x2644</td>
+            <td>Permission denied</td>
+            <td>权限错误</td>
+            <td>检查确认用户是否有相应操作权限</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_STREAM_QUERY </td>
+            <td>0x2645</td>
+            <td>Invalid stream query</td>
+            <td>非法流语句</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_INTERNAL_PK </td>
+            <td>0x2646</td>
+            <td>Invalid _c0 or _rowts expression</td>
+            <td>_c0或_rowts非法使用</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_TIMELINE_FUNC </td>
+            <td>0x2647</td>
+            <td>Invalid timeline function</td>
+            <td>函数依赖的主键时间戳不存在</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_PASSWD </td>
+            <td>0x2648</td>
+            <td>Invalid password</td>
+            <td>密码不符合规范</td>
+            <td>检查并修改密码</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_ALTER_TABLE </td>
+            <td>0x2649</td>
+            <td>Invalid alter table statement</td>
+            <td>修改表语句不合法</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_CANNOT_DROP_PRIMARY_KEY</td>
+            <td>0x264A</td>
+            <td>Primary timestamp column cannot be dropped</td>
+            <td>主键时间戳列不允许删除</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_MODIFY_COL </td>
+            <td>0x264B</td>
+            <td>Only binary/nchar column length could be modified, and the length can only be increased, not decreased</td>
+            <td>非法列修改</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_TBNAME </td>
+            <td>0x264C</td>
+            <td>Invalid tbname pseudo column</td>
+            <td>非法使用tbname列</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_FUNCTION_NAME </td>
+            <td>0x264D</td>
+            <td>Invalid function name</td>
+            <td>非法函数名</td>
+            <td>检查并修正函数名</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_COMMENT_TOO_LONG </td>
+            <td>0x264E</td>
+            <td>Comment too long</td>
+            <td>注释长度超限</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_NOT_ALLOWED_FUNC </td>
+            <td>0x264F</td>
+            <td>Function(s) only allowed in SELECT list, cannot mixed with non scalar functions or columns</td>
+            <td>非法的函数混用</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_NOT_ALLOWED_WIN_QUERY </td>
+            <td>0x2650</td>
+            <td>Window query not supported, since no valid timestamp column included in the result of subquery</td>
+            <td>窗口查询依赖的主键时间戳列不存在</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_DROP_COL </td>
+            <td>0x2651</td>
+            <td>No columns can be dropped</td>
+            <td>必须的列不能被删除</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_COL_JSON </td>
+            <td>0x2652</td>
+            <td>Only tag can be json type</td>
+            <td>普通列不支持JSON类型</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_DELETE_WHERE </td>
+            <td>0x2655</td>
+            <td>The DELETE statement must have a definite time window range</td>
+            <td>DELETE语句中存在非法WHERE条件</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_REDISTRIBUTE_VG </td>
+            <td>0x2656</td>
+            <td>The REDISTRIBUTE VGROUP statement only support 1 to 3 dnodes</td>
+            <td>REDISTRIBUTE VGROUP指定的DNODE个数非法</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_FILL_NOT_ALLOWED_FUNC </td>
+            <td>0x2657</td>
+            <td>Fill now allowed</td>
+            <td>函数不允许FILL功能</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_WINDOW_PC </td>
+            <td>0x2658</td>
+            <td>Invalid windows pc</td>
+            <td>非法使用窗口伪列</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_WINDOW_NOT_ALLOWED_FUNC </td>
+            <td>0x2659</td>
+            <td>Window not allowed</td>
+            <td>函数不能在窗口中使用</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_STREAM_NOT_ALLOWED_FUNC </td>
+            <td>0x265A</td>
+            <td>Stream not allowed</td>
+            <td>函数不能在流计算中使用</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_GROUP_BY_NOT_ALLOWED_FUNC</td>
+            <td>0x265B</td>
+            <td>Group by not allowd</td>
+            <td>函数不能在分组中使用</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_INTERP_CLAUSE </td>
+            <td>0x265D</td>
+            <td>Invalid interp clause</td>
+            <td>非法INTERP或相关语句</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_NO_VALID_FUNC_IN_WIN </td>
+            <td>0x265E</td>
+            <td>Not valid function ion window</td>
+            <td>非法窗口语句</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_ONLY_SUPPORT_SINGLE_TABLE</td>
+            <td>0x265F</td>
+            <td>Only support single table</td>
+            <td>函数只支持在单表查询中使用</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_SMA_INDEX </td>
+            <td>0x2660</td>
+            <td>Invalid sma index</td>
+            <td>非法创建SMA语句</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_SELECTED_EXPR </td>
+            <td>0x2661</td>
+            <td>Invalid SELECTed expression</td>
+            <td>无效查询语句</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_GET_META_ERROR </td>
+            <td>0x2662</td>
+            <td>Fail to get table info</td>
+            <td>获取表元数据信息失败</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_NOT_UNIQUE_TABLE_ALIAS </td>
+            <td>0x2663</td>
+            <td>Not unique table/alias</td>
+            <td>表名（别名）冲突</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_NOT_SUPPORT_JOIN </td>
+            <td>0x2664</td>
+            <td>Join requires valid time series input</td>
+            <td>不支持子查询不含主键时间戳列输出的JOIN查询</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_TAGS_PC </td>
+            <td>0x2665</td>
+            <td>The _TAGS pseudo column can only be used for subtable and supertable queries</td>
+            <td>非法TAG列查询</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_TIMELINE_QUERY </td>
+            <td>0x2666</td>
+            <td>-</td>
+            <td>子查询不含主键时间戳列输出</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INVALID_OPTR_USAGE </td>
+            <td>0x2667</td>
+            <td>Invalid usage of expr: %s</td>
+            <td>非法表达式</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PAR_INTERNAL_ERROR </td>
+            <td>0x26FF</td>
+            <td>Parser internal error</td>
+            <td>解析器内部错误</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PLAN_INTERNAL_ERROR </td>
+            <td>0x2700</td>
+            <td>Planner internal error</td>
+            <td>计划期内部错误</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PLAN_EXPECTED_TS_EQUAL </td>
+            <td>0x2701</td>
+            <td>Expect ts equal</td>
+            <td>JOIN条件校验失败</td>
+            <td>保留现场和日志，github上报issue</td>
+        </tr>
+        <tr>
+            <td>Parser Planner</td>
+            <td>TSDB_CODE_PLAN_NOT_SUPPORT_CROSS_JOIN</td>
+            <td>0x2702</td>
+            <td>Cross join not support</td>
+            <td>不支持CROSS JOIN</td>
+            <td>检查并修正SQL语句</td>
+        </tr>
+        <tr>
+            <td>function</td>
+            <td>TSDB_CODE_FUNC_FUNTION_ERROR </td>
+            <td>0x80002800</td>
+            <td>Function internal error函数参数输入不合理造成的错误，随错误码会返回具体错误描述信息。</td>
+            <td>比如APERCENTILE函数第三个参数指定算法时只能使用字符串"default" | "t-digest", 使用其他输入会报此类错误。或者TO_ISO8601函数第二个参数指定时区时，字符串不符合时区格式规范等。</td>
+            <td>根据具体错误描述信息，调整函数输入。</td>
+        </tr>
+        <tr>
+            <td>function</td>
+            <td>TSDB_CODE_FUNC_FUNTION_PARA_NUM </td>
+            <td>0x80002801</td>
+            <td>Invalid function para number函数输入参数个数不正确。</td>
+            <td>函数规定必须要使用n个参数，而用户给定参数个数不为n。比如COUNT(col1, col2)。</td>
+            <td>调整函数输入参数为正确个数。</td>
+        </tr>
+        <tr>
+            <td>function</td>
+            <td>TSDB_CODE_FUNC_FUNTION_PARA_TYPE </td>
+            <td>0x80002802</td>
+            <td>Invalid function para type函数输入参数类型不正确。</td>
+            <td>函数输入参数要求为数值类型，但是用户所给参数为字符串。比如SUM("abc")。</td>
+            <td>调整函数参数输入为正确类型</td>
+        </tr>
+        <tr>
+            <td>function</td>
+            <td>TSDB_CODE_FUNC_FUNTION_PARA_VALUE </td>
+            <td>0x80002803</td>
+            <td>Invalid function para value函数输入参数取值不正确。</td>
+            <td>函数输入参数范围不正确。比如SAMPLE函数第二个参数指定采样个数范围为[1, 1000], 如果不在这个范围内会会报错。</td>
+            <td>调整函数参数输入为正确取值。</td>
+        </tr>
+        <tr>
+            <td>function</td>
+            <td>TSDB_CODE_FUNC_NOT_BUILTIN_FUNTION</td>
+            <td>0x80002804</td>
+            <td>Not builtin function函数非内置函数。</td>
+            <td>内置函数不在的哈希表中会报错，用户应该很少遇见这个问题，否则是内部内置函数哈希初始化的时候出错或者写坏。</td>
+            <td>客户应该不会遇到，如果遇到，说明程序有bug，咨询开发人员。</td>
+        </tr>
+        <tr>
+            <td>function</td>
+            <td>TSDB_CODE_FUNC_DUP_TIMESTAMP </td>
+            <td>0x80002805</td>
+            <td>Duplicate timestamps not allowed in function函数输入主键列有重复时间戳。</td>
+            <td>对某些依赖时间线顺序函数做超级表查询时，所有子表数据会按照时间戳进行排序后合并为一条时间线进行计算，因此子表合并后的时间戳可能会出现重复，导致某些计算没有意义而报错。涉及到的函数有：CSUM，DERIVATIVE，DIFF，IRATE，MAVG，STATECOUNT，STATEDURATION，TWA</td>
+            <td>如果需要对超级表查询并且使用这些依赖时间线顺序函数时，确保子表中不存在重复时间戳数据。</td>
+        </tr>
+        <tr>
+            <td>udf</td>
+            <td>TSDB_CODE_UDF_STOPPING </td>
+            <td>0x80002901</td>
+            <td>udf is stopping</td>
+            <td>dnode退出时，收到udf调用</td>
+            <td>停止执行udf查询</td>
+        </tr>
+        <tr>
+            <td>udf</td>
+            <td>TSDB_CODE_UDF_PIPE_READ_ERR </td>
+            <td>0x80002902</td>
+            <td>udf pipe read error</td>
+            <td>taosd读取udfd pipe，发生错误</td>
+            <td>udfd异常退出，1）c udf崩溃 2）udfd崩溃</td>
+        </tr>
+        <tr>
+            <td>udf</td>
+            <td>TSDB_CODE_UDF_PIPE_CONNECT_ERR </td>
+            <td>0x80002903</td>
+            <td>udf pipe connect error</td>
+            <td>taosd建立到udfd的管道连接时，发生错误</td>
+            <td>1)taosd对应的udfd未启动。重启taosd</td>
+        </tr>
+        <tr>
+            <td>udf</td>
+            <td>TSDB_CODE_UDF_PIPE_NOT_EXIST </td>
+            <td>0x80002904</td>
+            <td>udf pip not exist</td>
+            <td>udf建立，调用，拆除三个阶段，两个阶段中间发生连接错误，导致连接消失，后续阶段继续执行</td>
+            <td>udfd异常退出，1）c udf崩溃 2）udfd崩溃</td>
+        </tr>
+        <tr>
+            <td>udf</td>
+            <td>TSDB_CODE_UDF_LOAD_UDF_FAILURE </td>
+            <td>0x80002905</td>
+            <td>udf load failure</td>
+            <td>udfd加载udf时错误</td>
+            <td>1）mnode中udf不存在2）udf 加载出错。查看日志</td>
+        </tr>
+        <tr>
+            <td>udf</td>
+            <td>TSDB_CODE_UDF_INVALID_INPUT </td>
+            <td>0x80002906</td>
+            <td>udf invalid function input</td>
+            <td>udf检查输入</td>
+            <td>udf函数不接受输入，如输入列类型错误</td>
+        </tr>
+        <tr>
+            <td>udf</td>
+            <td>TSDB_CODE_UDF_INVALID_BUFSIZE</td>
+            <td>0x80002907</td>
+            <td>udf invalid bufsize</td>
+            <td>udf聚合函数中间结果大于创建udf中指定的bufsize</td>
+            <td>增大bufSize，或者降低中间结果大小</td>
+        </tr>
+        <tr>
+            <td>udf</td>
+            <td>TSDB_CODE_UDF_INVALID_OUTPUT_TYPE</td>
+            <td>0x80002908</td>
+            <td>udf invalid output type</td>
+            <td>udf输出的类型和创建udf中指定的类型</td>
+            <td>修改udf，或者创建udf的类型，使得结果相同</td>
+        </tr>
+        <tr>
+            <td>udf</td>
+            <td>TSDB_CODE_UDF_SCRIPT_NOT_SUPPORTED</td>
+            <td>0x80002909</td>
+            <td>udf program language not supported</td>
+            <td>udf编程语言不支持</td>
+            <td>使用支持的语言,当前支持c，python</td>
+        </tr>
+        <tr>
+            <td>udf</td>
+            <td>TSDB_CODE_UDF_FUNC_EXEC_FAILURE</td>
+            <td>0x8000290A</td>
+            <td>udf function execution failure</td>
+            <td>udf函数执行错误，如返回错误的行数</td>
+            <td>具体查看错误日志</td>
+        </tr>
+        <tr>
+            <td>sml</td>
+            <td>TSDB_CODE_SML_INVALID_PROTOCOL_TYPE </td>
+            <td>0x3000</td>
+            <td>Invalid line protocol type</td>
+            <td>schemaless接口传入的协议非法</td>
+            <td>检查传入的协议是否为taos.h 中定位的三种 TSDB_SML_PROTOCOL_TYPE</td>
+        </tr>
+        <tr>
+            <td>sml</td>
+            <td>TSDB_CODE_SML_INVALID_PRECISION_TYPE</td>
+            <td>0x3001</td>
+            <td>Invalid timestamp precision type</td>
+            <td>schemaless接口传入的时间精度非法</td>
+            <td>检查传入的协议是否为taos.h 中定位的七种 TSDB_SML_TIMESTAMP_TYPE</td>
+        </tr>
+        <tr>
+            <td>sml</td>
+            <td>TSDB_CODE_SML_INVALID_DATA </td>
+            <td>0x3002</td>
+            <td>Invalid data format</td>
+            <td>schemaless接口传入的数据格式非法</td>
+            <td>具体查看client端的错误日志提示</td>
+        </tr>
+        <tr>
+            <td>sml</td>
+            <td>TSDB_CODE_SML_NOT_SAME_TYPE </td>
+            <td>0x3004</td>
+            <td>Not the same type as before</td>
+            <td>schemaless 数据一批的多行数据里相同列类型不一致</td>
+            <td>检测数据里每行相同列的数据类型是否一致</td>
+        </tr>
+        <tr>
+            <td>sml</td>
+            <td>TSDB_CODE_SML_INTERNAL_ERROR </td>
+            <td>0x3005</td>
+            <td>Internal error</td>
+            <td>schemaless 内部逻辑错误，一般不会出现</td>
+            <td>具体查看client端的错误日志提示</td>
+        </tr>
+        <tr>
+            <td>sma</td>
+            <td>TSDB_CODE_TSMA_INIT_FAILED</td>
+            <td>0x80003100</td>
+            <td>Tsma init failed</td>
+            <td>TSMA 环境初始化失败</td>
+            <td>检查错误日志，联系开发处理</td>
+        </tr>
+        <tr>
+            <td>sma</td>
+            <td>TSDB_CODE_TSMA_ALREADY_EXIST </td>
+            <td>0x80003101</td>
+            <td>Tsma already exists</td>
+            <td>TSMA 重复创建</td>
+            <td>避免重复创建</td>
+        </tr>
+        <tr>
+            <td>sma</td>
+            <td>TSDB_CODE_TSMA_INVALID_ENV </td>
+            <td>0x80003102</td>
+            <td>Invalid tsma env</td>
+            <td>TSMA 运行环境异常</td>
+            <td>检查错误日志，联系开发处理</td>
+        </tr>
+        <tr>
+            <td>sma</td>
+            <td>TSDB_CODE_TSMA_INVALID_STAT</td>
+            <td>0x80003103</td>
+            <td>Invalid tsma state</td>
+            <td>流计算下发结果的 vgroup 与创建 TSMA index 的 vgroup 不一致 </td>
+            <td>检查错误日志，联系开发处理</td>
+        </tr>
+        <tr>
+            <td>sma</td>
+            <td>TSDB_CODE_TSMA_INVALID_PTR</td>
+            <td>0x80003104</td>
+            <td>Invalid tsma pointer</td>
+            <td>在处理写入流计算下发的结果，消息体为空指针。</td>
+            <td>检查错误日志，联系开发处理</td>
+        </tr>
+        <tr>
+            <td>sma</td>
+            <td>TSDB_CODE_TSMA_INVALID_PARA</td>
+            <td>0x80003105</td>
+            <td>Invalid tsma parameters</td>
+            <td>在处理写入流计算下发的结果，结果数量为0。</td>
+            <td>检查错误日志，联系开发处理</td>
+        </tr>
+        <tr>
+            <td>sma</td>
+            <td>TSDB_CODE_RSMA_INVALID_ENV </td>
+            <td>0x80003150</td>
+            <td>Invalid rsma env</td>
+            <td>Rsma 执行环境异常。</td>
+            <td>检查错误日志，联系开发处理</td>
+        </tr>
+        <tr>
+            <td>sma</td>
+            <td>TSDB_CODE_RSMA_INVALID_STAT </td>
+            <td>0x80003151</td>
+            <td>Invalid rsma state</td>
+            <td>Rsma 执行状态异常。</td>
+            <td>检查错误日志，联系开发处理</td>
+        </tr>
+        <tr>
+            <td>sma</td>
+            <td>TSDB_CODE_RSMA_QTASKINFO_CREATE </td>
+            <td>0x80003152</td>
+            <td>Rsma qtaskinfo creation error</td>
+            <td>创建流计算环境异常。</td>
+            <td>检查错误日志，联系开发处理</td>
+        </tr>
+        <tr>
+            <td>sma</td>
+            <td>TSDB_CODE_RSMA_INVALID_SCHEMA</td>
+            <td>0x80003153</td>
+            <td>Rsma invalid schema</td>
+            <td>启动恢复时元数据信息错误</td>
+            <td>检查错误日志，联系开发处理</td>
+        </tr>
+        <tr>
+            <td>sma</td>
+            <td>TSDB_CODE_RSMA_STREAM_STATE_OPEN</td>
+            <td>0x80003154</td>
+            <td>Rsma stream state open</td>
+            <td>打开流算子状态存储失败</td>
+            <td>检查错误日志，联系开发处理</td>
+        </tr>
+        <tr>
+            <td>sma</td>
+            <td>TSDB_CODE_RSMA_STREAM_STATE_COMMIT</td>
+            <td>0x80003155</td>
+            <td>Rsma stream state commit</td>
+            <td>提交流算子状态存储失败</td>
+            <td>检查错误日志，联系开发处理</td>
+        </tr>
+        <tr>
+            <td>sma</td>
+            <td>TSDB_CODE_RSMA_FS_REF</td>
+            <td>0x80003156</td>
+            <td>Rsma fs ref error</td>
+            <td>算子文件引用计数错误</td>
+            <td>检查错误日志，联系开发处理</td>
+        </tr>
+        <tr>
+            <td>sma</td>
+            <td>TSDB_CODE_RSMA_FS_SYNC</td>
+            <td>0x80003157</td>
+            <td>Rsma fs sync error</td>
+            <td>算子文件同步失败</td>
+            <td>检查错误日志，联系开发处理</td>
+        </tr>
+        <tr>
+            <td>sma</td>
+            <td>TSDB_CODE_RSMA_FS_UPDATE</td>
+            <td>0x80003158</td>
+            <td>Rsma fs update error</td>
+            <td>算子文件更新失败</td>
+            <td>检查错误日志，联系开发处理</td>
+        </tr>
+        <tr>
+            <td>index</td>
+            <td>TSDB_CODE_INDEX_REBUILDING</td>
+            <td>0x3200</td>
+            <td>INDEX 正在重建中</td>
+            <td>写入过快，导致index 的合并线程处理不过来索引文件损坏，正在重建</td>
+            <td>检查错误日志，联系开发处理 </td>
+        </tr>
+        <tr>
+            <td>index</td>
+            <td>TSDB_CODE_INDEX_INVALID_FILE </td>
+            <td>0x3201</td>
+            <td>索引文件损坏</td>
+            <td>文件损坏</td>
+            <td>检查错误日志，联系开发处理 </td>
+        </tr>
+        <tr>
+            <td>tmq stream</td>
+            <td>TSDB_CODE_TMQ_INVALID_MSG </td>
+            <td>0x4000</td>
+            <td>Invalid message</td>
+            <td>订阅到的数据非法，一般不会出现</td>
+            <td>具体查看client端的错误日志提示</td>
+        </tr>
+        <tr>
+            <td>tmq stream</td>
+            <td>TSDB_CODE_TMQ_CONSUMER_MISMATCH</td>
+            <td>0x4001</td>
+            <td>Consumer mismatch</td>
+            <td>订阅请求的vnode和重新分配的vnode不一致，一般存在于有新消费者加入相同消费者组里时</td>
+            <td>内部错误，不暴露给用户</td>
+        </tr>
+        <tr>
+            <td>tmq stream</td>
+            <td>TSDB_CODE_TMQ_CONSUMER_CLOSED </td>
+            <td>0x4002</td>
+            <td>Consumer closed</td>
+            <td>消费者已经不存在了</td>
+            <td>查看是否已经close掉了</td>
+        </tr>
+        <tr>
+            <td>tmq stream</td>
+            <td>TSDB_CODE_STREAM_TASK_NOT_EXIST</td>
+            <td>0x4100</td>
+            <td>Stream task not exist</td>
+            <td>流计算任务不存在</td>
+            <td>具体查看server端的错误日志</td>
+        </tr>
+    </tbody>
+</table>

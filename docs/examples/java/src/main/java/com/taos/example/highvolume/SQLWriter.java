@@ -42,7 +42,7 @@ public class SQLWriter {
     /**
      * Maximum SQL length.
      */
-    private int maxSQLLength = 800_000;
+    private int maxSQLLength;
 
     /**
      * Map from table name to column values. For example:
@@ -81,6 +81,14 @@ public class SQLWriter {
         conn = getConnection();
         stmt = conn.createStatement();
         stmt.execute("use test");
+        ResultSet rs = stmt.executeQuery("show variables");
+        while (rs.next()) {
+            String configName = rs.getString(1);
+            if ("maxSQLLength".equals(configName)) {
+                maxSQLLength = Integer.parseInt(rs.getString(2));
+                logger.info("maxSQLLength={}", maxSQLLength);
+            }
+        }
     }
 
     /**
@@ -141,7 +149,7 @@ public class SQLWriter {
         } catch (SQLException e) {
             // convert to error code defined in taoserror.h
             int errorCode = e.getErrorCode() & 0xffff;
-            if (errorCode == 0x2603) {
+            if (errorCode == 0x362 || errorCode == 0x218) {
                 // Table does not exist
                 createTables();
                 executeSQL(sql);

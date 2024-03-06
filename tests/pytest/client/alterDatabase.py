@@ -29,18 +29,18 @@ class TDTestCase:
         tdSql.checkData(0, 0, "db")        
         
         tdSql.execute("alter database db comp 2")
-        tdSql.query("select * from information_schema.ins_databases")
+        tdSql.query("show databases")
         tdSql.checkData(0, 14, 2)
 
         tdSql.execute("alter database db keep 365,365,365")
-        tdSql.query("select * from information_schema.ins_databases")
+        tdSql.query("show databases")
         tdSql.checkData(0, 7, "365,365,365")
         
         tdSql.error("alter database db quorum 2")
         
 
         tdSql.execute("alter database db blocks 100")
-        tdSql.query("select * from information_schema.ins_databases")
+        tdSql.query("show databases")
         tdSql.checkData(0, 9, 100)
 
 

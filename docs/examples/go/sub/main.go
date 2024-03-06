@@ -1,82 +1,53 @@
 package main
 
 import (
+	"database/sql/driver"
 	"fmt"
+	"io"
 	"os"
 	"time"
 
-	"github.com/taosdata/driver-go/v3/af"
-	"github.com/taosdata/driver-go/v3/af/tmq"
-	tmqcommon "github.com/taosdata/driver-go/v3/common/tmq"
+	taos "github.com/taosdata/driver-go/v2/af"
 )
 
 func main() {
-	db, err := af.Open("", "root", "taosdata", "", 0)
+	db, err := taos.Open("", "", "", "log", 0)
 	if err != nil {
-		panic(err)
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 	defer db.Close()
-	_, err = db.Exec("create database if not exists example_tmq wal_retention_period 3600")
+	topic, err := db.Subscribe(false, "taoslogtail", "select ts, level, ipaddr, content from log", time.Second)
 	if err != nil {
-		panic(err)
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(2)
 	}
-	_, err = db.Exec("create topic if not exists example_tmq_topic as DATABASE example_tmq")
-	if err != nil {
-		panic(err)
-	}
-	if err != nil {
-		panic(err)
-	}
-	consumer, err := tmq.NewConsumer(&tmqcommon.ConfigMap{
-		"group.id":            "test",
-		"auto.offset.reset":   "latest",
-		"td.connect.ip":       "127.0.0.1",
-		"td.connect.user":     "root",
-		"td.connect.pass":     "taosdata",
-		"td.connect.port":     "6030",
-		"client.id":           "test_tmq_client",
-		"enable.auto.commit":  "false",
-		"msg.with.table.name": "true",
-	})
-	if err != nil {
-		panic(err)
-	}
-	err = consumer.Subscribe("example_tmq_topic", nil)
-	if err != nil {
-		panic(err)
-	}
-	_, err = db.Exec("create table example_tmq.t1 (ts timestamp,v int)")
-	if err != nil {
-		panic(err)
-	}
-	go func() {
-		for {
-			_, err = db.Exec("insert into example_tmq.t1 values(now,1)")
+	defer topic.Unsubscribe(true)
+	for {
+		func() {
+			rows, err := topic.Consume()
+			defer func() { rows.Close(); time.Sleep(time.Second) }()
 			if err != nil {
-				panic(err)
+				fmt.Println(err)
+				os.Exit(3)
 			}
-			time.Sleep(time.Microsecond * 100)
-		}
-	}()
-	for i := 0; i < 5; i++ {
-		ev := consumer.Poll(500)
-		if ev != nil {
-			switch e := ev.(type) {
-			case *tmqcommon.DataMessage:
-				fmt.Println(e.String())
-			case tmqcommon.Error:
-				fmt.Fprintf(os.Stderr, "%% Error: %v: %v\n", e.Code(), e)
-				panic(e)
+			for {
+				values := make([]driver.Value, 4)
+				err := rows.Next(values)
+				if err == io.EOF {
+					break
+				} else if err != nil {
+					fmt.Fprintln(os.Stderr, err)
+					os.Exit(4)
+				}
+				ts := values[0].(time.Time)
+				level := values[1].(int8)
+				ipaddr := values[2].(string)
+				content := values[3].(string)
+				fmt.Printf("%s %d %s %s\n", ts.Format(time.StampMilli), level, ipaddr, content)
 			}
-			consumer.Commit()
-		}
-	}
-	err = consumer.Unsubscribe()
-	if err != nil {
-		panic(err)
-	}
-	err = consumer.Close()
-	if err != nil {
-		panic(err)
+		}()
 	}
 }
+
+// 未完成

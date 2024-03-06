@@ -66,7 +66,7 @@ class TDTestCase:
             "name": "db",
             "drop": "yes",
             "replica": 1,
-            "duration": 10,
+            "days": 10,
             "cache": 16,
             "blocks": 8,
             "precision": "ms",
@@ -74,10 +74,9 @@ class TDTestCase:
             "minRows": 100,
             "maxRows": 4096,
             "comp": 2,
-            "walLevel": 1,
             "cachelast": 0,
             "quorum": 1,
-            "wal_fsync_period": 3000,
+            "fsync": 3000,
             "update": 0
         }
 
@@ -185,7 +184,7 @@ class TDTestCase:
             "user": "root",
             "password": "taosdata",
             "thread_count": 4,
-            "create_table_thread_count": 4,
+            "thread_count_create_tbl": 4,
             "result_file": "/tmp/insert_res.txt",
             "confirm_parameter_prompt": "no",
             "insert_interval": 0,
@@ -211,7 +210,7 @@ class TDTestCase:
             tdLog.info(f"taosd found in {buildPath}")
         binPath = buildPath + "/build/bin/"
 
-        create_table_cmd = f"{binPath}taosdemo -f {filepath} > /dev/null 2>&1"
+        create_table_cmd = f"{binPath}taosBenchmark -f {filepath} > /dev/null 2>&1"
         _ = subprocess.check_output(create_table_cmd, shell=True).decode("utf-8")
 
     def droptmpfile(self):
@@ -224,7 +223,7 @@ class TDTestCase:
         self.inserttable(file_create_table)
 
         tdLog.printNoPrefix("==========step2:check database and stable records")
-        tdSql.query("select * from information_schema.ins_databases")
+        tdSql.query("show databases")
         tdSql.checkData(0, 2, 2000)
         tdSql.execute("use db")
         tdSql.query("show stables")

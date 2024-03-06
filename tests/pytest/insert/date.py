@@ -7,7 +7,7 @@ from util.sql import *
 
 
 class TDTestCase:
-    def init(self, conn, logSql, replicaVar = 1):
+    def init(self, conn, logSql):
         tdLog.debug("start to execute %s" % __file__)
         tdSql.init(conn.cursor(), logSql)
 
@@ -174,14 +174,6 @@ class TDTestCase:
         # TSIM: sql drop database $db
         tdLog.info('drop database db')
         tdSql.execute('drop database db')
-        # TSIM: sql select * from information_schema.ins_databases
-        tdLog.info('select * from information_schema.ins_databases')
-        tdSql.query('select * from information_schema.ins_databases')
-        # TSIM: if $rows != 0 then
-        tdLog.info('tdSql.checkRow(0)')
-        tdSql.checkRows(0)
-        # TSIM: return -1
-        # TSIM: endi
 # convert end
 
     def stop(self):

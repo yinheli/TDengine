@@ -26,70 +26,6 @@ class DbConn:
     TYPE_NATIVE = "native-c"
     TYPE_REST =   "rest-api"
     TYPE_INVALID = "invalid"
-    
-
-
-    # class variables
-    lastSqlFromThreads : dict[int, str] = {} # stored by thread id, obtained from threading.current_thread().ident%10000
-    spendThreads : dict[int, float] = {} # stored by thread id, obtained from threading.current_thread().ident%10000
-    current_time : dict[int, float] = {}  # save current time 
-    @classmethod
-    def saveSqlForCurrentThread(cls, sql: str):
-        '''
-        Let us save the last SQL statement on a per-thread basis, so that when later we 
-        run into a dead-lock situation, we can pick out the deadlocked thread, and use 
-        that information to find what what SQL statement is stuck.
-        '''
-        
-        th = threading.current_thread()        
-        shortTid = th.native_id % 10000 #type: ignore
-        cls.lastSqlFromThreads[shortTid] = sql # Save this for later
-        cls.record_save_sql_time()
-
-    @classmethod
-    def fetchSqlForThread(cls, shortTid : int) -> str : 
-
-        print("=======================")
-        if shortTid not in cls.lastSqlFromThreads:
-            raise CrashGenError("No last-attempted-SQL found for thread id: {}".format(shortTid))
-        return cls.lastSqlFromThreads[shortTid] 
-
-    @classmethod
-    def get_save_sql_time(cls, shortTid : int):
-        '''
-        Let us save the last SQL statement on a per-thread basis, so that when later we 
-        run into a dead-lock situation, we can pick out the deadlocked thread, and use 
-        that information to find what what SQL statement is stuck.
-        '''
-        return cls.current_time[shortTid] 
-
-    @classmethod
-    def record_save_sql_time(cls):
-        '''
-        Let us save the last SQL statement on a per-thread basis, so that when later we 
-        run into a dead-lock situation, we can pick out the deadlocked thread, and use 
-        that information to find what what SQL statement is stuck.
-        '''
-        th = threading.current_thread()        
-        shortTid = th.native_id % 10000 #type: ignore
-        cls.current_time[shortTid] = float(time.time()) # Save this for later
- 
-    @classmethod
-    def sql_exec_spend(cls, cost: float):
-        '''
-        Let us save the last SQL statement on a per-thread basis, so that when later we 
-        run into a dead-lock situation, we can pick out the deadlocked thread, and use 
-        that information to find what what SQL statement is stuck.
-        '''
-        th = threading.current_thread()        
-        shortTid = th.native_id % 10000 #type: ignore
-        cls.spendThreads[shortTid] = cost # Save this for later
-
-    @classmethod
-    def get_time_cost(cls) ->float:
-        th = threading.current_thread()        
-        shortTid = th.native_id % 10000 #type: ignore
-        return cls.spendThreads.get(shortTid)
 
     @classmethod
     def create(cls, connType, dbTarget):
@@ -105,7 +41,6 @@ class DbConn:
     def createNative(cls, dbTarget) -> DbConn:
         return cls.create(cls.TYPE_NATIVE, dbTarget)
 
-
     @classmethod
     def createRest(cls, dbTarget) -> DbConn:
         return cls.create(cls.TYPE_REST, dbTarget)
@@ -120,7 +55,6 @@ class DbConn:
         return "[DbConn: type={}, target={}]".format(self._type, self._dbTarget)
 
     def getLastSql(self):
-        
         return self._lastSql
 
     def open(self):
@@ -160,19 +94,19 @@ class DbConn:
 
     def existsDatabase(self, dbName: str):
         ''' Check if a certain database exists '''
-        self.query("select * from information_schema.ins_databases")
+        self.query("show databases")
         dbs = [v[0] for v in self.getQueryResult()] # ref: https://stackoverflow.com/questions/643823/python-list-transformation
         # ret2 = dbName in dbs
         # print("dbs = {}, str = {}, ret2={}, type2={}".format(dbs, dbName,ret2, type(dbName)))
         return dbName in dbs # TODO: super weird type mangling seen, once here
 
-    def existsSuperTable(self, stName):
-        self.query("show stables")
+    def existsSuperTable(self, dbName, stName):
+        self.query("show {}.stables".format(dbName))
         sts = [v[0] for v in self.getQueryResult()]
         return stName in sts
 
-    def hasTables(self):
-        return self.query("show tables") > 0
+    def hasTables(self, dbName):
+        return self.query("show {}.tables".format(dbName)) > 0
 
     def execute(self, sql):
         ''' Return the number of rows affected'''
@@ -203,7 +137,7 @@ class DbConn:
     def getResultCols(self):
         raise RuntimeError("Unexpected execution, should be overriden")
 
-# Sample: curl -u root:taosdata -d "select * from information_schema.ins_databases" localhost:6020/rest/sql
+# Sample: curl -u root:taosdata -d "show databases" localhost:6020/rest/sql
 
 
 class DbConnRest(DbConn):
@@ -229,20 +163,13 @@ class DbConnRest(DbConn):
 
     def _doSql(self, sql):
         self._lastSql = sql # remember this, last SQL attempted
-        self.saveSqlForCurrentThread(sql) # Save in global structure too. #TODO: combine with above
-        time_cost = -1
-        time_start = time.time()
-        try:   
+        try:
             r = requests.post(self._url, 
                 data = sql,
-                auth = HTTPBasicAuth('root', 'taosdata'))    
+                auth = HTTPBasicAuth('root', 'taosdata'))         
         except:
             print("REST API Failure (TODO: more info here)")
-            self.sql_exec_spend(-2)
             raise
-        finally:
-            time_cost = time.time()- time_start 
-            self.sql_exec_spend(time_cost)
         rj = r.json()
         # Sanity check for the "Json Result"
         if ('status' not in rj):
@@ -274,8 +201,6 @@ class DbConnRest(DbConn):
         Logging.debug(
             "[SQL-REST] Execution Result, nRows = {}, SQL = {}".format(nRows, sql))
         return nRows
-
-    
 
     def query(self, sql):  # return rows affected
         return self.execute(sql)
@@ -390,7 +315,6 @@ class MyTDSql:
             raise
         return self.affectedRows
 
-
 class DbTarget:
     def __init__(self, cfgPath, hostAddr, port):
         self.cfgPath  = cfgPath
@@ -410,7 +334,6 @@ class DbConnNative(DbConn):
     # _connInfoDisplayed = False # TODO: find another way to display this
     totalConnections = 0 # Not private
     totalRequests = 0 
-    time_cost = -1
 
     def __init__(self, dbTarget):
         super().__init__(dbTarget)
@@ -469,18 +392,7 @@ class DbConnNative(DbConn):
                 "Cannot exec SQL unless db connection is open", CrashGenError.DB_CONNECTION_NOT_OPEN)
         Logging.debug("[SQL] Executing SQL: {}".format(sql))
         self._lastSql = sql
-        time_cost = -1
-        nRows = 0
-        time_start = time.time()
-        self.saveSqlForCurrentThread(sql) # Save in global structure too. #TODO: combine with above
-        try:
-            nRows= self._tdSql.execute(sql)
-        except Exception as e:
-            self.sql_exec_spend(-2)
-        finally:
-            time_cost =  time.time() - time_start
-            self.sql_exec_spend(time_cost)
-        
+        nRows = self._tdSql.execute(sql)
         cls = self.__class__
         cls.totalRequests += 1
         Logging.debug(
@@ -495,7 +407,6 @@ class DbConnNative(DbConn):
                 "Cannot query database until connection is open, restarting?", CrashGenError.DB_CONNECTION_NOT_OPEN)
         Logging.debug("[SQL] Executing SQL: {}".format(sql))
         self._lastSql = sql
-        self.saveSqlForCurrentThread(sql) # Save in global structure too. #TODO: combine with above
         nRows = self._tdSql.query(sql)
         cls = self.__class__
         cls.totalRequests += 1
@@ -560,3 +471,4 @@ class DbManager():
             self._dbConn.close()
             self._dbConn = None
             Logging.debug("DbManager closed DB connection...")
+

@@ -155,7 +155,7 @@ class TDTestCase:
         self.inertnow()
         self.querynow()
 
-        tdSql.query("select * from information_schema.ins_dnodes")
+        tdSql.query("show dnodes")
         index = tdSql.getData(0, 0)
         tdDnodes.stop(index)
         tdDnodes.start(index)

@@ -38,6 +38,8 @@ temp_version=""
 fin_result=""
 
 service_config_dir="/etc/systemd/system"
+nginx_port=6060
+nginx_dir="/usr/local/nginxd"
 
 # Color setting
 RED='\033[0;31m'
@@ -130,7 +132,10 @@ function check_main_path() {
         check_file ${install_main_dir} $i
     done
     if [ "$verMode" == "cluster" ]; then
-        check_file ${install_main_dir} "share/admin"
+        nginx_main_dir=("admin" "conf" "html" "sbin" "logs")
+        for i in "${nginx_main_dir[@]}";do
+            check_file ${nginx_dir}  $i
+        done
     fi
     echo -e "Check main path:\033[32mOK\033[0m!"
 }
@@ -145,6 +150,9 @@ function check_bin_path() {
     for i in "${lbin_dir[@]}";do
         check_link ${bin_link_dir}/$i
     done
+    if [ "$verMode" == "cluster" ]; then
+        check_file ${nginx_dir}/sbin nginx
+    fi
     echo -e "Check bin  path:\033[32mOK\033[0m!"
 }
 
@@ -162,7 +170,7 @@ function check_lib_path() {
 
 function check_header_path() {
 	# check all header
-	header_dir=("taos.h" "taosdef.h" "taoserror.h" "taosudf.h")
+	header_dir=("taos.h" "taosdef.h" "taoserror.h")
     for i in "${header_dir[@]}";do
         check_link ${inc_link_dir}/$i
     done

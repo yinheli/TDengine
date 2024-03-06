@@ -1,48 +1,75 @@
-cmake_minimum_required(VERSION 3.0)
+IF (CMAKE_VERSION VERSION_LESS 3.0)
+  PROJECT(TDengine CXX)
+  SET(PROJECT_VERSION_MAJOR "${LIB_MAJOR_VERSION}")
+  SET(PROJECT_VERSION_MINOR "${LIB_MINOR_VERSION}")
+  SET(PROJECT_VERSION_PATCH "${LIB_PATCH_VERSION}")
+  SET(PROJECT_VERSION "${LIB_VERSION_STRING}")
+ELSE ()
+  CMAKE_POLICY(SET CMP0048 NEW)
+  PROJECT(TDengine VERSION "${LIB_VERSION_STRING}" LANGUAGES CXX)
+ENDIF ()
 
-project(
-    TDengine
-    VERSION 3.0
-    DESCRIPTION "An open-source big data platform designed and optimized for the Internet of Things(IOT)"
-)
+IF (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  CMAKE_MINIMUM_REQUIRED(VERSION 3.0...3.20)
+ELSE ()
+  CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
+ENDIF ()
 
-if (NOT DEFINED TD_SOURCE_DIR)
-  set( TD_SOURCE_DIR ${PROJECT_SOURCE_DIR} )
+if(NOT WIN32)
+  string(ASCII 27 Esc)
+  set(ColourReset "${Esc}[m")
+  set(ColourBold  "${Esc}[1m")
+  set(Red         "${Esc}[31m")
+  set(Green       "${Esc}[32m")
+  set(Yellow      "${Esc}[33m")
+  set(Blue        "${Esc}[34m")
+  set(Magenta     "${Esc}[35m")
+  set(Cyan        "${Esc}[36m")
+  set(White       "${Esc}[37m")
+  set(BoldRed     "${Esc}[1;31m")
+  set(BoldGreen   "${Esc}[1;32m")
+  set(BoldYellow  "${Esc}[1;33m")
+  set(BoldBlue    "${Esc}[1;34m")
+  set(BoldMagenta "${Esc}[1;35m")
+  set(BoldCyan    "${Esc}[1;36m")
+  set(BoldWhite   "${Esc}[1;37m")
 endif()
 
+SET(TD_ACCOUNT FALSE)
+SET(TD_ADMIN FALSE)
+SET(TD_GRANT FALSE)
+SET(TD_USB_DONGLE FALSE)
+SET(TD_MQTT FALSE)
+SET(TD_TSDB_PLUGINS FALSE)
+SET(TD_STORAGE FALSE)
+SET(TD_TOPIC FALSE)
+SET(TD_MODULE FALSE)
+
+SET(TD_COVER FALSE)
+SET(TD_MEM_CHECK FALSE)
+
+SET(TD_PAGMODE_LITE FALSE)
+SET(TD_SOMODE_STATIC FALSE)
+SET(TD_GODLL FALSE)
+
 SET(TD_COMMUNITY_DIR ${PROJECT_SOURCE_DIR})
+MESSAGE(STATUS "Community directory: " ${TD_COMMUNITY_DIR})
 
-set(TD_SUPPORT_DIR "${TD_SOURCE_DIR}/cmake")
-set(TD_CONTRIB_DIR "${TD_SOURCE_DIR}/contrib")
+INCLUDE(cmake/input.inc)
+INCLUDE(cmake/platform.inc)
 
+IF (TD_WINDOWS OR TD_DARWIN)
+  SET(TD_SOMODE_STATIC TRUE)
+ENDIF ()
 
-include(${TD_SUPPORT_DIR}/cmake.platform)
-include(${TD_SUPPORT_DIR}/cmake.define)
-include(${TD_SUPPORT_DIR}/cmake.options)
-include(${TD_SUPPORT_DIR}/cmake.version)
+INCLUDE(cmake/define.inc)
+INCLUDE(cmake/env.inc)
+INCLUDE(cmake/version.inc)
+INCLUDE(cmake/install.inc)
 
+ADD_SUBDIRECTORY(deps)
+ADD_SUBDIRECTORY(src)
+ADD_SUBDIRECTORY(tests)
+ADD_SUBDIRECTORY(examples/c)
 
-# contrib
-add_subdirectory(contrib)
-
-set_property(GLOBAL PROPERTY GLOBAL_DEPENDS_NO_CYCLES OFF)
-
-# api
-add_library(api INTERFACE)
-target_include_directories(api INTERFACE "include/client")
-
-# src
-if(${BUILD_TEST})
-    include(CTest)
-    enable_testing()
-endif(${BUILD_TEST})
-
-add_subdirectory(source)
-add_subdirectory(tools)
-add_subdirectory(utils)
-add_subdirectory(examples/c)
-add_subdirectory(tests)
-include(${TD_SUPPORT_DIR}/cmake.install)
-
-# docs 
-add_subdirectory(docs/doxgen)
+INCLUDE(CPack)

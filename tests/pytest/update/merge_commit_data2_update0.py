@@ -27,7 +27,7 @@ class TDTestCase:
 
     def restart_taosd(self,db):
         tdDnodes.stop(1)
-        tdDnodes.startWithoutSleep(1)
+        tdDnodes.start(1)
         tdSql.execute("use %s;" % db)
 
     def date_to_timestamp_microseconds(self, date):
@@ -49,7 +49,7 @@ class TDTestCase:
         tdSql.execute(sql)
         sql = 'drop database if exists db'
         tdSql.execute(sql)
-        sql = 'create database db update 0 duration 30;'
+        sql = 'create database db update 0 days 30;'
         tdSql.execute(sql)
         sql = 'use db;'
         tdSql.execute(sql)

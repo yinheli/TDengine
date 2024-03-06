@@ -24,14 +24,11 @@ class TDTestCase:
         '''
         return
 
-    def init(self, conn, logSql, replicaVar=1):
-        self.replicaVar = int(replicaVar)
+    def init(self, conn, logSql):
         tdLog.debug("start to execute %s" % __file__)
         tdSql.init(conn.cursor(), logSql)
 
     def getPath(self, tool="taosBenchmark"):
-        if (platform.system().lower() == 'windows'):
-            tool = tool + ".exe"
         selfPath = os.path.dirname(os.path.realpath(__file__))
 
         if ("community" in selfPath):
@@ -63,9 +60,8 @@ class TDTestCase:
         tdSql.checkData(2, 0, "jtag")
         tdSql.checkData(2, 1, "JSON")
         tdSql.checkData(2, 3, "TAG")
-        # 3.0 cannot distinct jtag
-        #tdSql.query("select count(jtag) from db.stb")
-        #tdSql.checkData(0, 0, 8)
+        tdSql.query("select count(jtag) from db.stb")
+        tdSql.checkData(0, 0, 8)
 
     def stop(self):
         tdSql.close()

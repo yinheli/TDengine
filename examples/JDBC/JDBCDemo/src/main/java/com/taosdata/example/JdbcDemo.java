@@ -3,13 +3,10 @@ package com.taosdata.example;
 import java.sql.*;
 import java.util.Properties;
 
-import com.sun.org.apache.bcel.internal.generic.ACONST_NULL;
-import com.taosdata.jdbc.TSDBDriver;
-
 public class JdbcDemo {
-    private static String host = "localhost";
-    private static final String dbName = "power";
-    private static final String tbName = "meters";
+    private static String host;
+    private static final String dbName = "test";
+    private static final String tbName = "weather";
     private static final String user = "root";
     private static final String password = "taosdata";
 
@@ -33,13 +30,6 @@ public class JdbcDemo {
         demo.select();
         demo.dropTable();
         demo.close();
-
-        try {
-           Connection restCon = demo.getRestConn();
-           restCon.close();
-        }catch (Exception e){
-            System.out.println(e);
-        }
     }
 
     private void init() {
@@ -58,36 +48,34 @@ public class JdbcDemo {
             e.printStackTrace();
         }
     }
+
     private void createDatabase() {
-        String sql = "CREATE DATABASE IF NOT EXISTS " + dbName;
-        execute(sql);
+        String sql = "create database if not exists " + dbName;
+        exuete(sql);
     }
 
     private void useDatabase() {
-        String sql = "USE " + dbName;
-        execute(sql);
-    }
-
-    private void createTable() {
-        final String sql = "CREATE STABLE IF NOT EXISTS " + dbName + "." + tbName + " (`ts` TIMESTAMP, `current` FLOAT, `voltage` INT, `phase` FLOAT) TAGS (`groupid` INT, `location` VARCHAR(24))";
-        execute(sql);
+        String sql = "use " + dbName;
+        exuete(sql);
     }
 
     private void dropTable() {
-        final String sql = "DROP STABLE IF EXISTS " + dbName + "." + tbName + "";
-        execute(sql);
+        final String sql = "drop table if exists " + dbName + "." + tbName + "";
+        exuete(sql);
+    }
+
+    private void createTable() {
+        final String sql = "create table if not exists " + dbName + "." + tbName + " (ts timestamp, temperature float, humidity int)";
+        exuete(sql);
     }
 
     private void insert() {
-        final String sql = "INSERT INTO " + dbName + "." + tbName + " (tbname, location, groupId, ts, current, voltage, phase)" +
-                            "values('d31001', 'California.SanFrancisco', 2, '2021-07-13 14:06:34.630', 10.2, 219, 0.32)" +
-                            "('d31001', 'California.SanFrancisco', 2, '2021-07-13 14:06:35.779', 10.15, 217, 0.33)" +
-                            "('d31002', NULL, 2, '2021-07-13 14:06:34.255', 10.15, 217, 0.33)";
-        execute(sql);
+        final String sql = "insert into " + dbName + "." + tbName + " (ts, temperature, humidity) values(now, 20.5, 34)";
+        exuete(sql);
     }
 
     private void select() {
-        final String sql = "SELECT * FROM " + dbName + "." + tbName;
+        final String sql = "select * from " + dbName + "." + tbName;
         executeQuery(sql);
     }
 
@@ -108,7 +96,7 @@ public class JdbcDemo {
             ResultSet resultSet = statement.executeQuery(sql);
             long end = System.currentTimeMillis();
             printSql(sql, true, (end - start));
-            Util.printResult(resultSet);
+            printResult(resultSet);
         } catch (SQLException e) {
             long end = System.currentTimeMillis();
             printSql(sql, false, (end - start));
@@ -116,11 +104,23 @@ public class JdbcDemo {
         }
     }
 
+    private void printResult(ResultSet resultSet) throws SQLException {
+        ResultSetMetaData metaData = resultSet.getMetaData();
+        while (resultSet.next()) {
+            for (int i = 1; i <= metaData.getColumnCount(); i++) {
+                String columnLabel = metaData.getColumnLabel(i);
+                String value = resultSet.getString(i);
+                System.out.printf("%s: %s\t", columnLabel, value);
+            }
+            System.out.println();
+        }
+    }
+
     private void printSql(String sql, boolean succeed, long cost) {
         System.out.println("[ " + (succeed ? "OK" : "ERROR!") + " ] time cost: " + cost + " ms, execute statement ====> " + sql);
     }
 
-    private void execute(String sql) {
+    private void exuete(String sql) {
         long start = System.currentTimeMillis();
         try (Statement statement = connection.createStatement()) {
             boolean execute = statement.execute(sql);
@@ -136,15 +136,6 @@ public class JdbcDemo {
     private static void printHelp() {
         System.out.println("Usage: java -jar JDBCDemo.jar -host <hostname>");
         System.exit(0);
-    }
-
-    public Connection getRestConn() throws Exception{
-        Class.forName("com.taosdata.jdbc.rs.RestfulDriver");
-        String jdbcUrl = "jdbc:TAOS-RS://localhost:6041/power?user=root&password=taosdata";
-        Properties connProps = new Properties();
-        connProps.setProperty(TSDBDriver.PROPERTY_KEY_BATCH_LOAD, "true");
-        Connection conn = DriverManager.getConnection(jdbcUrl, connProps);
-        return conn;
     }
 
 }

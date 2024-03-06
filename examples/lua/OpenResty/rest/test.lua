@@ -4,21 +4,8 @@ local Pool = require "tdpool"
 local config = require "config"
 ngx.say("start time:"..os.time())
 
-local pool = Pool.new(Pool, config)
-local another_pool = Pool.new(Pool, config)
-local conn, conn1, conn2
-conn = pool:get_connection()
-conn1 = pool:get_connection()
-conn2 = pool:get_connection()
-local temp_conn = another_pool:get_connection()
-ngx.say("pool size:"..config.connection_pool_size)
-ngx.say("pool watermark:"..pool:get_watermark())
-ngx.say("pool current load:"..pool:get_current_load())
-pool:release_connection(conn1)
-pool:release_connection(conn2)
-another_pool:release_connection(temp_conn)
-ngx.say("pool watermark:"..pool:get_watermark())
-ngx.say("pool current load:"..pool:get_current_load())
+local pool = Pool.new(Pool,config)
+local conn = pool:get_connection()
 
 local res = driver.query(conn,"drop database if exists nginx")
 if res.code ~=0 then
@@ -41,14 +28,15 @@ else
    ngx.say("select db--- pass.")
 end
 
-res = driver.query(conn,"create table m1 (ts timestamp, speed int,owner binary(20))")
+res = driver.query(conn,"create table m1 (ts timestamp, speed int, owner binary(20), mark nchar(30))")
 if res.code ~=0 then
    ngx.say("create table---failed: "..res.error)
+
 else
    ngx.say("create table--- pass.")
 end
 
-res = driver.query(conn,"insert into m1 values ('2019-09-01 00:00:00.001', 0, 'robotspace'), ('2019-09-01 00:00:00.002',1,'Hilink'),('2019-09-01 00:00:00.003',2,'Harmony')")
+res = driver.query(conn,"insert into m1 values ('2019-09-01 00:00:00.001', 0, 'robotspace', '世界人民大团结万岁'), ('2019-09-01 00:00:00.002',1,'Hilink','⾾⾿⿀⿁⿂⿃⿄⿅⿆⿇⿈⿉⿊⿋⿌⿍⿎⿏⿐⿑⿒⿓⿔⿕'),('2019-09-01 00:00:00.003',2,'Harmony', '₠₡₢₣₤₥₦₧₨₩₪₫€₭₮₯₰₱₲₳₴₵')")
 if res.code ~=0 then
    ngx.say("insert records failed: "..res.error)
    return
@@ -68,13 +56,13 @@ if res.code ~=0 then
 else
    ngx.say(cjson.encode(res))
     if (#(res.item) == 3) then
-	ngx.say("select--- pass")
+        ngx.say("select--- pass")
     else
 	ngx.say("select--- failed: expect 3 affected records, actually received "..#(res.item))
     end
 
 end
-
+--[[
 local flag = false
 function query_callback(res)
    if res.code ~=0 then
@@ -92,8 +80,12 @@ end
 driver.query_a(conn,"insert into m1 values ('2019-09-01 00:00:00.001', 3, 'robotspace'),('2019-09-01 00:00:00.006', 4, 'Hilink'),('2019-09-01 00:00:00.007', 6, 'Harmony')", query_callback)
 
 while not flag do
---   ngx.say("i am here once...")
+   ngx.say("i am here once...")
    ngx.sleep(0.001) -- time unit is second
 end
+--]]
+
+ngx.say("pool water_mark:"..pool:get_water_mark())
+
 pool:release_connection(conn)
 ngx.say("end time:"..os.time())

@@ -13,7 +13,7 @@ CMD_NAME=
 LOOP_TIMES=5
 SLEEP_TIME=0
 
-while getopts "hf:t:s:" arg
+while getopts "f:t:s:" arg
 do
   case $arg in
     f)
@@ -24,12 +24,6 @@ do
       ;;
     s)
       SLEEP_TIME=$OPTARG
-      ;;
-    h)
-      echo "Usage: $(basename $0) -f [cmd name] "
-      echo "                  -t [loop times] "
-      echo "                  -s [sleep time] "
-      exit 0
       ;;
     ?)
       echo "unknow argument"

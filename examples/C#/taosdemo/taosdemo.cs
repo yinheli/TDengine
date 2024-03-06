@@ -72,7 +72,7 @@ namespace TDengineDriver
             {
                 if ("--help" == argv[i])
                 {
-                    Console.WriteLine("Usage: taosdemo.exe [OPTION...]");
+                    Console.WriteLine("Usage: mono taosdemo.exe [OPTION...]");
                     Console.WriteLine("");
                     HelpPrint("--help", "Show usage.");
                     Console.WriteLine("");
@@ -118,7 +118,7 @@ namespace TDengineDriver
             port = (short)this.GetArgumentAsLong(argv, "-p", 0, 65535, 6030);
             user = this.GetArgumentAsString(argv, "-u", "root");
             password = this.GetArgumentAsString(argv, "-P", "taosdata");
-            dbName = this.GetArgumentAsString(argv, "-d", "db");
+            dbName = this.GetArgumentAsString(argv, "-d", "taosdemo_cs");
             stablePrefix = this.GetArgumentAsString(argv, "-s", "st");
             tablePrefix = this.GetArgumentAsString(argv, "-m", "t");
             isInsertOnly = this.GetArgumentAsFlag(argv, "-x", true);
@@ -305,7 +305,7 @@ namespace TDengineDriver
             this.conn = TDengine.Connect(this.host, this.user, this.password, db, this.port);
             if (this.conn == IntPtr.Zero)
             {
-                Console.WriteLine("Connect to TDengine failed. Reason: {0}\n", TDengine.Error(0));
+                Console.WriteLine("Connect to TDengine failed");
                 CleanAndExitProgram(1);
             }
             else
@@ -361,7 +361,10 @@ namespace TDengineDriver
 
                 threadArr[i] = new Thread(createTableThread.ThreadMain);
                 threadArr[i].Start();
-                threadArr[i].Join();
+            }
+            for (int j = 0; j < numOfThreads; j++)
+            {
+                threadArr[j].Join();
             }
         }
 
@@ -482,7 +485,10 @@ namespace TDengineDriver
 
                 threadArr[i] = new Thread(insertThread.ThreadMain);
                 threadArr[i].Start();
-                threadArr[i].Join();
+            }
+            for (int j = 0; j < numOfThreads; j++)
+            {
+                threadArr[j].Join();
             }
         }
 

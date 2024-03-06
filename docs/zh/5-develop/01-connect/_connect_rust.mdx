@@ -1,0 +1,19 @@
+```rust title="原生连接"
+use taos::*;
+
+#[tokio::main]
+async fn main() -> Result<(), Error> {
+    #[allow(unused_variables)]
+    let taos = TaosBuilder::from_dsn("taos://")?.build()?;
+    println!("Connected");
+    Ok(())
+}
+
+```
+
+[查看源码](https://github.com/taosdata/TDengine/blob/main/docs/examples/rust/nativeexample/examples/connect.rs)
+
+:::note
+对于 Rust 连接器， 连接方式的不同只体现在使用的特性不同。如果启用了 "ws" 特性，那么只有 Websocket 的实现会被编译进来。
+
+:::

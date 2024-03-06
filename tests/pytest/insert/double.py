@@ -7,7 +7,7 @@ from util.sql import *
 
 
 class TDTestCase:
-    def init(self, conn, logSql, replicaVar = 1):
+    def init(self, conn, logSql):
         tdLog.debug("start to execute %s" % __file__)
         tdSql.init(conn.cursor(), logSql)
 
@@ -75,6 +75,10 @@ class TDTestCase:
         tdSql.checkData(0, 1, 2.000000000)
         tdLog.info('drop database db')
         tdSql.execute('drop database db')
+        tdLog.info('show databases')
+        tdSql.query('show databases')
+        tdLog.info('tdSql.checkRow(0)')
+        tdSql.checkRows(0)
 # convert end
 
     def stop(self):

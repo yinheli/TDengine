@@ -4,11 +4,11 @@ import taos
 conn = taos.connect()
 # Execute a sql, ignore the result set, just get affected rows. It's useful for DDL and DML statement.
 conn.execute("DROP DATABASE IF EXISTS test")
-conn.execute("CREATE DATABASE test keep 36500")
+conn.execute("CREATE DATABASE test")
 # change database. same as execute "USE db"
 conn.select_db("test")
 conn.execute("CREATE STABLE weather(ts TIMESTAMP, temperature FLOAT) TAGS (location INT)")
-affected_row = conn.execute("INSERT INTO t1 USING weather TAGS(1) VALUES (now, 23.5) (now+1m, 23.5) (now+2m, 24.4)")
+affected_row: int = conn.execute("INSERT INTO t1 USING weather TAGS(1) VALUES (now, 23.5) (now+1m, 23.5) (now+2m 24.4)")
 print("affected_row", affected_row)
 # output:
 # affected_row 3
@@ -16,10 +16,10 @@ print("affected_row", affected_row)
 
 # ANCHOR: query
 # Execute a sql and get its result set. It's useful for SELECT statement
-result = conn.query("SELECT * from weather")
+result: taos.TaosResult = conn.query("SELECT * from weather")
 
 # Get fields from result
-fields = result.fields
+fields: taos.field.TaosFields = result.fields
 for field in fields:
     print(field)  # {name: ts, type: 9, bytes: 8}
 

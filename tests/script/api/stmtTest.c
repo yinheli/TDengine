@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "taos.h"
 #include <sys/time.h>
+#include <pthread.h>
 #include <unistd.h>
-#include "../../../include/client/taos.h"
 
 #define PRINT_ERROR printf("\033[31m");
 #define PRINT_SUCCESS printf("\033[32m");
@@ -63,7 +64,7 @@ int main(int argc, char *argv[]) {
     execute_simple_sql(taos, "use test");
     execute_simple_sql(taos, "create table super(ts timestamp, c1 int, c2 bigint, c3 float, c4 double, c5 binary(8), c6 smallint, c7 tinyint, c8 bool, c9 nchar(8), c10 timestamp) tags (t1 int, t2 bigint, t3 float, t4 double, t5 binary(8), t6 smallint, t7 tinyint, t8 bool, t9 nchar(8))");
 
-    char *sql = taosMemoryCalloc(1, 1024*1024);
+    char *sql = calloc(1, 1024*1024);
     int sqlLen = 0;
     sqlLen = sprintf(sql, "create table");
     for (int i = 0; i < 10; i++) {
@@ -227,6 +228,14 @@ int main(int argc, char *argv[]) {
     }
     PRINT_SUCCESS
     printf("Successfully execute insert statement.\n");
+
+    int affectedRows = taos_stmt_affected_rows(stmt);
+    printf("Successfully inserted %d rows\n", affectedRows);
+    if (affectedRows != 10) {
+      PRINT_ERROR
+      printf("failed to insert 10 rows\n");
+      exit(EXIT_FAILURE);
+    }
 
     taos_stmt_close(stmt);
     for (int i = 0; i < 10; i++) {

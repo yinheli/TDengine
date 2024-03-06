@@ -1,49 +1,38 @@
 ---
-title: Connect to TDengine
 sidebar_label: Connect
-description: This document describes how to establish connections to TDengine and how to install and use TDengine client libraries.
+title: Connect
+description: "This document explains how to establish connections to TDengine, and briefly introduces how to install and use TDengine connectors."
 ---
 
 import Tabs from "@theme/Tabs";
 import TabItem from "@theme/TabItem";
-import ConnJava from "./_connect_java.mdx";
-import ConnGo from "./_connect_go.mdx";
-import ConnRust from "./_connect_rust.mdx";
-import ConnNode from "./_connect_node.mdx";
-import ConnPythonNative from "./_connect_python.mdx";
-import ConnCSNative from "./_connect_cs.mdx";
-import ConnC from "./_connect_c.mdx";
-import ConnR from "./_connect_r.mdx";
-import ConnPHP from "./_connect_php.mdx";
-import InstallOnLinux from "../../08-client-libraries/_linux_install.mdx";
-import InstallOnWindows from "../../08-client-libraries/_windows_install.mdx";
-import InstallOnMacOS from "../../08-client-libraries/_macos_install.mdx";
-import VerifyLinux from "../../08-client-libraries/_verify_linux.mdx";
-import VerifyWindows from "../../08-client-libraries/_verify_windows.mdx";
-import VerifyMacOS from "../../08-client-libraries/_verify_macos.mdx";
+import ConnJava from "./\_connect_java.mdx";
+import ConnGo from "./\_connect_go.mdx";
+import ConnRust from "./\_connect_rust.mdx";
+import ConnNode from "./\_connect_node.mdx";
+import ConnPythonNative from "./\_connect_python.mdx";
+import ConnCSNative from "./\_connect_cs.mdx";
+import ConnC from "./\_connect_c.mdx";
+import ConnR from "./\_connect_r.mdx";
+import InstallOnWindows from "../../14-reference/03-connector/\_linux_install.mdx";
+import InstallOnLinux from "../../14-reference/03-connector/\_windows_install.mdx";
+import VerifyLinux from "../../14-reference/03-connector/\_verify_linux.mdx";
+import VerifyWindows from "../../14-reference/03-connector/\_verify_windows.mdx";
 
-Any application running on any platform can access TDengine through the REST API provided by TDengine. For information, see [REST API](../../reference/rest-api/). Applications can also use the client libraries for various programming languages, including C/C++, Java, Python, Go, Node.js, C#, and Rust, to access TDengine. These client libraries support connecting to TDengine clusters using both native interfaces (taosc). Some client libraries also support connecting over a REST interface. Community developers have also contributed several unofficial client libraries, such as the ADO.NET, Lua, and PHP libraries.
+Any application programs running on any kind of platform can access TDengine through the REST API provided by TDengine. For details, please refer to [REST API](../../reference/rest-api/). Additionally, application programs can use the connectors of multiple programming languages including C/C++, Java, Python, Go, Node.js, C#, Rust to access TDengine. This chapter describes how to establish a connection to TDengine and briefly introduces how to install and use connectors. TDengine community also provides connectors in LUA and PHP languages. For details about the connectors, please refer to [Connectors](../../reference/connector/).
 
 ## Establish Connection
 
-There are three ways for a client library to establish connections to TDengine:
+There are two ways for a connector to establish connections to TDengine:
 
-1. Native connection through the TDengine client driver (taosc).
-2. REST connection through the REST API provided by the taosAdapter component.
-3. Websocket connection provided by the taosAdapter component.
+1. Connection through the REST API provided by the taosAdapter component, this way is called "REST connection" hereinafter.
+2. Connection through the TDengine client driver (taosc), this way is called "Native connection" hereinafter.
 
-![TDengine connection type](connection-type-en.webp)
+Key differences：
 
-For these ways of connections, client libraries provide similar APIs for performing operations and running SQL statements on your databases. The main difference is the method of establishing the connection, which is not visible to users.
-
-Key differences:
-
-1. For a Native connection, the client driver taosc and the server TDengine version must be compatible.
-2. For a REST connection, users do not need to install the client driver taosc, providing the advantage of cross-platform ease of use. However, functions such as data subscription and binary data types are not available. Additionally, compared to Native and Websocket connections, a REST connection has the worst performance.
-3. For a Websocket connection, users also do not need to install the client driver taosc. However, compared to a Native connection, the performance is reduced by about 30%.
-4. To connect to a cloud service instance, you need to use the REST connection or Websocket connection.
-   
-Normally we recommend using **Websocket connection**.
+1. The TDengine client driver (taosc) has the highest performance with all the features of TDengine like [Parameter Binding](../../reference/connector/cpp#parameter-binding-api), [Subscription](../../reference/connector/cpp#subscription-and-consumption-api), etc.
+2. The TDengine client driver (taosc) is not supported across all platforms, and applications built on taosc may need to be modified when updating taosc to newer versions.
+3. The REST connection is more accessible with cross-platform support, however it results in a 30% performance downgrade.
 
 ## Install Client Driver taosc
 
@@ -53,13 +42,10 @@ If you are choosing to use the native connection and the the application is not 
 
 <Tabs defaultValue="linux" groupId="os">
   <TabItem value="linux" label="Linux">
-    <InstallOnLinux />
-  </TabItem>
-  <TabItem value="windows" label="Windows">
     <InstallOnWindows />
   </TabItem>
-  <TabItem value="macos" label="MacOS">
-    <InstallOnMacOS />
+  <TabItem value="windows" label="Windows">
+    <InstallOnLinux />
   </TabItem>
 </Tabs>
 
@@ -74,23 +60,20 @@ After the above installation and configuration are done and making sure TDengine
   <TabItem value="windows" label="Windows">
     <VerifyWindows />
   </TabItem>
-  <TabItem value="macos" label="MacOS">
-    <VerifyMacOS />
-  </TabItem>
 </Tabs>
 
-## Install Client Library
+## Install Connectors
 
 <Tabs groupId="lang">
 <TabItem label="Java" value="java">
-
+  
 If `maven` is used to manage the projects, what needs to be done is only adding below dependency in `pom.xml`.
 
 ```xml
 <dependency>
   <groupId>com.taosdata.jdbc</groupId>
   <artifactId>taos-jdbcdriver</artifactId>
-  <version>3.2.8</version>
+  <version>2.0.38</version>
 </dependency>
 ```
 
@@ -115,11 +98,7 @@ pip install git+https://github.com/taosdata/taos-connector-python.git
 Just need to add `driver-go` dependency in `go.mod` .
 
 ```go-mod title=go.mod
-module goexample
-
-go 1.17
-
-require github.com/taosdata/driver-go/v3 latest
+{{#include docs/examples/go/go.mod}}
 ```
 
 :::note
@@ -130,18 +109,18 @@ require github.com/taosdata/driver-go/v3 latest
 </TabItem>
 <TabItem label="Rust" value="rust">
 
-Just need to add `taos` dependency in `Cargo.toml`.
+Just need to add `libtaos` dependency in `Cargo.toml`.
 
 ```toml title=Cargo.toml
 [dependencies]
-taos = { version = "*"}
+libtaos = { version = "0.4.2"}
 ```
 
 :::info
-Rust client library uses different features to distinguish the way to establish connection. To establish Websocket connection, please enable `ws` feature.
+Rust connector uses different features to distinguish the way to establish connection. To establish REST connection, please enable `rest` feature.
 
 ```toml
-taos = { version = "*", default-features = false, features = ["ws"] }
+libtaos = { version = "*", features = ["rest"] }
 ```
 
 :::
@@ -149,22 +128,22 @@ taos = { version = "*", default-features = false, features = ["ws"] }
 </TabItem>
 <TabItem label="Node.js" value="node">
 
-Node.js client library provides different ways of establishing connections by providing different packages.
+Node.js connector provides different ways of establishing connections by providing different packages.
 
-1. Install Node.js Native Client Library
+1. Install Node.js Native Connector
 
 ```
-npm install @tdengine/client
+npm i td2.0-connector
 ```
 
 :::note
 It's recommend to use Node whose version is between `node-v12.8.0` and `node-v13.0.0`.
 :::
 
-2. Install Node.js REST Client Library
+2. Install Node.js REST Connector
 
 ```
-npm install @tdengine/rest
+npm i td2.0-rest-connector
 ```
 
 </TabItem>
@@ -184,7 +163,7 @@ Just need to add the reference to [TDengine.Connector](https://www.nuget.org/pac
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="TDengine.Connector" Version="3.1.0" />
+    <PackageReference Include="TDengine.Connector" Version="1.0.6" />
   </ItemGroup>
 
 </Project>
@@ -204,8 +183,8 @@ The sample code below are based on dotnet6.0, they may need to be adjusted if yo
 </TabItem>
 <TabItem label="R" value="r">
 
-1. Download [taos-jdbcdriver-version-dist.jar](https://repo1.maven.org/maven2/com/taosdata/jdbc/taos-jdbcdriver/3.0.0/).
-2. Install the dependency package `RJDBC`:
+1. Download [taos-jdbcdriver-version-dist.jar](https://repo1.maven.org/maven2/com/taosdata/jdbc/taos-jdbcdriver/2.0.38/).
+2. Install the dependency package `RJDBC`：
 
 ```R
 install.packages("RJDBC")
@@ -214,13 +193,13 @@ install.packages("RJDBC")
 </TabItem>
 <TabItem label="C" value="c">
 
-If the client driver (taosc) is already installed, then the C client library is already available.
+If the client driver (taosc) is already installed, then the C connector is already available.
 <br/>
 
 </TabItem>
 <TabItem label="PHP" value="php">
 
-**Download Source Code Package and Unzip: **
+**Download Source Code Package and Unzip：**
 
 ```shell
 curl -L -o php-tdengine.tar.gz https://github.com/Yurunsoft/php-tdengine/archive/refs/tags/v1.0.2.tar.gz \
@@ -228,24 +207,24 @@ curl -L -o php-tdengine.tar.gz https://github.com/Yurunsoft/php-tdengine/archive
 && tar -xzf php-tdengine.tar.gz -C php-tdengine --strip-components=1
 ```
 
-> Version number `v1.0.2` is only for example, it can be replaced to any newer version.
+> Version number `v1.0.2` is only for example, it can be replaced to any newer version, please check available version from [TDengine PHP Connector Releases](https://github.com/Yurunsoft/php-tdengine/releases).
 
-**Non-Swoole Environment: **
+**Non-Swoole Environment：**
 
 ```shell
 phpize && ./configure && make -j && make install
 ```
 
-**Specify TDengine Location: **
+**Specify TDengine Location：**
 
 ```shell
-phpize && ./configure --with-tdengine-dir=/usr/local/Cellar/tdengine/3.0.0.0 && make -j && make install
+phpize && ./configure --with-tdengine-dir=/usr/local/Cellar/tdengine/2.4.0.0 && make -j && make install
 ```
 
 > `--with-tdengine-dir=` is followed by the TDengine installation location.
 > This way is useful in case TDengine location can't be found automatically or macOS.
 
-**Swoole Environment: **
+**Swoole Environment：**
 
 ```shell
 phpize && ./configure --enable-swoole && make -j && make install
@@ -253,14 +232,14 @@ phpize && ./configure --enable-swoole && make -j && make install
 
 **Enable The Extension:**
 
-Option One: Add `extension=tdengine` in `php.ini`
+Option One: Add `extension=tdengine` in `php.ini` 
 
 Option Two: Specify the extension on CLI `php -d extension=tdengine test.php`
 
 </TabItem>
 </Tabs>
 
-## Establish a connection
+## Establish Connection
 
 Prior to establishing connection, please make sure TDengine is already running and accessible. The following sample code assumes TDengine is running on the same host as the client program, with FQDN configured to "localhost" and serverPort configured to "6030".
 
@@ -289,12 +268,9 @@ Prior to establishing connection, please make sure TDengine is already running a
   <TabItem label="C" value="c">
     <ConnC />
   </TabItem>
-  <TabItem label="PHP" value="php">
-    <ConnPHP />
-  </TabItem>
 </Tabs>
 
 :::tip
-If the connection fails, in most cases it's caused by improper configuration for FQDN or firewall. Please refer to the section "Unable to establish connection" in [FAQ](../../train-faq/faq).
+If the connection fails, in most cases it's caused by improper configuration for FQDN or firewall. Please refer to the section "Unable to establish connection" in [FAQ](https://docs.taosdata.com/train-faq/faq).
 
 :::

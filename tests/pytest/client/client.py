@@ -15,6 +15,7 @@ import sys
 from util.log import *
 from util.cases import *
 from util.sql import *
+import os
 
 from datetime import timedelta
 
@@ -27,8 +28,8 @@ class TDTestCase:
         tdSql.prepare()
 
         ret = tdSql.query('select database()')
-        tdSql.checkData(0, 0, "db")        
-        
+        tdSql.checkData(0, 0, "db")
+
         ret = tdSql.query('select server_status()')
         tdSql.checkData(0, 0, 1)
 
@@ -37,7 +38,7 @@ class TDTestCase:
 
         time.sleep(1)
 
-        ret = tdSql.query('select * from information_schema.ins_dnodes')
+        ret = tdSql.query('show dnodes')
 
         dnodeId = tdSql.getData(0, 0);
         dnodeEndpoint = tdSql.getData(0, 1);
@@ -47,9 +48,9 @@ class TDTestCase:
 
         time.sleep(1)
 
-        ret = tdSql.query('select * from information_schema.ins_mnodes')
+        ret = tdSql.query('show mnodes')
         tdSql.checkRows(1)
-        tdSql.checkData(0, 2, "master")
+        tdSql.checkData(0, 2, "leader")
 
         role_time = tdSql.getData(0, 3)
         create_time = tdSql.getData(0, 4)
@@ -58,10 +59,10 @@ class TDTestCase:
         if create_time-time_delta < role_time < create_time+time_delta:
             tdLog.info("role_time {} and create_time {} expected within range".format(role_time, create_time))
         else:
-            tdLog.exit("role_time {} and create_time {} not expected within range".format(role_time, create_time))    
+            tdLog.exit("role_time {} and create_time {} not expected within range".format(role_time, create_time))
 
         ret = tdSql.query('show vgroups')
-        tdSql.checkRows(0)        
+        tdSql.checkRows(0)
 
         tdSql.execute('create stable st (ts timestamp, f int) tags(t int)')
         tdSql.execute('create table ct1 using st tags(1)');
@@ -72,7 +73,15 @@ class TDTestCase:
         ret = tdSql.query('show vnodes "{}"'.format(dnodeEndpoint))
         tdSql.checkRows(1)
         tdSql.checkData(0, 0, 2)
-        tdSql.checkData(0, 1, "master")
+        tdSql.checkData(0, 1, "leader")
+
+        cmd = "taos -h 127.0.0.1 -s 'show databases'"
+        r = os.popen(cmd)
+        text = r.read()
+        r.close
+
+        if 'Unable to establish connection' in text:
+            tdLog.exit("%s failed: command 'taos -h 127.0.0.1' Unable to establish connection" % __file__)
 
     def stop(self):
         tdSql.close()

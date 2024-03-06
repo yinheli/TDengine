@@ -1,0 +1,39 @@
+```js title="原生连接"
+//A cursor also needs to be initialized in order to interact with TDengine from Node.js.
+const taos = require("@tdengine/client");
+var conn = taos.connect({
+  host: "127.0.0.1",
+  user: "root",
+  password: "taosdata",
+  config: "/etc/taos",
+  port: 0,
+});
+var cursor = conn.cursor(); // Initializing a new cursor
+
+//Close a connection
+conn.close();
+```
+
+[查看源码](https://github.com/taosdata/TDengine/blob/main/docs/examples/node/nativeexample/connect.js)
+
+```js title="REST 连接"
+const { options, connect } = require("@tdengine/rest");
+
+async function test() {
+  options.path = "/rest/sql";
+  options.host = "localhost";
+  options.port = 6041;
+  let conn = connect(options);
+  let cursor = conn.cursor();
+  try {
+    let res = await cursor.query("SELECT server_version()");
+    console.log("res.getResult()",res.getResult());
+  } catch (err) {
+    console.log(err);
+  }
+}
+test();
+
+```
+
+[查看源码](https://github.com/taosdata/TDengine/blob/main/docs/examples/node/restexample/connect.js)

@@ -1,0 +1,49 @@
+---
+title: 窗口聚合查询
+---
+
+export const ToSql = ()=>(<a href="../../sql-language/query/window">「SQL 手册/窗口查询」</a>);
+
+使用窗口聚合查询时，系统将根据生成规则，生成多个窗口。每个窗口都有起始时间、终止时间，（时间戳主键）位于这两个时间点之间的数据，属于该窗口。聚合函数对每个窗口内的数据进行聚合，每个窗口产生一条聚合结果。
+
+![窗口聚合](./window-aggregation.png)
+
+## 窗口起止时间
+
+使用如下伪列，得到窗口的起止时间：
+
+- `_wstart`：窗口起始时间
+- `_wend`：窗口终止时间
+- `_wduration`：持续时间（即终止时间减起始时间）
+
+## 窗口类型
+
+TDengine 支持如下几类窗口：
+
+- 滑动时间窗口
+- 时间窗口
+- 会话窗口
+- 状态窗口
+
+本文仅介绍滑动时间窗口，其他窗口类型请参考<ToSql/>。
+
+## 滑动时间窗口
+
+使用 INTERVAL 可以生成翻转时间窗口，即任意两个相邻窗口，前一窗口的结束时间与后一窗口的开始时间重合：
+
+```sql
+-- 每个窗口的长度为 30 分钟;
+SELECT _wstart, _wend, _wduration, AVG(current) FROM test.meters INTERVAL(30m);
+```
+
+使用 SLIDING 可以指定窗口滑动步长；滑动步长，指相邻两个窗口的起始时间相距的时间长度：
+
+```sql
+-- 窗口长度与滑动步长相等（30 分钟），其效果与不用 SLIDING 时一样;
+SELECT _wstart, _wend, AVG(current) FROM test.meters INTERVAL(30m) SLIDING(30m);
+
+-- 窗口长度为 30 分钟，滑动步长 5 分钟，窗口之间存在重叠;
+SELECT _wstart, _wend, AVG(current) FROM test.meters INTERVAL(30m) SLIDING(5m);
+```
+
+滑动步长不能大于窗口长度。

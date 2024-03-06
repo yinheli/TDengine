@@ -11,13 +11,11 @@
 
 # -*- coding: utf-8 -*-
 
-import sys
 import os
 from util.log import *
 from util.cases import *
 from util.sql import *
 from util.dnodes import *
-import subprocess
 
 
 class TDTestCase:
@@ -27,8 +25,7 @@ class TDTestCase:
         '''
         return
 
-    def init(self, conn, logSql, replicaVar=1):
-        self.replicaVar = int(replicaVar)
+    def init(self, conn, logSql):
         tdLog.debug("start to execute %s" % __file__)
         tdSql.init(conn.cursor(), logSql)
         self.tmpdir = "tmp"
@@ -38,8 +35,12 @@ class TDTestCase:
 
         if ("community" in selfPath):
             projPath = selfPath[:selfPath.find("community")]
+        elif ("src" in selfPath):
+            projPath = selfPath[:selfPath.find("src")]
+        elif ("/tools/" in selfPath):
+            projPath = selfPath[:selfPath.find("/tools/")]
         else:
-            projPath = selfPath[:selfPath.find("tests")]
+            tdLog.exit("path: %s is not supported" % selfPath)
 
         buildPath = ""
         for root, dirs, files in os.walk(projPath):
@@ -51,10 +52,10 @@ class TDTestCase:
         return buildPath
 
     def run(self):
-        tdSql.prepare(replica=f"{self.replicaVar}")
+        tdSql.prepare()
 
         tdSql.execute("drop database if exists db")
-        tdSql.execute("create database db  days 11 keep 3649 blocks 8 ")
+        tdSql.execute("create database db  keep 3649 ")
 
         tdSql.execute("use db")
         tdSql.execute(
@@ -86,8 +87,17 @@ class TDTestCase:
 
         os.system("%staosdump -i %s" % (binPath, self.tmpdir))
 
-        tdSql.query("select * from information_schema.ins_databases")
-        tdSql.checkRows(1)
+        tdSql.query("show databases")
+        dbresult = tdSql.queryResult
+
+        found = False
+        for i in range(len(dbresult)):
+            print("Found db: %s" % dbresult[i][0])
+            if (dbresult[i][0] == "db"):
+                found = True
+                break
+
+        assert found == True
 
         tdSql.execute("use db")
         tdSql.query("show stables")
@@ -96,14 +106,16 @@ class TDTestCase:
 
         tdSql.query("show tables")
         tdSql.checkRows(2)
-        tdSql.checkData(0, 0, 't2')
-        tdSql.checkData(1, 0, 't1')
+        dbresult = tdSql.queryResult
+        print(dbresult)
+        for i in range(len(dbresult)):
+            assert ((dbresult[i][0] == "t1") or (dbresult[i][0] == "t2"))
 
-        tdSql.query("select btag from st where tbname = 't1'")
+        tdSql.query("select distinct(btag) from st where tbname = 't1'")
         tdSql.checkRows(1)
         tdSql.checkData(0, 0, "test")
 
-        tdSql.query("select btag from st where tbname = 't2'")
+        tdSql.query("select distinct(btag) from st where tbname = 't2'")
         tdSql.checkRows(1)
         tdSql.checkData(0, 0, None)
 

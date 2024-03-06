@@ -8,7 +8,7 @@
 #include <sys/time.h>
 #include <taos.h>
 
-typedef uint16_t VarDataLenT;
+typedef int16_t VarDataLenT;
 
 #define TSDB_NCHAR_SIZE sizeof(int32_t)
 #define VARSTR_HEADER_SIZE sizeof(VarDataLenT)
@@ -78,9 +78,7 @@ int printRow(char *str, TAOS_ROW row, TAOS_FIELD *fields, int numFields) {
       } break;
 
       case TSDB_DATA_TYPE_BINARY:
-      case TSDB_DATA_TYPE_VARBINARY:
-      case TSDB_DATA_TYPE_NCHAR:
-      case TSDB_DATA_TYPE_GEOMETRY: {
+      case TSDB_DATA_TYPE_NCHAR: {
         int32_t charLen = varDataLen((char *)row[i] - VARSTR_HEADER_SIZE);
         memcpy(str + len, row[i], charLen);
         len += charLen;

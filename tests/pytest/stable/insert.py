@@ -91,6 +91,29 @@ class TDTestCase:
             tdSql.query("show stables")
             tdSql.checkRows(1)
 
+        # TS-646
+        tdLog.info("test case for TS-646")
+        tdSql.execute("drop stable if exists db.st")        
+        tdSql.execute("create table stb(ts timestamp, c1 int) tags(t1 int)")
+        tdSql.error("create table `` using stb tags(1)")
+
+        # TS-1760
+        sql = "create table stb9 (ts timestamp"
+        for i in range(999):
+            sql += ", longcolumntest%d double" % i
+        sql += ") tags(t1 int)"
+
+        tdSql.execute(sql)
+        tdSql.query("describe stb9")
+        tdSql.checkRows(1001)        
+        tdSql.query("show create table stb9")
+        query = tdSql.getData(0, 1)
+        
+        tdSql.execute("drop table if exists stb9")
+        tdSql.execute(query)
+        tdSql.query("describe stb9")
+        tdSql.checkRows(1001)
+        
     def stop(self):
         tdSql.close()
         tdLog.success("%s successfully executed" % __file__)

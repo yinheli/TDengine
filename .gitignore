@@ -1,17 +1,15 @@
-*build/
-compile_commands.json
-CMakeSettings.json
-.cache
+build/
 .ycm_extra_conf.py
-.tasks
-.vimspector.json
 .vscode/
-.vscode
+.cache/
+compile_commands.json
 .idea/
 cmake-build-debug/
 cmake-build-release/
+cmake-build-relwithdebinfo/
 cscope.out
 cscope.files
+tags
 .DS_Store
 debug/
 release/
@@ -23,10 +21,9 @@ mac/
 .mypy_cache
 *.tmp
 *.swp
-*.swo
-*.orig
 src/connector/nodejs/node_modules/
 src/connector/nodejs/out/
+tests/test/
 tests/taoshebei/
 tests/taoscsv/
 tests/taosdalipu/
@@ -42,19 +39,11 @@ taosdalipu/
 Target/
 *.failed
 *.sql
-sim
 sim/
 psim/
 pysim/
 *.out
 *DS_Store
-tests/script/api/batchprepare
-taosadapter
-taosadapter-debug
-tools/taos-tools/*
-tools/taosws-rs/*
-tools/taosadapter/*
-tools/upx*
 
 # Doxygen Generated files
 html/
@@ -98,11 +87,10 @@ tests/comparisonTest/opentsdb/opentsdbtest/.settings/
 tests/examples/JDBC/JDBCDemo/.classpath
 tests/examples/JDBC/JDBCDemo/.project
 tests/examples/JDBC/JDBCDemo/.settings/
-source/libs/parser/inc/sql.*
-tests/script/tmqResult.txt
-tests/tmqResult.txt
-tests/script/jenkins/basic.txt
-
+tests/script/api/batchprepare
+tests/script/api/stmt
+tests/script/api/stmtBatchTest
+tests/script/api/stmtTest
 # Emacs
 # -*- mode: gitignore; -*-
 *~
@@ -114,23 +102,3 @@ auto-save-list
 tramp
 .\#*
 TAGS
-
-contrib/*
-!contrib/CMakeLists.txt
-!contrib/test
-sql
-debug*/
-.env
-tools/README
-tools/LICENSE
-tools/README.1ST
-tools/THANKS
-tools/NEWS
-tools/COPYING
-tools/BUGS
-tools/taos-tools
-tools/taosws-rs
-tags
-.clangd
-*CMakeCache*
-*CMakeFiles*

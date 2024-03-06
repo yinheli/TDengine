@@ -24,14 +24,11 @@ class TDTestCase:
         '''
         return
 
-    def init(self, conn, logSql, replicaVar=1):
-        self.replicaVar = int(replicaVar)
+    def init(self, conn, logSql):
         tdLog.debug("start to execute %s" % __file__)
         tdSql.init(conn.cursor(), logSql)
 
     def getPath(self, tool="taosBenchmark"):
-        if (platform.system().lower() == 'windows'):
-            tool = tool + ".exe"
         selfPath = os.path.dirname(os.path.realpath(__file__))
 
         if ("community" in selfPath):
@@ -59,9 +56,9 @@ class TDTestCase:
         tdLog.info("%s" % cmd)
         os.system("%s" % cmd)
         tdSql.execute("reset query cache")
-        tdSql.query("select count(*) from (select distinct(tbname) from db.stb1)")
+        tdSql.query("select count(tbname) from db.stb1")
         tdSql.checkData(0, 0, 8)
-        tdSql.query("select count(*) from (select distinct(tbname) from db.stb2)")
+        tdSql.query("select count(tbname) from db.stb2")
         tdSql.checkData(0, 0, 8)
         tdSql.query("select count(*) from db.stb1")
         result = tdSql.getData(0, 0)

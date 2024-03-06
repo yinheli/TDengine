@@ -92,7 +92,6 @@ class TDTestCase:
         tdLog.info('drop database db')
         tdSql.execute('drop database db')
 
-
     def stop(self):
         tdSql.close()
         tdLog.success("%s successfully executed" % __file__)

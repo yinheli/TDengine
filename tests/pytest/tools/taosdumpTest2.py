@@ -76,7 +76,7 @@ class TDTestCase:
             for i in range(finish, self.numberOfRecords):
                 sql += "(%d, 1019774612, 29931, 1442173978, 165092.468750, 1128.643179, 'MOCq1pTu', 18405, 82, 0, 'g0A6S0Fu')" % (currts + i)
                 finish = i + 1
-                if (1048576 - len(sql)) < 16384:
+                if (1048576 - len(sql)) < 65519:
                     break
             tdSql.execute(sql)
 
@@ -95,13 +95,13 @@ class TDTestCase:
 
         tdSql.execute("drop database db")
         tdSql.query("show databases")
-        tdSql.checkRows(2)
+        tdSql.checkRows(0)
 
-        os.system("%s -i ./taosdumptest/tmp" % binPath)
+        os.system("%s -i ./taosdumptest/tmp " % binPath)
 
         tdSql.query("show databases")
-        tdSql.checkRows(3)
-        tdSql.checkData(2, 0, 'db')
+        tdSql.checkRows(1)
+        tdSql.checkData(0, 0, 'db')
 
         tdSql.execute("use db")
         tdSql.query("show stables")
@@ -125,15 +125,16 @@ class TDTestCase:
         os.system("rm ./taosdumptest/tmp/*.sql")
         os.system("rm ./taosdumptest/tmp/*.avro*")
         os.system("rm -rf ./taosdumptest/tmp/taosdump.*")
-        os.system("%s -D test -o ./taosdumptest/tmp" % binPath)
+        os.system("%s -D test -o ./taosdumptest/tmp " % binPath)
 
         tdSql.execute("drop database test")
         tdSql.query("show databases")
-        tdSql.checkRows(3)
+        tdSql.checkRows(1)
 
-        os.system("%s -i ./taosdumptest/tmp" % binPath)
+        os.system("%s -i ./taosdumptest/tmp " % binPath)
 
         tdSql.execute("use test")
+        tdSql.error("show vnodes '' ")
         tdSql.query("show stables")
         tdSql.checkRows(1)
         tdSql.checkData(0, 0, 'stb')

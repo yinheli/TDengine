@@ -1,11 +1,11 @@
+#include <stdio.h>
 #include <math.h>
 #include <stdarg.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include "taos.h"
-#include "lauxlib.h"
 #include "lua.h"
+#include "lauxlib.h"
 #include "lualib.h"
+#include <taos.h>
 
 struct cb_param{
   lua_State* state;
@@ -29,7 +29,7 @@ static int l_connect(lua_State *L){
   luaL_checktype(L, 1, LUA_TTABLE);
 
   lua_getfield(L, 1,"host");
-  if (lua_isstring(L, -1)){
+  if (lua_isstring(L,-1)){
     host = lua_tostring(L, -1);
     // printf("host = %s\n", host);
   }
@@ -58,7 +58,7 @@ static int l_connect(lua_State *L){
     //printf("password = %s\n", password);
   }
 
-  lua_settop(L, 0);
+  lua_settop(L,0);
 
   taos_init();
   
@@ -67,7 +67,7 @@ static int l_connect(lua_State *L){
 
   taos = taos_connect(host, user,password,database, port);
   if (taos == NULL) {
-    //printf("failed to connect server, reason:%s\n", taos_errstr(taos));
+    printf("failed to connect server, reason:%s\n", taos_errstr(taos));
     
     lua_pushinteger(L, -1);
     lua_setfield(L, table_index, "code");
@@ -79,7 +79,7 @@ static int l_connect(lua_State *L){
     // printf("success to connect server\n");
     lua_pushinteger(L, 0);
     lua_setfield(L, table_index, "code");
-    lua_pushstring(L, "success");
+    lua_pushstring(L, taos_errstr(taos));
     lua_setfield(L, table_index, "error");    
     lua_pushlightuserdata(L,taos);
     lua_setfield(L, table_index, "conn");
@@ -126,7 +126,7 @@ static int l_query(lua_State *L){
       //printf("row index:%d\n",rows);
       rows++;
 
-      lua_pushnumber(L, rows);
+      lua_pushnumber(L,rows);
       lua_newtable(L);
 
       for (int i = 0; i < num_fields; ++i) {
@@ -162,7 +162,6 @@ static int l_query(lua_State *L){
 	case TSDB_DATA_TYPE_JSON:
 	case TSDB_DATA_TYPE_BINARY:
 	case TSDB_DATA_TYPE_NCHAR:
-	case TSDB_DATA_TYPE_GEOMETRY:
 	  //printf("type:%d, max len:%d, current len:%d\n",fields[i].type, fields[i].bytes, length[i]);
 	  lua_pushlstring(L,(char *)row[i], length[i]);
 	  break;
@@ -204,7 +203,7 @@ void async_query_callback(void *param, TAOS_RES *result, int code){
     printf("failed, reason:%s\n", taos_errstr(result));
     lua_pushinteger(L, -1);
     lua_setfield(L, table_index, "code");    
-    lua_pushstring(L, taos_errstr(result));
+    lua_pushstring(L,"something is wrong");// taos_errstr(taos));
     lua_setfield(L, table_index, "error");    
   }else{
     //printf("success to async query.\n");
@@ -221,9 +220,9 @@ void async_query_callback(void *param, TAOS_RES *result, int code){
 
 static int l_async_query(lua_State *L){
   int r = luaL_ref(L, LUA_REGISTRYINDEX);
-  TAOS *    taos = (TAOS*)lua_topointer(L, 1);
-  const char * sqlstr = lua_tostring(L, 2);
-  // int stime = luaL_checknumber(L, 3);
+  TAOS *    taos = (TAOS*)lua_topointer(L,1);
+  const char * sqlstr = lua_tostring(L,2);
+  // int stime = luaL_checknumber(L,3);
 
   lua_newtable(L);
   int table_index = lua_gettop(L);
@@ -231,7 +230,7 @@ static int l_async_query(lua_State *L){
   struct async_query_callback_param *p = malloc(sizeof(struct async_query_callback_param));
   p->state = L;
   p->callback=r;
-  // printf("r:%d, L:%d\n", r, L);
+  // printf("r:%d, L:%d\n",r,L);
   taos_query_a(taos,sqlstr,async_query_callback,p);
 
   lua_pushnumber(L, 0);
@@ -242,6 +241,67 @@ static int l_async_query(lua_State *L){
   return 1;
 }
 
+void stream_cb(void *param, TAOS_RES *result, TAOS_ROW row){
+  struct cb_param* p = (struct cb_param*) param;
+  TAOS_FIELD *fields = taos_fetch_fields(result);
+  int         numFields = taos_num_fields(result);
+
+  // printf("\nnumfields:%d\n", numFields);
+  //printf("\n\r-----------------------------------------------------------------------------------\n");
+
+  lua_State *L = p->state;
+  lua_rawgeti(L, LUA_REGISTRYINDEX, p->callback);
+
+  lua_newtable(L);
+
+  for (int i = 0; i < numFields; ++i) {
+    if (row[i] == NULL) {
+      continue;
+    }
+
+    lua_pushstring(L,fields[i].name);
+
+    switch (fields[i].type) {
+    case TSDB_DATA_TYPE_TINYINT:
+      lua_pushinteger(L,*((char *)row[i]));
+      break;
+    case TSDB_DATA_TYPE_SMALLINT:
+      lua_pushinteger(L,*((short *)row[i]));
+      break;
+    case TSDB_DATA_TYPE_INT:
+      lua_pushinteger(L,*((int *)row[i]));
+      break;
+    case TSDB_DATA_TYPE_BIGINT:
+      lua_pushinteger(L,*((int64_t *)row[i]));
+      break;
+    case TSDB_DATA_TYPE_FLOAT:
+      lua_pushnumber(L,*((float *)row[i]));
+      break;
+    case TSDB_DATA_TYPE_DOUBLE:
+      lua_pushnumber(L,*((double *)row[i]));
+      break;
+    case TSDB_DATA_TYPE_BINARY:
+    case TSDB_DATA_TYPE_NCHAR:
+      lua_pushstring(L,(char *)row[i]);
+      break;
+    case TSDB_DATA_TYPE_TIMESTAMP:
+      lua_pushinteger(L,*((int64_t *)row[i]));
+      break;
+    case TSDB_DATA_TYPE_BOOL:
+      lua_pushinteger(L,*((char *)row[i]));
+      break;
+    default:
+      lua_pushnil(L);
+      break;
+    }
+
+    lua_settable(L, -3);
+  }
+
+  lua_call(L, 1, 0);
+
+  //  printf("-----------------------------------------------------------------------------------\n\r");
+}
 
 static int l_close(lua_State *L){
   TAOS *taos= (TAOS*)lua_topointer(L,1);
@@ -274,7 +334,7 @@ static const struct luaL_Reg lib[] = {
 extern int luaopen_luaconnector51(lua_State* L)
 {
   //  luaL_register(L, "luaconnector51", lib);
-  lua_newtable(L);
+  lua_newtable (L);
   luaL_setfuncs(L,lib,0);
   return 1;
 }

@@ -153,7 +153,7 @@
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Master MNode",
+      "title": "Leader MNode",
       "transformations": [
         {
           "id": "filterByValue",
@@ -163,7 +163,7 @@
                 "config": {
                   "id": "regex",
                   "options": {
-                    "value": "master"
+                    "value": "leader"
                   }
                 },
                 "fieldName": "role"
@@ -246,7 +246,7 @@
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Master MNode Create Time",
+      "title": "Leader MNode Create Time",
       "transformations": [
         {
           "id": "filterByValue",
@@ -256,7 +256,7 @@
                 "config": {
                   "id": "regex",
                   "options": {
-                    "value": "master"
+                    "value": "leader"
                   }
                 },
                 "fieldName": "role"
@@ -1566,7 +1566,7 @@
     },
     {
       "datasource": "${ds}",
-      "description": "taosd  max  memory  last 10 minutes",
+      "description": "taosd  max  memery  last 10 minutes",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1933,7 +1933,7 @@
     },
     {
       "datasource": "${ds}",
-      "description": "taosd  max  memory  last 10 minutes",
+      "description": "taosd  max  memery  last 10 minutes",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2000,7 +2000,7 @@
     },
     {
       "datasource": "${ds}",
-      "description": "taosd  max  memory  last 10 minutes",
+      "description": "taosd  max  memery  last 10 minutes",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2961,7 +2961,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Requests Count per Minutes $fqdn",
+      "title": "Requets Count per Minutes $fqdn",
       "tooltip": {
         "shared": true,
         "sort": 0,

@@ -89,36 +89,36 @@ class TDTestCase:
         tdSql.prepare()
 
         # last_cache_0.sim
-        tdSql.execute("create database test1 cachemodel 'none'")
+        tdSql.execute("create database test1 cachelast 0")
         tdSql.execute("use test1")
         self.insertData()
         self.executeQueries()
         
-        tdSql.execute("alter database test1 cachemodel 'last_row'")        
+        tdSql.execute("alter database test1 cachelast 1")        
         self.executeQueries()
         tdDnodes.stop(1)
         tdDnodes.start(1)
         self.executeQueries()
 
-        tdSql.execute("alter database test1 cachemodel 'none'")        
+        tdSql.execute("alter database test1 cachelast 0")        
         self.executeQueries()
         tdDnodes.stop(1)
         tdDnodes.start(1)
         self.executeQueries()
 
         # last_cache_1.sim
-        tdSql.execute("create database test2 cachemodel 'last_row'")
+        tdSql.execute("create database test2 cachelast 1")
         tdSql.execute("use test2")
         self.insertData()
         self.executeQueries()
         
-        tdSql.execute("alter database test2 cachemodel 'none'")        
+        tdSql.execute("alter database test2 cachelast 0")        
         self.executeQueries()
         tdDnodes.stop(1)
         tdDnodes.start(1)
         self.executeQueries()
 
-        tdSql.execute("alter database test2 cachemodel 'last_row'")        
+        tdSql.execute("alter database test2 cachelast 1")        
         self.executeQueries()
         tdDnodes.stop(1)
         tdDnodes.start(1)

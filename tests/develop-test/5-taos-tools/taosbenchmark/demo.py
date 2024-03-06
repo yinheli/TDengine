@@ -27,14 +27,11 @@ class TDTestCase:
         """
         return
 
-    def init(self, conn, logSql, replicaVar=1):
-        # comment off by Shuduo for CI self.replicaVar = int(replicaVar)
+    def init(self, conn, logSql):
         tdLog.debug("start to execute %s" % __file__)
         tdSql.init(conn.cursor(), logSql)
 
     def getPath(self, tool="taosBenchmark"):
-        if (platform.system().lower() == 'windows'):
-            tool = tool + ".exe"
         selfPath = os.path.dirname(os.path.realpath(__file__))
 
         if "community" in selfPath:
@@ -79,7 +76,7 @@ class TDTestCase:
         tdSql.checkData(4, 1, "INT")
         tdSql.checkData(4, 3, "TAG")
         tdSql.checkData(5, 0, "location")
-        tdSql.checkData(5, 1, "VARCHAR")
+        tdSql.checkData(5, 1, "BINARY")
         tdSql.checkData(5, 2, 24)
         tdSql.checkData(5, 3, "TAG")
 

@@ -61,7 +61,7 @@ class TDTestCase:
         def build_db(precision, start_time):
             tdSql.execute("drop database if exists timedb1")
             tdSql.execute(
-                "create database timedb1 duration 10 keep 36500 precision " +
+                "create database timedb1 days 10 keep 36500 blocks 8 precision " +
                 "\"" +
                 precision +
                 "\"")
@@ -134,15 +134,15 @@ class TDTestCase:
         # dump all data
 
         os.system(
-            "%s -g --databases timedb1 -o ./taosdumptest/dumptmp1" %
+            "%s  -g --databases timedb1 -o ./taosdumptest/dumptmp1" %
             binPath)
 
         # dump part data with -S  -E
         os.system(
-            '%s -g --databases timedb1 -S 1625068810000000000 -E 1625068860000000000  -o ./taosdumptest/dumptmp2 ' %
+            '%s  -g --databases timedb1 -S 1625068810000000000 -E 1625068860000000000  -o ./taosdumptest/dumptmp2 ' %
             binPath)
         os.system(
-            '%s -g --databases timedb1 -S 1625068810000000000  -o ./taosdumptest/dumptmp3  ' %
+            '%s  -g --databases timedb1 -S 1625068810000000000  -o ./taosdumptest/dumptmp3  ' %
             binPath)
 
         tdSql.execute("drop database timedb1")
@@ -200,14 +200,14 @@ class TDTestCase:
         self.createdb(precision="us")
 
         os.system(
-            "%s -g --databases timedb1 -o ./taosdumptest/dumptmp1" %
+            "%s  -g --databases timedb1 -o ./taosdumptest/dumptmp1" %
             binPath)
 
         os.system(
-            '%s -g --databases timedb1 -S 1625068810000000 -E 1625068860000000  -o ./taosdumptest/dumptmp2 ' %
+            '%s  -g --databases timedb1 -S 1625068810000000 -E 1625068860000000  -o ./taosdumptest/dumptmp2 ' %
             binPath)
         os.system(
-            '%s -g --databases timedb1 -S 1625068810000000  -o ./taosdumptest/dumptmp3  ' %
+            '%s  -g --databases timedb1 -S 1625068810000000  -o ./taosdumptest/dumptmp3  ' %
             binPath)
 
         os.system("%s -i ./taosdumptest/dumptmp1" % binPath)
@@ -269,14 +269,14 @@ class TDTestCase:
         self.createdb(precision="ms")
 
         os.system(
-            "%s -g --databases timedb1 -o ./taosdumptest/dumptmp1" %
+            "%s  -g --databases timedb1 -o ./taosdumptest/dumptmp1" %
             binPath)
 
         os.system(
-            '%s -g --databases timedb1 -S 1625068810000 -E 1625068860000  -o ./taosdumptest/dumptmp2 ' %
+            '%s  -g --databases timedb1 -S 1625068810000 -E 1625068860000  -o ./taosdumptest/dumptmp2 ' %
             binPath)
         os.system(
-            '%s -g --databases timedb1 -S 1625068810000  -o ./taosdumptest/dumptmp3  ' %
+            '%s  -g --databases timedb1 -S 1625068810000  -o ./taosdumptest/dumptmp3  ' %
             binPath)
 
         os.system("%s -i ./taosdumptest/dumptmp1" % binPath)

@@ -1,4 +1,6 @@
-const taos = require("@tdengine/client");
+//const taos = require('td2.0-connector');
+const taos = require('../../../src/connector/nodejs/');
+
 
 var host = null;
 var port = 6030;

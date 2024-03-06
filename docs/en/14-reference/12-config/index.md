@@ -1,13 +1,16 @@
 ---
+sidebar_label: Configuration
 title: Configuration Parameters
-description: This document describes the configuration parameters for the TDengine server and client.
+description: "Configuration parameters for client and server in TDengine"
 ---
+
+In this chapter, all the configuration parameters on both server and client side are described thoroughly.
 
 ## Configuration File on Server Side
 
-On the server side, the actual service of TDengine is provided by an executable `taosd` whose parameters can be configured in file `taos.cfg` to meet the requirements of different use cases. The default location of `taos.cfg` is `/etc/taos` on Linux system, it's located under `C:\TDengine` on Windows system. The location of configuration file can be specified by using `-c` parameter on the CLI of `taosd`. For example, on Linux system the configuration file can be put under `/home/user` and used like below
+On the server side, the actual service of TDengine is provided by an executable `taosd` whose parameters can be configured in file `taos.cfg` to meet the requirements of different use cases. The default location of `taos.cfg` is `/etc/taos`, but can be changed by using `-c` parameter on the CLI of `taosd`. For example, the configuration file can be put under `/home/user` and used like below
 
-```
+```bash
 taosd -c /home/user
 ```
 
@@ -19,26 +22,19 @@ taosd -C
 
 ## Configuration File on Client Side
 
-TDengine CLI `taos` is the tool for users to interact with TDengine. It can share same configuration file as `taosd` or use a separate configuration file. When launching `taos`, parameter `-c` can be used to specify the location where its configuration file is. For example:
+TDengine CLI `taos` is the tool for users to interact with TDengine. It can share same configuration file as `taosd` or use a separate configuration file. When launching `taos`, parameter `-c` can be used to specify the location where its configuration file is. For example `taos -c /home/cfg` means `/home/cfg/taos.cfg` will be used. If `-c` is not used, the default location of the configuration file is `/etc/taos`. For more details please use `taos --help` to get.
 
-```
-taos -c /home/cfg
-```
-
-means `/home/cfg/taos.cfg` will be used. If `-c` is not used, the default location of the configuration file is `/etc/taos`. For more details please use `taos --help` to get.
-
-Parameter `-C` can be used on the CLI of `taos` to show its configuration, like below:
+From version 2.0.10.0 below commands can be used to show the configuration parameters of the client side.
 
 ```bash
 taos -C
 ```
 
-## Configuration Parameters
+```bash
+taos --dump-config
+```
 
-:::note
-The parameters described in this document by the effect that they have on the system.
-
-:::
+# Configuration Parameters
 
 :::note
 `taosd` needs to be restarted for the parameters changed in the configuration file to take effect.
@@ -49,19 +45,19 @@ The parameters described in this document by the effect that they have on the sy
 
 ### firstEp
 
-| Attribute  | Description                                                                                          |
-| ---------- | ---------------------------------------------------------------------------------------------------- |
-| Applicable | Server and Client                                                                                    |
-| Meaning    | The end point of the first dnode in the cluster to be connected to when `taosd` or `taos` is started |
-| Default    | localhost:6030                                                                                       |
+| Attribute     | Description                                                                                          |
+| ------------- | ---------------------------------------------------------------------------------------------------- |
+| Applicable    | Server and Client                                                                                    |
+| Meaning       | The end point of the first dnode in the cluster to be connected to when `taosd` or `taos` is started |
+| Default Value | localhost:6030                                                                                       |
 
 ### secondEp
 
-| Attribute  | Description                                                                                                            |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Applicable | Server and Client                                                                                                      |
-| Meaning    | The end point of the second dnode to be connected to if the firstEp is not available when `taosd` or `taos` is started |
-| Default    | None                                                                                                                   |
+| Attribute     | Description                                                                                                            |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Applicable    | Server and Client                                                                                                      |
+| Meaning       | The end point of the second dnode to be connected to if the firstEp is not available when `taosd` or `taos` is started |
+| Default Value | None                                                                                                                   |
 
 ### fqdn
 
@@ -70,28 +66,35 @@ The parameters described in this document by the effect that they have on the sy
 | Applicable    | Server Only                                                              |
 | Meaning       | The FQDN of the host where `taosd` will be started. It can be IP address |
 | Default Value | The first hostname configured for the host                               |
-| Note          | It should be within 96 bytes                                             |  |
+| Note          | It should be within 96 bytes                                             |
 
 ### serverPort
 
-| Attribute     | Description                                           |
-| ------------- | ----------------------------------------------------- |
-| Applicable    | Server Only                                           |
-| Meaning       | The port for external access after `taosd` is started |
-| Default Value | 6030                                                  |
+| Attribute     | Description                                                                                                                     |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Applicable    | Server Only                                                                                                                     |
+| Meaning       | The port for external access after `taosd` is started                                                                           |
+| Default Value | 6030                                                                                                                            |
+| Note          | REST service is provided by `taosd` before 2.4.0.0 but by `taosAdapter` after 2.4.0.0, the default port of REST service is 6041 |
 
 :::note
-Ensure that your firewall rules do not block TCP port 6042  on any host in the cluster. Below table describes the ports used by TDengine in details.
+TDengine uses 13 continuous ports, both TCP and UDP, starting with the port specified by `serverPort`. You should ensure, in your firewall rules, that these ports are kept open. Below table describes the ports used by TDengine in details.
+
 :::
 
-| Protocol | Default Port | Description                                                                                               | How to configure                                                                               |
-| :------- | :----------- | :-------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------- |
-| TCP      | 6030         | Communication between client and server. In a multi-node cluster, communication between nodes. serverPort |
-| TCP      | 6041         | REST connection between client and server                                                                 | Prior to 2.4.0.0: serverPort+11; After 2.4.0.0 refer to [taosAdapter](../taosadapter/) |
-| TCP      | 6043         | Service Port of taosKeeper                                                                                | The parameter of taosKeeper                                                                    |
-| TCP      | 6044         | Data access port for StatsD                                                                               | Configurable through taosAdapter parameters.                                                   |
-| UDP      | 6045         | Data access for statsd                                                                                    | Configurable through taosAdapter parameters.                                                   |
-| TCP      | 6060         | Port of Monitoring Service in Enterprise version                                                          |                                                                                                |
+| Protocol | Default Port | Description                                      | How to configure                                                                               |
+| :------- | :----------- | :----------------------------------------------- | :--------------------------------------------------------------------------------------------- |
+| TCP      | 6030         | Communication between client and server          | serverPort                                                                                     |
+| TCP      | 6035         | Communication among server nodes in cluster      | serverPort+5                                                                                   |
+| TCP      | 6040         | Data syncup among server nodes in cluster        | serverPort+10                                                                                  |
+| TCP      | 6041         | REST connection between client and server        | Prior to 2.4.0.0: serverPort+11; After 2.4.0.0 refer to [taosAdapter](../taosadapter/) |
+| TCP      | 6042         | Service Port of Arbitrator                       | The parameter of Arbitrator                                                                    |
+| TCP      | 6043         | Service Port of TaosKeeper                       | The parameter of TaosKeeper                                                                    |
+| TCP      | 6044         | Data access port for StatsD                      | refer to [taosAdapter](../taosadapter/)                                                 |
+| UDP      | 6045         | Data access for statsd                           | refer to [taosAdapter](../taosadapter/)                                                 |
+| TCP      | 6060         | Port of Monitoring Service in Enterprise version |                                                                                                |
+| UDP      | 6030-6034    | Communication between client and server          | serverPort                                                                                     |
+| UDP      | 6035-6039    | Communication among server nodes in cluster      | serverPort                                                                                     |
 
 ### maxShellConns
 
@@ -102,55 +105,36 @@ Ensure that your firewall rules do not block TCP port 6042  on any host in the c
 | Value Range   | 10-50000000                                          |
 | Default Value | 5000                                                 |
 
-### numOfRpcSessions
+### maxConnections
 
-| Attribute     | Description                                |
-| ------------- | ------------------------------------------ |
-| Applicable    | Client/Server                              |
-| Meaning       | The maximum number of connection to create |
-| Value Range   | 100-100000                                 |
-| Default Value | 10000                                      |
+| Attribute     | Description                                                                   |
+| ------------- | ----------------------------------------------------------------------------- |
+| Applicable    | Server Only                                                                   |
+| Meaning       | The maximum number of connections allowed by a database                       |
+| Value Range   | 1-100000                                                                      |
+| Default Value | 5000                                                                          |
+| Note          | The maximum number of worker threads on the client side is maxConnections/100 |
 
-### timeToGetAvailableConn
+### rpcForceTcp
 
-| Attribute     | Description                                    |
-| ------------- | ---------------------------------------------- |
-| Applicable    | Client/Server                                  |
-| Meaning       | The maximum waiting time to get available conn |
-| Value Range   | 10-50000000(ms)                                |
-| Default Value | 500000                                         |
+| Attribute     | Description                                                         |
+| ------------- | ------------------------------------------------------------------- |
+| Applicable    | Server and Client                                                   |
+| Meaning       | TCP is used by force                                                |
+| Value Range   | 0: disabled 1: enabled                                              |
+| Default Value | 0                                                                   |
+| Note          | It's suggested to configure to enable if network is not good enough |
 
 ## Monitoring Parameters
 
-:::note
-Please note the `taoskeeper` needs to be installed and running to create the `log` database and receiving metrics sent by `taosd` as the full monitoring solution.
-
-:::
-
 ### monitor
 
-| Attribute   | Description                                                                                                                                                                                                                                                                                                           |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Applicable  | Server only                                                                                                                                                                                                                                                                                                           |
-| Meaning     | The switch for monitoring inside server. The main object of monitoring is to collect information about load on physical nodes, including CPU usage, memory usage, disk usage, and network bandwidth. Monitoring information is sent over HTTP to the taosKeeper service specified by `monitorFqdn` and `monitorProt`. |
-| Value Range | 0: monitoring disabled, 1: monitoring enabled                                                                                                                                                                                                                                                                         |
-| Default     | 0                                                                                                                                                                                                                                                                                                                     |
-
-### monitorFqdn
-
-| Attribute  | Description                           |
-| ---------- | ------------------------------------- |
-| Applicable | Server Only                           |
-| Meaning    | FQDN of taosKeeper monitoring service |
-| Default    | None                                  |
-
-### monitorPort
-
-| Attribute     | Description                           |
-| ------------- | ------------------------------------- |
-| Applicable    | Server Only                           |
-| Meaning       | Port of taosKeeper monitoring service |
-| Default Value | 6043                                  |
+| Attribute     | Description                                                                                                                                                                         |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Applicable    | Server Only                                                                                                                                                                         |
+| Meaning       | The switch for monitoring inside server. The workload of the hosts, including CPU, memory, disk, network, TTP requests, are collected and stored in a system builtin database `LOG` |
+| Value Range   | 0: monitoring disabled, 1: monitoring enabled                                                                                                                                       |
+| Default Value | 1                                                                                                                                                                                   |
 
 ### monitorInterval
 
@@ -159,58 +143,38 @@ Please note the `taoskeeper` needs to be installed and running to create the `lo
 | Applicable    | Server Only                                |
 | Meaning       | The interval of collecting system workload |
 | Unit          | second                                     |
-| Value Range   | 1-200000                                   |
+| Value Range   | 1-600                                      |
 | Default Value | 30                                         |
 
 ### telemetryReporting
 
 | Attribute     | Description                                                                  |
 | ------------- | ---------------------------------------------------------------------------- |
-| Applicable    | Server and Client                                                            |
+| Applicable    | Server Only                                                                  |
 | Meaning       | Switch for allowing TDengine to collect and report service usage information |
 | Value Range   | 0: Not allowed; 1: Allowed                                                   |
 | Default Value | 1                                                                            |
-### crashReporting
-
-| Attribute     | Description                                                                  |
-| ------------- | ---------------------------------------------------------------------------- |
-| Applicable    | Server and Client                                                            |
-| Meaning       | Switch for allowing TDengine to collect and report crash related information |
-| Value Range   | 0,1   0: Not allowed; 1: allowed                                             |
-| Default Value | 1                                                                            |
-
 
 ## Query Parameters
 
-### queryPolicy
+### queryBufferSize
 
-| Attribute   | Description                                                                                                                                                                                                           |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Applicable  | Client only                                                                                                                                                                                                           |
-| Meaning     | Execution policy for query statements                                                                                                                                                                                 |
-| Unit        | None                                                                                                                                                                                                                  |
-| Default     | 1                                                                                                                                                                                                                     |
-| Value Range | 1: Run queries on vnodes and not on qnodes; 2: Run subtasks without scan operators on qnodes and subtasks with scan operators on vnodes; 3: Only run scan operators on vnodes, and run all other operators on qnodes. |
+| Attribute     | Description                                                                              |
+| ------------- | ---------------------------------------------------------------------------------------- |
+| Applicable    | Server Only                                                                              |
+| Meaning       | The total memory size reserved for all queries                                           |
+| Unit          | MB                                                                                       |
+| Default Value | None                                                                                     |
+| Note          | It can be estimated by "maximum number of concurrent queries" _ "number of tables" _ 170 |
 
-### querySmaOptimize
+### ratioOfQueryCores
 
-| Attribute     | Description                                                                                                                                                         |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Applicable    | Client only                                                                                                                                                         |
-| Meaning       | SMA index optimization policy                                                                                                                                       |
-| Unit          | None                                                                                                                                                                |
-| Default Value | 0                                                                                                                                                                   |
-| Notes         | 0: Disable SMA indexing and perform all queries on non-indexed data; 1: Enable SMA indexing and perform queries from suitable statements on precomputation results. |
-
-### countAlwaysReturnValue
-
-| Attribute  | Description                                                                                                                                                                                                                     |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Applicable | Server only                                                                                                                                                                                                                     |
-| Meaning    | count()/hyperloglog() return value or not if the input data is empty or NULL                                                                                                                                                    |
-| Vlue Range | 0: Return empty line, 1: Return 0                                                                                                                                                                                               |
-| Default    | 1                                                                                                                                                                                                                               |
-| Notes      | When this parameter is setting to 1, for queries containing GROUP BY, PARTITION BY and INTERVAL clause, and input data in certain groups or windows is empty or NULL, the corresponding groups or windows have no return values |
+| Attribute     | Description                                                                                           |
+| ------------- | ----------------------------------------------------------------------------------------------------- |
+| Applicable    | Server Only                                                                                           |
+| Meaning       | Maximum number of query threads                                                                       |
+| Default Value | 1                                                                                                     |
+| Note          | value range: float number between [0, 2] 0: only 1 query thread; >0: the times of the number of cores |
 
 ### maxNumOfDistinctRes
 
@@ -220,16 +184,17 @@ Please note the `taoskeeper` needs to be installed and running to create the `lo
 | Meaning       | The maximum number of distinct rows returned |
 | Value Range   | [100,000 - 100,000,000]                      |
 | Default Value | 100,000                                      |
+| Note          | After version 2.3.0.0                        |
 
-### keepColumnName
+### maxSqlGroups
 
-| Attribute     | Description                                                                                                     |
-| ------------- | --------------------------------------------------------------------------------------------------------------- |
-| Applicable    | Client only                                                                                                     |
-| Meaning       | When the Last, First, and LastRow functions are queried and no alias is specified, the alias is automatically set to the column name (excluding the function name). Therefore, if the order by clause refers to the column name, it will automatically refer to the function corresponding to the column. |
-| Value Range   | 1 means automatically setting the alias to the column name (excluding the function name), 0 means not automatically setting the alias.                                   |
-| Default Value | 0          |
-| Notes | When multiple of the above functions act on the same column at the same time and no alias is specified, if the order by clause refers to the column name, column selection ambiguous will occur because the aliases of multiple columns are the same. |
+| 属性     | 说明                             |
+| -------- | -------------------------------- | --- |
+| 适用范围 | Server and Client                     |
+| 含义     | The maximus number of groups when group by or interval |
+| 取值范围 | [500,000 - 10,000,000]    |
+| 缺省值   | 1,000,000                            |
+| 补充说明 | After version 2.6.0.21                   |     |
 
 ## Locale Parameters
 
@@ -242,12 +207,12 @@ Please note the `taoskeeper` needs to be installed and running to create the `lo
 | Default Value | TimeZone configured in the host |
 
 :::info
-To handle the data insertion and data query from multiple timezones, Unix Timestamp is used and stored in TDengine. The timestamp generated from any timezones at same time is same in Unix timestamp. Note that Unix timestamps are converted and recorded on the client side. To make sure the time on client side can be converted to Unix timestamp correctly, the timezone must be set properly.
+To handle the data insertion and data query from multiple timezones, Unix Timestamp is used and stored in TDengine. The timestamp generated from any timezones at same time is same in Unix timestamp. To make sure the time on client side can be converted to Unix timestamp correctly, the timezone must be set properly.
 
-On Linux/macOS, TDengine clients automatically obtain timezone from the host. Alternatively, the timezone can be configured explicitly in configuration file `taos.cfg` like below. For example:
+On Linux system, TDengine clients automatically obtain timezone from the host. Alternatively, the timezone can be configured explicitly in configuration file `taos.cfg` like below.
 
 ```
-timezone UTC-8
+timezone UTC-7
 timezone GMT-8
 timezone Asia/Shanghai
 ```
@@ -285,11 +250,11 @@ To avoid the problems of using time strings, Unix timestamp can be used directly
 | Default Value | Locale configured in host |
 
 :::info
-A specific type "nchar" is provided in TDengine to store non-ASCII characters such as Chinese, Japanese, and Korean. The characters to be stored in nchar type are firstly encoded in UCS4-LE before sending to server side. Note that the correct encoding is determined by the user. To store non-ASCII characters correctly, the encoding format of the client side needs to be set properly.
+A specific type "nchar" is provided in TDengine to store non-ASCII characters such as Chinese, Japanese, and Korean. The characters to be stored in nchar type are firstly encoded in UCS4-LE before sending to server side. To store non-ASCII characters correctly, the encoding format of the client side needs to be set properly.
 
-The characters input on the client side are encoded using the default system encoding, which is UTF-8 on Linux/macOS, or GB18030 or GBK on some systems in Chinese, POSIX in docker, CP936 on Windows in Chinese. The encoding of the operating system in use must be set correctly so that the characters in nchar type can be converted to UCS4-LE.
+The characters input on the client side are encoded using the default system encoding, which is UTF-8 on Linux, or GB18030 or GBK on some systems in Chinese, POSIX in docker, CP936 on Windows in Chinese. The encoding of the operating system in use must be set correctly so that the characters in nchar type can be converted to UCS4-LE.
 
-The locale definition standard on Linux/macOS is: &lt;Language&gt;\_&lt;Region&gt;.&lt;charset&gt;, for example, in "zh_CN.UTF-8", "zh" means Chinese, "CN" means China mainland, "UTF-8" means charset. The charset indicates how to display the characters. On Linux/macOS, the charset can be set by locale in the system. On Windows system another configuration parameter `charset` must be used to configure charset because the locale used on Windows is not POSIX standard. Of course, `charset` can also be used on Linux/macOS to specify the charset.
+The locale definition standard on Linux is: &lt;Language&gt;\_&lt;Region&gt;.&lt;charset&gt;, for example, in "zh_CN.UTF-8", "zh" means Chinese, "CN" means China mainland, "UTF-8" means charset. On Linux and Mac OSX, the charset can be set by locale in the system. On Windows system another configuration parameter `charset` must be used to configure charset because the locale used on Windows is not POSIX standard. Of course, `charset` can also be used on Linux to specify the charset.
 
 :::
 
@@ -302,11 +267,21 @@ The locale definition standard on Linux/macOS is: &lt;Language&gt;\_&lt;Region&g
 | Default Value | charset set in the system |
 
 :::info
-On Linux/macOS, if `charset` is not set in `taos.cfg`, when `taos` is started, the charset is obtained from system locale. If obtaining charset from system locale fails, `taos` would fail to start.
-
-So on Linux/macOS, if system locale is set properly, it's not necessary to set `charset` in `taos.cfg`. For example:
+On Linux, if `charset` is not set in `taos.cfg`, when `taos` is started, the charset is obtained from system locale. If obtaining charset from system locale fails, `taos` would fail to start. So on Linux system, if system locale is set properly, it's not necessary to set `charset` in `taos.cfg`. For example:
 
 ```
+locale zh_CN.UTF-8
+```
+
+On a Linux system, if the charset contained in `locale` is not consistent with that set by `charset`, the later setting in the configuration file takes precedence.
+
+```title="Effective charset is GBK"
+locale zh_CN.UTF-8
+charset GBK
+```
+
+```title="Effective charset is UTF-8"
+charset GBK
 locale zh_CN.UTF-8
 ```
 
@@ -316,44 +291,106 @@ On Windows system, it's not possible to obtain charset from system locale. If it
 charset CP936
 ```
 
-Refer to the documentation for your operating system before changing the charset.
-
-On a Linux/macOS, if the charset contained in `locale` is not consistent with that set by `charset`, the later setting in the configuration file takes precedence.
-
-```
-locale zh_CN.UTF-8
-charset GBK
-```
-
-The charset that takes effect is GBK.
-
-```
-charset GBK
-locale zh_CN.UTF-8
-```
-
-The charset that takes effect is UTF-8.
-
 :::
 
 ## Storage Parameters
 
 ### dataDir
 
-| Attribute     | Description                                                                                                                                                                                                 |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Applicable    | Server Only                                                                                                                                                                                                 |
-| Meaning       | All data files are stored in this directory                                                                                                                                                                 |
-| Default Value | /var/lib/taos                                                                                                                                                                                               |
-| Note          | The [Tiered Storage](https://docs.tdengine.com/tdinternal/arch/#tiered-storage) function needs to be used in conjunction with the [KEEP](https://docs.tdengine.com/taos-sql/database/#parameters) parameter |
+| Attribute     | Description                                 |
+| ------------- | ------------------------------------------- |
+| Applicable    | Server Only                                 |
+| Meaning       | All data files are stored in this directory |
+| Default Value | /var/lib/taos                               |
 
-### tempDir
+### cache
 
-| Attribute  | Description                                                                        |
-| ---------- | ---------------------------------------------------------------------------------- |
-| Applicable | Server only                                                                        |
-| Meaning    | The directory where to put all the temporary files generated during system running |
-| Default    | /tmp                                                                               |
+| Attribute     | Description                   |
+| ------------- | ----------------------------- |
+| Applicable    | Server Only                   |
+| Meaning       | The size of each memory block |
+| Unit          | MB                            |
+| Default Value | 16                            |
+
+### blocks
+
+| Attribute     | Description                                                    |
+| ------------- | -------------------------------------------------------------- |
+| Applicable    | Server Only                                                    |
+| Meaning       | The number of memory blocks of size `cache` used by each vnode |
+| Default Value | 6                                                              |
+
+### days
+
+| Attribute     | Description                                           |
+| ------------- | ----------------------------------------------------- |
+| Applicable    | Server Only                                           |
+| Meaning       | The time range of the data stored in single data file |
+| Unit          | day                                                   |
+| Default Value | 10                                                    |
+
+### keep
+
+| Attribute     | Description                            |
+| ------------- | -------------------------------------- |
+| Applicable    | Server Only                            |
+| Meaning       | The number of days for data to be kept |
+| Unit          | day                                    |
+| Default Value | 3650                                   |
+
+### minRows
+
+| Attribute     | Description                                |
+| ------------- | ------------------------------------------ |
+| Applicable    | Server Only                                |
+| Meaning       | minimum number of rows in single data file |
+| Default Value | 100                                        |
+
+### maxRows
+
+| Attribute     | Description                                |
+| ------------- | ------------------------------------------ |
+| Applicable    | Server Only                                |
+| Meaning       | maximum number of rows in single data file |
+| Default Value | 4096                                       |
+
+### walLevel
+
+| Attribute     | Description                                                                        |
+| ------------- | ---------------------------------------------------------------------------------- |
+| Applicable    | Server Only                                                                        |
+| Meaning       | WAL level                                                                          |
+| Value Range   | 0: wal disabled <br/> 1: wal enabled without fsync <br/> 2: wal enabled with fsync |
+| Default Value | 1                                                                                  |
+
+### fsync
+
+| Attribute     | Description                                                                                                           |
+| ------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Applicable    | Server Only                                                                                                           |
+| Meaning       | The waiting time for invoking fsync when walLevel is 2                                                                |
+| Unit          | millisecond                                                                                                           |
+| Value Range   | 0: no waiting time, fsync is performed immediately once WAL is written; <br/> maximum value is 180000, i.e. 3 minutes |
+| Default Value | 3000                                                                                                                  |
+
+### update
+
+| Attribute     | Description                                                                                            |
+| ------------- | ------------------------------------------------------------------------------------------------------ |
+| Applicable    | Server Only                                                                                            |
+| Meaning       | If it's allowed to update existing data                                                                |
+| Value Range   | 0: not allowed <br/> 1: a row can only be updated as a whole <br/> 2: a part of columns can be updated |
+| Default Value | 0                                                                                                      |
+| Note          | Not available from version 2.0.8.0                                                                     |
+
+### cacheLast
+
+| Attribute     | Description                                                                                                                                                          |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Applicable    | Server Only                                                                                                                                                          |
+| Meaning       | Whether to cache the latest rows of each sub table in memory                                                                                                         |
+| Value Range   | 0: not cached <br/> 1: the last row of each sub table is cached <br/> 2: the last non-null value of each column is cached <br/> 3: identical to both 1 and 2 are set |
+| Default Value | 0                                                                                                                                                                    |
 
 ### minimalTmpDirGB
 
@@ -366,44 +403,440 @@ The charset that takes effect is UTF-8.
 
 ### minimalDataDirGB
 
-| Attribute     | Description                                                                                       |
-| ------------- | ------------------------------------------------------------------------------------------------- |
-| Applicable    | Server Only                                                                                       |
-| Meaning       | When the available disk space in dataDir is below this threshold, writing to dataDir is suspended |
-| Unit          | GB                                                                                                |
-| Default Value | 2.0                                                                                               |
+| Attribute     | Description                                                                                      |
+| ------------- | ------------------------------------------------------------------------------------------------ |
+| Applicable    | Server Only                                                                                      |
+| Meaning       | hen the available disk space in dataDir is below this threshold, writing to dataDir is suspended |
+| Unit          | GB                                                                                               |
+| Default Value | 2.0                                                                                              |
 
-### metaCacheMaxSize
+### vnodeBak
 
-| Attribute     | Description                                                                                       |
-| ------------- | ------------------------------------------------------------------------------------------------- |
-| Applicable    | Client Only                                                                                       |
-| Meaning       | Maximum meta cache size in single client process                                                  |
-| Unit          | MB                                                                                                |
-| Default Value | -1 (No limitation)                                                                                |
-
+| Attribute     | Description                                                                 |
+| ------------- | --------------------------------------------------------------------------- |
+| Applicable    | Server Only                                                                 |
+| Meaning       | Whether to backup the corresponding vnode directory when a vnode is deleted |
+| Value Range   | 0: not backed up, 1: backup                                                 |
+| Default Value | 1                                                                           |
 
 ## Cluster Parameters
 
-### supportVnodes
+### numOfMnodes
+
+| Attribute     | Description                    |
+| ------------- | ------------------------------ |
+| Applicable    | Server Only                    |
+| Meaning       | The number of management nodes |
+| Default Value | 3                              |
+
+### replica
+
+| Attribute     | Description                |
+| ------------- | -------------------------- |
+| Applicable    | Server Only                |
+| Meaning       | The number of replications |
+| Value Range   | 1-3                        |
+| Default Value | 1                          |
+
+### quorum
+
+| Attribute     | Description                                                                                |
+| ------------- | ------------------------------------------------------------------------------------------ |
+| Applicable    | Server Only                                                                                |
+| Meaning       | The number of required confirmations for data replication in case of multiple replications |
+| Value Range   | 1,2                                                                                        |
+| Default Value | 1                                                                                          |
+
+### role
+
+| Attribute     | Description                                                     |
+| ------------- | --------------------------------------------------------------- |
+| Applicable    | Server Only                                                     |
+| Meaning       | The role of the dnode                                           |
+| Value Range   | 0: both mnode and vnode <br/> 1: mnode only <br/> 2: dnode only |
+| Default Value | 0                                                               |
+
+### balance
+
+| Attribute     | Description              |
+| ------------- | ------------------------ |
+| Applicable    | Server Only              |
+| Meaning       | Automatic load balancing |
+| Value Range   | 0: disabled, 1: enabled  |
+| Default Value | 1                        |
+
+### balanceInterval
+
+| Attribute     | Description                                     |
+| ------------- | ----------------------------------------------- |
+| Applicable    | Server Only                                     |
+| Meaning       | The interval for checking load balance by mnode |
+| Unit          | second                                          |
+| Value Range   | 1-30000                                         |
+| Default Value | 300                                             |
+
+### arbitrator
+
+| Attribute     | Description                                        |
+| ------------- | -------------------------------------------------- |
+| Applicable    | Server Only                                        |
+| Meaning       | End point of arbitrator, format is same as firstEp |
+| Default Value | None                                               |
+
+## Time Parameters
+
+### precision
+
+| Attribute     | Description                                       |
+| ------------- | ------------------------------------------------- |
+| Applicable    | Server only                                       |
+| Meaning       | Time precision used for each database             |
+| Value Range   | ms: millisecond; us: microsecond ; ns: nanosecond |
+| Default Value | ms                                                |
+
+### rpcTimer
+
+| Attribute     | Description        |
+| ------------- | ------------------ |
+| Applicable    | Server and Client  |
+| Meaning       | rpc retry interval |
+| Unit          | milliseconds       |
+| Value Range   | 100-3000           |
+| Default Value | 300                |
+
+### rpcMaxTime
+
+| Attribute     | Description                        |
+| ------------- | ---------------------------------- |
+| Applicable    | Server and Client                  |
+| Meaning       | maximum wait time for rpc response |
+| Unit          | second                             |
+| Value Range   | 100-7200                           |
+| Default Value | 600                                |
+
+### statusInterval
+
+| Attribute     | Description                                     |
+| ------------- | ----------------------------------------------- |
+| Applicable    | Server Only                                     |
+| Meaning       | the interval of dnode reporting status to mnode |
+| Unit          | second                                          |
+| Value Range   | 1-10                                            |
+| Default Value | 1                                               |
+
+### shellActivityTimer
+
+| Attribute     | Description                                            |
+| ------------- | ------------------------------------------------------ |
+| Applicable    | Server and Client                                      |
+| Meaning       | The interval for taos shell to send heartbeat to mnode |
+| Unit          | second                                                 |
+| Value Range   | 1-120                                                  |
+| Default Value | 3                                                      |
+
+### tableMetaKeepTimer
+
+| Attribute     | Description                                                                                        |
+| ------------- | -------------------------------------------------------------------------------------------------- |
+| Applicable    | Server Only                                                                                        |
+| Meaning       | The expiration time for metadata in cache, once it's reached the client would refresh the metadata |
+| Unit          | second                                                                                             |
+| Value Range   | 1-8640000                                                                                          |
+| Default Value | 7200                                                                                               |
+
+### maxTmrCtrl
+
+| Attribute     | Description              |
+| ------------- | ------------------------ |
+| Applicable    | Server and Client        |
+| Meaning       | Maximum number of timers |
+| Unit          | None                     |
+| Value Range   | 8-2048                   |
+| Default Value | 512                      |
+
+### offlineThreshold
+
+| Attribute     | Description                                                                                                                   |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Applicable    | Server Only                                                                                                                   |
+| Meaning       | The expiration time for dnode online status, once it's reached before receiving status from a node, the dnode becomes offline |
+| Unit          | second                                                                                                                        |
+| Value Range   | 5-7200000                                                                                                                     |
+| Default Value | 86400\*10 (i.e. 10 days)                                                                                                      |
+
+## Performance Optimization Parameters
+
+### numOfThreadsPerCore
+
+| Attribute     | Description                                 |
+| ------------- | ------------------------------------------- |
+| Applicable    | Server and Client                           |
+| Meaning       | The number of consumer threads per CPU core |
+| Default Value | 1.0                                         |
+
+### ratioOfQueryThreads
+
+| Attribute     | Description                                                                                   |
+| ------------- | --------------------------------------------------------------------------------------------- |
+| Applicable    | Server Only                                                                                   |
+| Meaning       | Maximum number of query threads                                                               |
+| Value Range   | 0: Only one query thread <br/> 1: Same as number of CPU cores <br/> 2: two times of CPU cores |
+| Default Value | 1                                                                                             |
+| Note          | This value can be a float number, 0.5 means half of the CPU cores                             |
+
+### maxVgroupsPerDb
+
+| Attribute     | Description                          |
+| ------------- | ------------------------------------ |
+| Applicable    | Server Only                          |
+| Meaning       | Maximum number of vnodes for each DB |
+| Value Range   | 0-8192                               |
+| Default Value |                                      |
+
+### maxTablesPerVnode
+
+| Attribute     | Description                            |
+| ------------- | -------------------------------------- |
+| Applicable    | Server Only                            |
+| Meaning       | Maximum number of tables in each vnode |
+| Default Value | 1000000                                |
+
+### minTablesPerVnode
+
+| Attribute     | Description                            |
+| ------------- | -------------------------------------- |
+| Applicable    | Server Only                            |
+| Meaning       | Minimum number of tables in each vnode |
+| Default Value | 1000                                   |
+
+### tableIncStepPerVnode
+
+| Attribute     | Description                                                                                 |
+| ------------- | ------------------------------------------------------------------------------------------- |
+| Applicable    | Server Only                                                                                 |
+| Meaning       | When minTablesPerVnode is reached, the number of tables are allocated for a vnode each time |
+| Default Value | 1000                                                                                        |
+
+### maxNumOfOrderedRes
+
+| Attribute     | Description                                 |
+| ------------- | ------------------------------------------- |
+| Applicable    | Server and Client                           |
+| Meaning       | Maximum number of rows ordered for a STable |
+| Default Value | 100,000                                     |
+
+### mnodeEqualVnodeNum
+
+| Attribute     | Description                                                                                     |
+| ------------- | ----------------------------------------------------------------------------------------------- |
+| Applicable    | Server Only                                                                                     |
+| Meaning       | The number of vnodes whose system resources consumption are considered as equal to single mnode |
+| Default Value | 4                                                                                               |
+
+### numOfCommitThreads
+
+| Attribute     | Description                               |
+| ------------- | ----------------------------------------- |
+| Applicable    | Server Only                               |
+| Meaning       | Maximum of threads for committing to disk |
+| Default Value |                                           |
+
+## Compression Parameters
+
+### comp
+
+| Attribute     | Description                                                         |
+| ------------- | ------------------------------------------------------------------- |
+| Applicable    | Server Only                                                         |
+| Meaning       | Whether data is compressed                                          |
+| Value Range   | 0: uncompressed, 1: One phase compression, 2: Two phase compression |
+| Default Value | 2                                                                   |
+
+### tsdbMetaCompactRatio
+
+| Attribute     | Description                                                                                 |
+| ------------- | ------------------------------------------------------------------------------------------- |
+| Meaning       | The threshold for percentage of redundant in meta file to trigger compression for meta file |
+| Value Range   | 0: no compression forever, [1-100]: The threshold percentage                                |
+| Default Value | 0                                                                                           |
+
+### compressMsgSize
+
+| Attribute     | Description                                                                      |
+| ------------- | -------------------------------------------------------------------------------- |
+| Applicable    | Server Only                                                                      |
+| Meaning       | The threshold for message size to compress the message..                         |
+| Unit          | bytes                                                                            |
+| Value Range   | 0: already compress; >0: compress when message exceeds it; -1: always uncompress |
+| Default Value | -1                                                                               |
+
+### compressColData
+
+| Attribute     | Description                                                                                                         |
+| ------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Applicable    | Server Only                                                                                                         |
+| Meaning       | The threshold for size of column data to trigger compression for the query result                                   |
+| Unit          | bytes                                                                                                               |
+| Value Range   | 0: always compress; >0: only compress when the size of any column data exceeds the threshold; -1: always uncompress |
+| Default Value | -1                                                                                                                  |
+| Note          | available from version 2.3.0.0                                                                                      |
+
+### lossyColumns
+
+| Attribute     | Description                                                                                                                                 |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Applicable    | Server Only                                                                                                                                 |
+| Meaning       | The floating number types for lossy compression                                                                                             |
+| Value Range   | "": lossy compression is disabled <br/> float: only for float <br/>double: only for double <br/> float \| double: for both float and double |
+| Default Value | "" , i.e. disabled                                                                                                                          |
+
+### fPrecision
+
+| Attribute     | Description                                                 |
+| ------------- | ----------------------------------------------------------- |
+| Applicable    | Server Only                                                 |
+| Meaning       | Compression precision for float type                        |
+| Value Range   | 0.1 ~ 0.00000001                                            |
+| Default Value | 0.00000001                                                  |
+| Note          | The fractional part lower than this value will be discarded |
+
+### dPrecision
+
+| Attribute     | Description                                                 |
+| ------------- | ----------------------------------------------------------- |
+| Applicable    | Server Only                                                 |
+| Meaning       | Compression precision for double type                       |
+| Value Range   | 0.1 ~ 0.0000000000000001                                    |
+| Default Value | 0.0000000000000001                                          |
+| Note          | The fractional part lower than this value will be discarded |
+
+## Continuous Query Parameters
+
+### stream
 
 | Attribute     | Description                        |
 | ------------- | ---------------------------------- |
 | Applicable    | Server Only                        |
-| Meaning       | Maximum number of vnodes per dnode |
-| Value Range   | 0-4096                             |
-| Default Value | 2x the CPU cores                   |
+| Meaning       | Whether to enable continuous query |
+| Value Range   | 0: disabled <br/> 1: enabled       |
+| Default Value | 1                                  |
 
-## Performance Tuning
+### minSlidingTime
 
-### numOfCommitThreads
+| Attribute     | Description                                              |
+| ------------- | -------------------------------------------------------- |
+| Applicable    | Server Only                                              |
+| Meaning       | Minimum sliding time of time window                      |
+| Unit          | millisecond or microsecond , depending on time precision |
+| Value Range   | 10-1000000                                               |
+| Default Value | 10                                                       |
 
-| Attribute     | Description                         |
-| ------------- | ----------------------------------- |
-| Applicable    | Server Only                         |
-| Meaning       | Maximum number of threads to commit |
-| Value Range   | 0-1024                              |
-| Default Value |                                     |
+### minIntervalTime
+
+| Attribute     | Description                 |
+| ------------- | --------------------------- |
+| Applicable    | Server Only                 |
+| Meaning       | Minimum size of time window |
+| Unit          | millisecond                 |
+| Value Range   | 1-1000000                   |
+| Default Value | 10                          |
+
+### maxStreamCompDelay
+
+| Attribute     | Description                                      |
+| ------------- | ------------------------------------------------ |
+| Applicable    | Server Only                                      |
+| Meaning       | Maximum delay before starting a continuous query |
+| Unit          | millisecond                                      |
+| Value Range   | 10-1000000000                                    |
+| Default Value | 20000                                            |
+
+### maxFirstStreamCompDelay
+
+| Attribute     | Description                                                          |
+| ------------- | -------------------------------------------------------------------- |
+| Applicable    | Server Only                                                          |
+| Meaning       | Maximum delay time before starting a continuous query the first time |
+| Unit          | millisecond                                                          |
+| Value Range   | 10-1000000000                                                        |
+| Default Value | 10000                                                                |
+
+### retryStreamCompDelay
+
+| Attribute     | Description                                   |
+| ------------- | --------------------------------------------- |
+| Applicable    | Server Only                                   |
+| Meaning       | Delay time before retrying a continuous query |
+| Unit          | millisecond                                   |
+| Value Range   | 10-1000000000                                 |
+| Default Value | 10                                            |
+
+### streamCompDelayRatio
+
+| Attribute     | Description                                                              |
+| ------------- | ------------------------------------------------------------------------ |
+| Applicable    | Server Only                                                              |
+| Meaning       | The delay ratio, with time window size as the base, for continuous query |
+| Value Range   | 0.1-0.9                                                                  |
+| Default Value | 0.1                                                                      |
+
+:::info
+To prevent system resource from being exhausted by multiple concurrent streams, a random delay is applied on each stream automatically. `maxFirstStreamCompDelay` is the maximum delay time before a continuous query is started the first time. `streamCompDelayRatio` is the ratio for calculating delay time, with the size of the time window as base. `maxStreamCompDelay` is the maximum delay time. The actual delay time is a random time not bigger than `maxStreamCompDelay`. If a continuous query fails, `retryStreamComDelay` is the delay time before retrying it, also not bigger than `maxStreamCompDelay`.
+
+:::
+
+## HTTP Parameters
+
+:::note
+HTTP service was provided by `taosd` prior to version 2.4.0.0 and is provided by `taosAdapter` after version 2.4.0.0.
+The parameters described in this section are only application in versions prior to 2.4.0.0. If you are using any version from 2.4.0.0, please refer to [taosAdapter](../taosadapter/).
+
+:::
+
+### http
+
+| Attribute     | Description                    |
+| ------------- | ------------------------------ |
+| Applicable    | Server Only                    |
+| Meaning       | Whether to enable http service |
+| Value Range   | 0: disabled, 1: enabled        |
+| Default Value | 1                              |
+
+### httpEnableRecordSql
+
+| Attribute     | Description                                                               |
+| ------------- | ------------------------------------------------------------------------- |
+| Applicable    | Server Only                                                               |
+| Meaning       | Whether to record the SQL invocation through REST interface               |
+| Default Value | 0: false; 1: true                                                         |
+| Note          | The resulting files, i.e. httpnote.0/httpnote.1, are located under logDir |
+
+### httpMaxThreads
+
+| Attribute     | Description                                  |
+| ------------- | -------------------------------------------- |
+| Applicable    | Server Only                                  |
+| Meaning       | The number of threads for RESTFul interface. |
+| Default Value | 2                                            |
+
+### restfulRowLimit
+
+| Attribute     | Description                                                  |
+| ------------- | ------------------------------------------------------------ |
+| Applicable    | Server Only                                                  |
+| Meaning       | Maximum number of rows returned each time by REST interface. |
+| Default Value | 10240                                                        |
+| Note          | Maximum value is 10,000,000                                  |
+
+### httpDBNameMandatory
+
+| Attribute     | Description                              |
+| ------------- | ---------------------------------------- |
+| Applicable    | Server Only                              |
+| Meaning       | Whether database name is required in URL |
+| Value Range   | 0:not required, 1: required              |
+| Default Value | 0                                        |
+| Note          | From version 2.3.0.0                     |
 
 ## Log Parameters
 
@@ -430,7 +863,7 @@ The charset that takes effect is UTF-8.
 | ------------- | ------------------------------------------ |
 | Applicable    | Server and Client                          |
 | Meaning       | Maximum number of lines in single log file |
-| Default Value | 10000000                                   |
+| Default Value | 10,000,000                                 |
 
 ### asyncLog
 
@@ -451,26 +884,6 @@ The charset that takes effect is UTF-8.
 | Default Value | 0                                                                                                                                           |
 | Note          | When it's bigger than 0, the log file would be renamed to "taosdlog.xxx" in which "xxx" is the timestamp when the file is changed last time |
 
-### slowLogThreshold
-
-| Attribute     | Description                                                                                              |
-| ------------- | -------------------------------------------------------------------------------------------------------- |
-| Applicable    | Client only                                                                                              |
-| Meaning       | When an operation execution time exceeds this threshold, the operation will be logged in slow log file   |
-| Unit          | second                                                                                                   |
-| Default Value | 3                                                                                                        |
-| Note          | All slow operations will be logged in file "taosSlowLog" in the log directory                            |
-
-### slowLogScope
-
-| Attribute       | Description                                                             |
-| --------------- | ----------------------------------------------------------------------- |
-| Applicable      | Client only                                                             |
-| Meaning         | Slow log type to be logged                                              |
-| Optional Values | ALL, QUERY, INSERT, OTHERS, NONE                                        |
-| Default Value   | ALL                                                                     |
-| Note            | All slow operations will be logged by default, one option could be set  |
-
 ### debugFlag
 
 | Attribute     | Description                                               |
@@ -480,95 +893,23 @@ The charset that takes effect is UTF-8.
 | Value Range   | 131: INFO/WARNING/ERROR; 135: plus DEBUG; 143: plus TRACE |
 | Default Value | 131 or 135, depending on the module                       |
 
-### tmrDebugFlag
+### mDebugFlag
 
-| Attribute     | Description               |
-| ------------- | ------------------------- |
-| Applicable    | Server and Client         |
-| Meaning       | Log level of timer module |
-| Value Range   | same as debugFlag         |
-| Default Value |                           |
-
-### uDebugFlag
-
-| Attribute     | Description                |
-| ------------- | -------------------------- |
-| Applicable    | Server and Client          |
-| Meaning       | Log level of common module |
-| Value Range   | same as debugFlag          |
-| Default Value |                            |
-
-### rpcDebugFlag
-
-| Attribute     | Description             |
-| ------------- | ----------------------- |
-| Applicable    | Server and Client       |
-| Meaning       | Log level of rpc module |
-| Value Range   | same as debugFlag       |
-| Default Value |                         |
-
-### jniDebugFlag
-
-| Attribute     | Description             |
-| ------------- | ----------------------- |
-| Applicable    | Client Only             |
-| Meaning       | Log level of jni module |
-| Value Range   | same as debugFlag       |
-| Default Value |                         |
-
-### qDebugFlag
-
-| Attribute     | Description               |
-| ------------- | ------------------------- |
-| Applicable    | Server and Client         |
-| Meaning       | Log level of query module |
-| Value Range   | same as debugFlag         |
-| Default Value |                           |
-
-### cDebugFlag
-
-| Attribute     | Description         |
-| ------------- | ------------------- |
-| Applicable    | Client Only         |
-| Meaning       | Log level of Client |
-| Value Range   | same as debugFlag   |
-| Default Value |                     |
+| Attribute     | Description        |
+| ------------- | ------------------ |
+| Applicable    | Server Only        |
+| Meaning       | Log level of mnode |
+| Value Range   | same as debugFlag  |
+| Default Value | 135                |
 
 ### dDebugFlag
 
 | Attribute     | Description        |
 | ------------- | ------------------ |
-| Applicable    | Server Only        |
+| Applicable    | Server and Client  |
 | Meaning       | Log level of dnode |
 | Value Range   | same as debugFlag  |
 | Default Value | 135                |
-
-### vDebugFlag
-
-| Attribute     | Description        |
-| ------------- | ------------------ |
-| Applicable    | Server Only        |
-| Meaning       | Log level of vnode |
-| Value Range   | same as debugFlag  |
-| Default Value |                    |
-
-### mDebugFlag
-
-| Attribute     | Description               |
-| ------------- | ------------------------- |
-| Applicable    | Server Only               |
-| Meaning       | Log level of mnode module |
-| Value Range   | same as debugFlag         |
-| Default Value | 135                       |
-
-### wDebugFlag
-
-| Attribute     | Description             |
-| ------------- | ----------------------- |
-| Applicable    | Server Only             |
-| Meaning       | Log level of WAL module |
-| Value Range   | same as debugFlag       |
-| Default Value | 135                     |
 
 ### sDebugFlag
 
@@ -579,232 +920,211 @@ The charset that takes effect is UTF-8.
 | Value Range   | same as debugFlag        |
 | Default Value | 135                      |
 
+### wDebugFlag
+
+| Attribute     | Description             |
+| ------------- | ----------------------- |
+| Applicable    | Server and Client       |
+| Meaning       | Log level of WAL module |
+| Value Range   | same as debugFlag       |
+| Default Value | 135                     |
+
+### sdbDebugFlag
+
+| Attribute     | Description            |
+| ------------- | ---------------------- |
+| Applicable    | Server and Client      |
+| Meaning       | logLevel of sdb module |
+| Value Range   | same as debugFlag      |
+| Default Value | 135                    |
+
+### rpcDebugFlag
+
+| Attribute     | Description             |
+| ------------- | ----------------------- |
+| Applicable    | Server and Client       |
+| Meaning       | Log level of rpc module |
+| Value Range   | Same as debugFlag       |
+| Default Value |                         |
+
+### tmrDebugFlag
+
+| Attribute     | Description               |
+| ------------- | ------------------------- |
+| Applicable    | Server and Client         |
+| Meaning       | Log level of timer module |
+| Value Range   | Same as debugFlag         |
+| Default Value |                           |
+
+### cDebugFlag
+
+| Attribute     | Description         |
+| ------------- | ------------------- |
+| Applicable    | Client Only         |
+| Meaning       | Log level of Client |
+| Value Range   | Same as debugFlag   |
+| Default Value |                     |
+
+### jniDebugFlag
+
+| Attribute     | Description             |
+| ------------- | ----------------------- |
+| Applicable    | Client Only             |
+| Meaning       | Log level of jni module |
+| Value Range   | Same as debugFlag       |
+| Default Value |                         |
+
+### odbcDebugFlag
+
+| Attribute     | Description              |
+| ------------- | ------------------------ |
+| Applicable    | Client Only              |
+| Meaning       | Log level of odbc module |
+| Value Range   | Same as debugFlag        |
+| Default Value |                          |
+
+### uDebugFlag
+
+| Attribute     | Description                |
+| ------------- | -------------------------- |
+| Applicable    | Server and Client          |
+| Meaning       | Log level of common module |
+| Value Range   | Same as debugFlag          |
+| Default Value |                            |
+
+### httpDebugFlag
+
+| Attribute     | Description                                 |
+| ------------- | ------------------------------------------- |
+| Applicable    | Server Only                                 |
+| Meaning       | Log level of http module (prior to 2.4.0.0) |
+| Value Range   | Same as debugFlag                           |
+| Default Value |                                             |
+
+### mqttDebugFlag
+
+| Attribute     | Description              |
+| ------------- | ------------------------ |
+| Applicable    | Server Only              |
+| Meaning       | Log level of mqtt module |
+| Value Range   | Same as debugFlag        |
+| Default Value |                          |
+
+### monitorDebugFlag
+
+| Attribute     | Description                    |
+| ------------- | ------------------------------ |
+| Applicable    | Server Only                    |
+| Meaning       | Log level of monitoring module |
+| Value Range   | Same as debugFlag              |
+| Default Value |                                |
+
+### qDebugFlag
+
+| Attribute     | Description               |
+| ------------- | ------------------------- |
+| Applicable    | Server and Client         |
+| Meaning       | Log level of query module |
+| Value Range   | Same as debugFlag         |
+| Default Value |                           |
+
+### vDebugFlag
+
+| Attribute     | Description        |
+| ------------- | ------------------ |
+| Applicable    | Server and Client  |
+| Meaning       | Log level of vnode |
+| Value Range   | Same as debugFlag  |
+| Default Value |                    |
+
 ### tsdbDebugFlag
 
 | Attribute     | Description              |
 | ------------- | ------------------------ |
 | Applicable    | Server Only              |
 | Meaning       | Log level of TSDB module |
-| Value Range   | same as debugFlag        |
+| Value Range   | Same as debugFlag        |
 | Default Value |                          |
 
-### tqDebugFlag
+### cqDebugFlag
 
-| Attribute     | Description            |
-| ------------- | ---------------------- |
-| Applicable    | Server only            |
-| Meaning       | Log level of TQ module |
-| Value Range   | same as debugFlag      |
-| Default Value |                        |
+| Attribute     | Description                          |
+| ------------- | ------------------------------------ |
+| Applicable    | Server and Client                    |
+| Meaning       | Log level of continuous query module |
+| Value Range   | Same as debugFlag                    |
+| Default Value |                                      |
 
-### fsDebugFlag
+## Client Only
 
-| Attribute     | Description            |
-| ------------- | ---------------------- |
-| Applicable    | Server only            |
-| Meaning       | Log level of FS module |
-| Value Range   | same as debugFlag      |
-| Default Value |                        |
+### maxSQLLength
 
-### udfDebugFlag
+| Attribute     | Description                            |
+| ------------- | -------------------------------------- |
+| Applicable    | Client Only                            |
+| Meaning       | Maximum length of single SQL statement |
+| Unit          | bytes                                  |
+| Value Range   | 65480-1048576                          |
+| Default Value | 1048576                                |
 
-| Attribute     | Description             |
-| ------------- | ----------------------- |
-| Applicable    | Server Only             |
-| Meaning       | Log level of UDF module |
-| Value Range   | same as debugFlag       |
-| Default Value |                         |
+### tscEnableRecordSql
 
-### smaDebugFlag
+| Attribute     | Description                                                                                                                                       |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Meaning       | Whether to record SQL statements in file                                                                                                          |
+| Value Range   | 0: false, 1: true                                                                                                                                 |
+| Default Value | 0                                                                                                                                                 |
+| Note          | The generated files are named as "tscnote-xxxx.0/tscnote-xxx.1" in which "xxxx" is the pid of the client, and located at same place as client log |
 
-| Attribute     | Description             |
-| ------------- | ----------------------- |
-| Applicable    | Server Only             |
-| Meaning       | Log level of SMA module |
-| Value Range   | same as debugFlag       |
-| Default Value |                         |
+### maxBinaryDisplayWidth
 
-### idxDebugFlag
+| Attribute     | Description                                                                                         |
+| ------------- | --------------------------------------------------------------------------------------------------- |
+| Meaning       | Maximum display width of binary and nchar in taos shell. Anything beyond this limit would be hidden |
+| Value Range   | 5 -                                                                                                 |
+| Default Value | 30                                                                                                  |
 
-| Attribute     | Description               |
-| ------------- | ------------------------- |
-| Applicable    | Server Only               |
-| Meaning       | Log level of index module |
-| Value Range   | same as debugFlag         |
-| Default Value |                           |
+:::info
+If the length of value exceeds `maxBinaryDisplayWidth`, then the actual display width is max(column name, maxBinaryDisplayLength); otherwise the actual display width is max(length of column name, length of column value). This parameter can also be changed dynamically using `set max_binary_display_width <nn\>` in TDengine CLI `taos`.
 
-### tdbDebugFlag
+:::
 
-| Attribute     | Description             |
-| ------------- | ----------------------- |
-| Applicable    | Server Only             |
-| Meaning       | Log level of TDB module |
-| Value Range   | same as debugFlag       |
-| Default Value |                         |
+### maxWildCardsLength
 
-## Schemaless Parameters
+| Attribute     | Description                                           |
+| ------------- | ----------------------------------------------------- |
+| Meaning       | The maximum length for wildcard string used with LIKE |
+| Unit          | bytes                                                 |
+| Value Range   | 0-16384                                               |
+| Default Value | 100                                                   |
+| Note          | From version 2.1.6.1                                  |
 
-### smlChildTableName
+### clientMerge
 
-| Attribute     | Description                                |
-| ------------- | ------------------------------------------ |
-| Applicable    | Client only                                |
-| Meaning       | Custom subtable name for schemaless writes |
-| Type          | String                                     |
-| Default Value | None                                       |
+| Attribute     | Description                                         |
+| ------------- | --------------------------------------------------- |
+| Meaning       | Whether to filter out duplicate data on client side |
+| Value Range   | 0: false; 1: true                                   |
+| Default Value | 0                                                   |
+| Note          | From version 2.3.0.0                                |
 
-### smlAutoChildTableNameDelimiter
+### maxRegexStringLen
 
-| Attribute     | Description                                |
-| ------------- | ------------------------------------------ |
-| Applicable    | Client only                                |
-| Meaning       | Delimiter between tags as table name|
-| Type          | String                                     |
-| Default Value | None                                       |
-
-### smlTagName
-
-| Attribute     | Description                                                   |
-| ------------- | ------------------------------------------------------------- |
-| Applicable    | Client only                                                   |
-| Meaning       | Default tag for schemaless writes without tag value specified |
-| Type          | String                                                        |
-| Default Value | _tag_null                                                     |
-
-### smlDataFormat
-
-| Attribute   | Description                                                                         |
-| ----------- | ----------------------------------------------------------------------------------- |
-| Applicable  | Client only                                                                         |
-| Meaning     | Whether schemaless columns are consistently ordered, depat, discarded since 3.0.3.0 |
-| Value Range | 0: not consistent; 1: consistent.                                                   |
-| Default     | 0                                                                                   |
-
-### smlTsDefaultName
-
-| Attribute     | Description                                                     |
-| --------      | --------------------------------------------------------        |
-| Applicable    | Client only                                                     |
-| Meaning       | The name of the time column for schemaless automatic table creation is set through this configuration |
-| Type          | String                                                          |
-| Default Value | _ts                                                             |
-
-## Compress Parameters
-
-### compressMsgSize
-
-| Attribute   | Description                                                                                                        |
-| ----------- | ------------------------------------------------------------------------------------------------------------------ |
-| Applicable  | Both Client and Server side                                                                                        |
-| Meaning     | Whether RPC message is compressed                                                                                  |
-| Value Range | -1: none message is compressed; 0: all messages are compressed; N (N>0): messages exceeding N bytes are compressed |
-| Default     | -1                                                                                                                 |
-
+| Attribute     | Description                          |
+| ------------- | ------------------------------------ |
+| Meaning       | Maximum length of regular expression |
+| Value Range   | [128, 16384]                         |
+| Default Value | 128                                  |
+| Note          | From version 2.3.0.0                 |
 
 ## Other Parameters
 
 ### enableCoreFile
 
-| Attribute     | Description                                                                                                                                                                                                        |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Applicable    | Server and Client                                                                                                                                                                                                  |
-| Meaning       | Whether to generate core file when server crashes                                                                                                                                                                  |
-| Value Range   | 0: false, 1: true                                                                                                                                                                                                  |
-| Default Value | 1                                                                                                                                                                                                                  |
-| Note          | The core file is generated under root directory `systemctl start taosd`/`launchctl start com.tdengine.taosd` is used to start, or under the working directory if `taosd` is started directly on Linux/macOS Shell. |
-
-### enableScience
-
-| Attribute     | Description                                                   |
-| ------------- | ------------------------------------------------------------- |
-| Applicable    | Only taos-CLI client                                          |
-| Meaning       | Whether to show float and double with the scientific notation |
-| Value Range   | 0: false, 1: true                                             |
-| Default Value | 0                                                             |
-
-
-### udf
-
-| Attribute     | Description                        |
-| ------------- | ---------------------------------- |
-| Applicable    | Server Only                        |
-| Meaning       | Whether the UDF service is enabled |
-| Value Range   | 0: disable UDF; 1: enabled UDF     |
-| Default Value | 1                                  |
-
-### ttlChangeOnWrite
-
-| Attribute     | Description                                                                   |
-| ------------- | ----------------------------------------------------------------------------- |
-| Applicable    | Server Only                                                                   |
-| Meaning       | Whether the ttl expiration time changes with the table modification operation |
-| Value Range   | 0: not change; 1: change by modification                                      |
-| Default Value | 0                                                                             |
-
-### tmqMaxTopicNum
-
-| Attribute     | Description               |
-| -------- | ------------------ |
-| Applicable | Server Only       |
-| Meaning     | The max num of topics  |
-| Value Range | 1-10000|
-| Default Value   | 20                  |
-
-## 3.0 Parameters
-
-| #   |     **Parameter**      | **Applicable to 2.x ** | **Applicable to  3.0 **      | Current behavior in 3.0 |
-| --- | :--------------------: | ---------------------- | ---------------------------- | ----------------------- |
-| 1   |        firstEp         | Yes                    | Yes                          |                         |
-| 2   |        secondEp        | Yes                    | Yes                          |                         |
-| 3   |          fqdn          | Yes                    | Yes                          |                         |
-| 4   |       serverPort       | Yes                    | Yes                          |                         |
-| 5   |     maxShellConns      | Yes                    | Yes                          |                         |
-| 6   |        monitor         | Yes                    | Yes                          |                         |
-| 7   |      monitorFqdn       | No                     | Yes                          |                         |
-| 8   |      monitorPort       | No                     | Yes                          |                         |
-| 9   |    monitorInterval     | Yes                    | Yes                          |                         |
-| 10  |      queryPolicy       | No                     | Yes                          |                         |
-| 11  |    querySmaOptimize    | No                     | Yes                          |                         |
-| 12  |  maxNumOfDistinctRes   | Yes                    | Yes                          |                         |
-| 15  | countAlwaysReturnValue | Yes                    | Yes                          |                         |
-| 16  |        dataDir         | Yes                    | Yes                          |                         |
-| 17  |    minimalDataDirGB    | Yes                    | Yes                          |                         |
-| 18  |     supportVnodes      | No                     | Yes                          |                         |
-| 19  |        tempDir         | Yes                    | Yes                          |                         |
-| 20  |    minimalTmpDirGB     | Yes                    | Yes                          |                         |
-| 21  |   smlChildTableName    | Yes                    | Yes                          |                         |
-| 22  |       smlTagName       | Yes                    | Yes                          |                         |
-| 23  |     smlDataFormat      | No                     | Yes(discarded since 3.0.3.0) |                         |
-| 24  |     statusInterval     | Yes                    | Yes                          |                         |
-| 25  |         logDir         | Yes                    | Yes                          |                         |
-| 26  |    minimalLogDirGB     | Yes                    | Yes                          |                         |
-| 27  |     numOfLogLines      | Yes                    | Yes                          |                         |
-| 28  |        asyncLog        | Yes                    | Yes                          |                         |
-| 29  |      logKeepDays       | Yes                    | Yes                          |                         |
-| 30  |       debugFlag        | Yes                    | Yes                          |                         |
-| 31  |      tmrDebugFlag      | Yes                    | Yes                          |                         |
-| 32  |       uDebugFlag       | Yes                    | Yes                          |                         |
-| 33  |      rpcDebugFlag      | Yes                    | Yes                          |                         |
-| 34  |      jniDebugFlag      | Yes                    | Yes                          |                         |
-| 35  |       qDebugFlag       | Yes                    | Yes                          |                         |
-| 36  |       cDebugFlag       | Yes                    | Yes                          |                         |
-| 37  |       dDebugFlag       | Yes                    | Yes                          |                         |
-| 38  |       vDebugFlag       | Yes                    | Yes                          |                         |
-| 39  |       mDebugFlag       | Yes                    | Yes                          |                         |
-| 40  |       wDebugFlag       | Yes                    | Yes                          |                         |
-| 41  |       sDebugFlag       | Yes                    | Yes                          |                         |
-| 42  |     tsdbDebugFlag      | Yes                    | Yes                          |                         |
-| 43  |      tqDebugFlag       | No                     | Yes                          |                         |
-| 44  |      fsDebugFlag       | Yes                    | Yes                          |                         |
-| 45  |      udfDebugFlag      | No                     | Yes                          |                         |
-| 46  |      smaDebugFlag      | No                     | Yes                          |                         |
-| 47  |      idxDebugFlag      | No                     | Yes                          |                         |
-| 48  |      tdbDebugFlag      | No                     | Yes                          |                         |
-| 49  |     metaDebugFlag      | No                     | Yes                          |                         |
-| 50  |        timezone        | Yes                    | Yes                          |                         |
-| 51  |         locale         | Yes                    | Yes                          |                         |
-| 52  |        charset         | Yes                    | Yes                          |                         |
-| 53  |          udf           | Yes                    | Yes                          |                         |
-| 54  |     enableCoreFile     | Yes                    | Yes                          |                         |
-| 55  |    ttlChangeOnWrite    | No                     | Yes                          |                         |
-| 56  |     keepTimeOffset     | Yes                    | Yes(discarded since 3.2.0.0) |                         |
+| Attribute     | Description                                                                                                                                                             |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Applicable    | Server and Client                                                                                                                                                       |
+| Meaning       | Whether to generate core file when server crashes                                                                                                                       |
+| Value Range   | 0: false, 1: true                                                                                                                                                       |
+| Default Value | 1                                                                                                                                                                       |
+| Note          | The core file is generated under root directory `systemctl start taosd` is used to start, or under the working directory if `taosd` is started directly on Linux Shell. |

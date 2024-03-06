@@ -1,5 +1,5 @@
 [Unit]
-Description=server service
+Description=TDengine server service
 After=network-online.target
 Wants=network-online.target
 
@@ -8,7 +8,7 @@ Type=simple
 ExecStart=/usr/bin/taosd
 ExecStartPre=/usr/local/taos/bin/startPre.sh
 TimeoutStopSec=1000000s
-LimitNOFILE=1048576
+LimitNOFILE=infinity
 LimitNPROC=infinity
 LimitCORE=infinity
 TimeoutStartSec=0

@@ -24,9 +24,12 @@ class TDSimClient:
 
         self.cfgDict = {
             "numOfLogLines": "100000000",
+            "numOfThreadsPerCore": "2.0",
             "locale": "en_US.UTF-8",
             "charset": "UTF-8",
             "asyncLog": "0",
+            "anyIp": "0",
+            "sdbDebugFlag": "135",
             "rpcDebugFlag": "135",
             "tmrDebugFlag": "131",
             "cDebugFlag": "135",
@@ -34,18 +37,18 @@ class TDSimClient:
             "jnidebugFlag": "135",
             "qdebugFlag": "135",
             "telemetryReporting": "0",
-            }
+        }
 
     def init(self, path):
         self.__init__()
         self.path = path
 
     def getLogDir(self):
-        self.logDir = os.path.join(self.path,"sim","psim","log")
+        self.logDir = "%s/sim/psim/log" % (self.path)
         return self.logDir
 
     def getCfgDir(self):
-        self.cfgDir = os.path.join(self.path,"sim","psim","cfg")
+        self.cfgDir = "%s/sim/psim/cfg" % (self.path)
         return self.cfgDir
 
     def setTestCluster(self, value):
@@ -60,25 +63,21 @@ class TDSimClient:
             tdLog.exit(cmd)
 
     def deploy(self):
-        self.logDir = os.path.join(self.path,"sim","psim","log")
-        self.cfgDir = os.path.join(self.path,"sim","psim","cfg")
-        self.cfgPath = os.path.join(self.path,"sim","psim","cfg","taos.cfg")
+        self.logDir = "%s/sim/psim/log" % (self.path)
+        self.cfgDir = "%s/sim/psim/cfg" % (self.path)
+        self.cfgPath = "%s/sim/psim/cfg/taos.cfg" % (self.path)
 
         cmd = "rm -rf " + self.logDir
         if os.system(cmd) != 0:
             tdLog.exit(cmd)
-    
-        cmd = "mkdir -p " + self.logDir
-        if os.system(cmd) != 0:
-            tdLog.exit(cmd)
+
+        os.makedirs(self.logDir, exist_ok=True)  # like "mkdir -p"
 
         cmd = "rm -rf " + self.cfgDir
         if os.system(cmd) != 0:
             tdLog.exit(cmd)
 
-        cmd = "mkdir -p " + self.cfgDir
-        if os.system(cmd) != 0:
-            tdLog.exit(cmd)
+        os.makedirs(self.cfgDir, exist_ok=True)  # like "mkdir -p"
 
         cmd = "touch " + self.cfgPath
         if os.system(cmd) != 0:
@@ -126,10 +125,11 @@ class TDDnode:
         return totalSize
 
     def deploy(self):
-        self.logDir = os.path.join(self.path,"sim","dnode%d" % self.index, "log")
-        self.dataDir = os.path.join(self.path,"sim","dnode%d" % self.index, "data")
-        self.cfgDir = os.path.join(self.path,"sim","dnode%d" % self.index, "cfg")
-        self.cfgPath = os.path.join(self.path,"sim","dnode%d" % self.index, "cfg","taos.cfg")
+        self.logDir = "%s/sim/dnode%d/log" % (self.path, self.index)
+        self.dataDir = "%s/sim/dnode%d/data" % (self.path, self.index)
+        self.cfgDir = "%s/sim/dnode%d/cfg" % (self.path, self.index)
+        self.cfgPath = "%s/sim/dnode%d/cfg/taos.cfg" % (
+            self.path, self.index)
 
         cmd = "rm -rf " + self.dataDir
         if os.system(cmd) != 0:
@@ -143,17 +143,11 @@ class TDDnode:
         if os.system(cmd) != 0:
             tdLog.exit(cmd)
 
-        cmd = "mkdir -p " + self.dataDir
-        if os.system(cmd) != 0:
-            tdLog.exit(cmd)
+        os.makedirs(self.dataDir, exist_ok=True)  # like "mkdir -p"
 
-        cmd = "mkdir -p " + self.logDir
-        if os.system(cmd) != 0:
-            tdLog.exit(cmd)
+        os.makedirs(self.logDir, exist_ok=True)  # like "mkdir -p"
 
-        cmd = "mkdir -p " + self.cfgDir
-        if os.system(cmd) != 0:
-            tdLog.exit(cmd)
+        os.makedirs(self.cfgDir, exist_ok=True)  # like "mkdir -p"
 
         cmd = "touch " + self.cfgPath
         if os.system(cmd) != 0:
@@ -202,7 +196,7 @@ class TDDnode:
             "dnode:%d is deployed and configured by %s" %
             (self.index, self.cfgPath))
 
-    def getBuildPath(self):
+    def getPath(self, tool="taosd"):
         selfPath = os.path.dirname(os.path.realpath(__file__))
 
         if ("community" in selfPath):
@@ -210,23 +204,22 @@ class TDDnode:
         else:
             projPath = selfPath[:selfPath.find("tests")]
 
+        paths = []
         for root, dirs, files in os.walk(projPath):
-            if ("taosd" in files):
+            if ((tool) in files):
                 rootRealPath = os.path.dirname(os.path.realpath(root))
                 if ("packaging" not in rootRealPath):
-                    buildPath = root[:len(root)-len("/build/bin")]
+                    paths.append(os.path.join(root, tool))
                     break
-        return buildPath
+        return paths[0]
 
     def start(self):
-        buildPath = self.getBuildPath()
+        binPath = self.getPath()
 
-        if (buildPath == ""):
+        if (binPath == ""):
             tdLog.exit("taosd not found!")
         else:
-            tdLog.info("taosd found in %s" % buildPath)
-
-        binPath = buildPath + "/build/bin/taosd"
+            tdLog.info("taosd found: %s" % binPath)
 
         if self.deployed == 0:
             tdLog.exit("dnode:%d is not deployed" % (self.index))
@@ -319,11 +312,11 @@ class TDDnode:
             tdLog.exit(cmd)
 
     def getDnodeRootDir(self, index):
-        dnodeRootDir = os.path.join(self.path,"sim","psim","dnode%d" % index)
+        dnodeRootDir = "%s/sim/psim/dnode%d" % (self.path, index)
         return dnodeRootDir
 
     def getDnodesRootDir(self):
-        dnodesRootDir = os.path.join(self.path,"sim","psim")
+        dnodesRootDir = "%s/sim/psim" % (self.path)
         return dnodesRootDir
 
 

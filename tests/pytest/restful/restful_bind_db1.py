@@ -75,10 +75,10 @@ class TDTestCase():
 
         # test with no bind databases
 
-        sqls = ["select * from information_schema.ins_databases;",
+        sqls = ["show databases;",
         "use test", 
         "show tables;",
-        "select * from information_schema.ins_dnodes;",
+        "show dnodes;",
         "show vgroups;",
         "create database db;",
         "drop database db;",

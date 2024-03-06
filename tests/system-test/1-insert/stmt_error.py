@@ -24,9 +24,8 @@ class TDTestCase:
         case1 <wenzhouwww>: [TD-11899] : this is an test case for check stmt error use .
         '''
         return
-    
-    def init(self, conn, logSql, replicaVar=1):
-        self.replicaVar = int(replicaVar)
+
+    def init(self, conn, logSql):
         tdLog.debug("start to execute %s" % __file__)
         tdSql.init(conn.cursor(), logSql)
 
@@ -76,29 +75,24 @@ class TDTestCase:
             stmt.bind_param(params)
             stmt.execute()
 
-            assert stmt.affected_rows == 1
+            result = stmt.use_result()
+            assert result.affected_rows == 1
+            result.close()
             stmt.close()
 
-            querystmt=conn.statement("select ?, bo, nil, ti, si, ii,bi, tu, su, iu, bu, ff, dd, bb, nn, tt from log")
-            queryparam=new_bind_params(1)
-            print(type(queryparam))
-            queryparam[0].binary("ts")
-            querystmt.bind_param(queryparam)
-            querystmt.execute()
-            result=querystmt.use_result()
-
-            row=result.fetch_all()
+            stmt = conn.statement("select * from log")
+            stmt.execute()
+            result = stmt.use_result()
+            row  = result.next()
             print(row)
-
-            assert row[0][1] == True
-            assert row[0][2] == None
-            for i in range(3, 10):
-                assert row[0][i] == i - 1
+            assert row[2] == None
+            for i in range(3, 11):
+                assert row[i] == i - 1
             #float == may not work as expected
-            # assert row[0][11] == c_float(10.1)
-            assert row[0][12] == 10.11
-            assert row[0][13][65054:] == "hello"
-            assert row[0][14] == "stmt"
+            # assert row[10] == c_float(10.1)
+            assert row[12] == 10.11
+            assert row[13][65054:] == "hello"
+            assert row[14] == "stmt"
 
             conn.execute("drop database if exists %s" % dbname)
             conn.close()
@@ -147,6 +141,26 @@ class TDTestCase:
             stmt.bind_param(params)
             stmt.execute()
 
+            result = stmt.use_result()
+            assert result.affected_rows == 1
+            result.close()
+            stmt.close()
+
+            stmt = conn.statement("select * from log")
+            stmt.execute()
+            result = stmt.use_result()
+            row  = result.next()
+            print(row)
+            assert row[2] == None
+            for i in range(3, 11):
+                assert row[i] == i - 1
+            #float == may not work as expected
+            # assert row[10] == c_float(10.1)
+            assert row[12] == 10.11
+            assert row[13] == "hello"
+            assert row[14] == "stmt"
+
+            conn.execute("drop database if exists %s" % dbname)
             conn.close()
 
         except Exception as err:
@@ -203,19 +217,20 @@ class TDTestCase:
             self.test_stmt_insert_error(self.conn())
         except Exception as error :
             
-            if str(error)=='[0x0200]: no mix usage for ? and values':
-                tdLog.info('=========stmt error occured for bind part column ==============')
+            if str(error)=='[0x0200]: invalid operation: only ? allowed in values':
+                tdLog.info('=========stmt error occured  for bind part column ==============')
             else:
-                tdLog.exit("expect error(%s) not occured" % str(error))
+                tdLog.exit("expect error not occured")
 
         try:    
             self.test_stmt_insert_error_null_timestamp(self.conn())
             tdLog.exit("expect error not occured - 1")
         except Exception as error :
-            if str(error)=='[0x060b]: Timestamp data out of range':
+            if str(error)=='[0x0200]: invalid operation: bind column type mismatch or invalid':
                 tdLog.info('=========stmt error occured  for bind part column(NULL Timestamp) ==============')
             else:
-                tdLog.exit("expect error(%s) not occured - 2" % str(error))
+                tdLog.exit("expect error not occured - 2")
+        
     def stop(self):
         tdSql.close()
         tdLog.success("%s successfully executed" % __file__)

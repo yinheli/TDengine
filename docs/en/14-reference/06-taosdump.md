@@ -1,6 +1,6 @@
 ---
 title: taosdump
-description: This document describes how to use taosdump, a tool for backing up and restoring the data in a TDengine cluster.
+description: "taosdump is a tool that supports backing up data from a running TDengine cluster and restoring the backed up data to the same, or another running TDengine cluster."
 ---
 
 ## Introduction
@@ -19,7 +19,7 @@ Users should not use taosdump to back up raw data, environment settings, hardwar
 
 There are two ways to install taosdump:
 
-- Install the taosTools official installer. Please find taosTools from [Release History](https://docs.taosdata.com/releases/tools/) page and download and install it.
+- Install the taosTools official installer. Please find taosTools from [All download links](https://www.tdengine.com/all-downloads) page and download and install it.
 
 - Compile taos-tools separately and install it. Please refer to the [taos-tools](https://github.com/taosdata/taos-tools) repository for details.
 
@@ -76,9 +76,10 @@ Usage: taosdump [OPTION...] dbname [tbname ...]
   -A, --all-databases        Dump all databases.
   -D, --databases=DATABASES  Dump listed databases. Use comma to separate
                              database names.
-  -e, --escape-character     Use escaped character for database name
   -N, --without-property     Dump database without its properties.
   -s, --schemaonly           Only dump table schemas.
+  -y, --answer-yes           Input yes for prompt. It will skip data file
+                             checking!
   -d, --avro-codec=snappy    Choose an avro codec among null, deflate, snappy,
                              and lzma.
   -S, --start-time=START_TIME   Start time to dump. Either epoch or
@@ -102,8 +103,6 @@ Usage: taosdump [OPTION...] dbname [tbname ...]
   -L, --loose-mode           Use loose mode if the table name and column name
                              use letter and number only. Default is NOT.
   -n, --no-escape            No escape char '`'. Default is using it.
-  -Q, --dot-replace          Repalce dot character with underline character in
-                             the table name.(Version 2.5.3)
   -T, --thread-num=THREAD_NUM   Number of thread for dump in file. Default is
                              8.
   -C, --cloud=CLOUD_DSN      specify a DSN to access TDengine cloud service
@@ -113,12 +112,9 @@ Usage: taosdump [OPTION...] dbname [tbname ...]
   -?, --help                 Give this help list
       --usage                Give a short usage message
   -V, --version              Print program version
-  -W, --rename=RENAME-LIST   Rename database name with new name during
-                             importing data. RENAME-LIST:
-                             "db1=newDB1|db2=newDB2" means rename db1 to newDB1
-                             and rename db2 to newDB2 (Version 2.5.4)
 
 Mandatory or optional arguments to long options are also mandatory or optional
 for any corresponding short options.
 
+Report bugs to <support@taosdata.com>.
 ```

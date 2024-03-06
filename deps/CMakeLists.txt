@@ -1,0 +1,50 @@
+PROJECT(TDengine)
+
+IF (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  CMAKE_MINIMUM_REQUIRED(VERSION 3.0...3.20)
+ELSE ()
+  CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
+ENDIF ()
+
+ADD_SUBDIRECTORY(zlib-1.2.11)
+ADD_SUBDIRECTORY(pthread)
+ADD_SUBDIRECTORY(regex)
+ADD_SUBDIRECTORY(iconv)
+ADD_SUBDIRECTORY(lz4)
+ADD_SUBDIRECTORY(cJson)
+ADD_SUBDIRECTORY(wepoll)
+ADD_SUBDIRECTORY(MsvcLibX)
+ADD_SUBDIRECTORY(rmonotonic)
+
+IF (TD_BUILD_LUA)
+  ADD_SUBDIRECTORY(lua)
+ENDIF ()
+
+IF (TD_LINUX AND TD_MQTT)
+  ADD_SUBDIRECTORY(MQTT-C)
+ENDIF ()
+
+IF (TD_DARWIN AND TD_MQTT)
+  ADD_SUBDIRECTORY(MQTT-C)
+ENDIF ()
+
+IF (TD_LINUX_64 AND JEMALLOC_ENABLED)
+  MESSAGE("")
+  MESSAGE("${Green} ENABLE jemalloc ${ColourReset}")
+  MESSAGE("")
+  MESSAGE("setup deps/jemalloc, current source dir:" ${CMAKE_CURRENT_SOURCE_DIR})
+  MESSAGE("binary dir:" ${CMAKE_BINARY_DIR})
+  include(ExternalProject)
+  ExternalProject_Add(jemalloc
+    PREFIX        "jemalloc"
+    SOURCE_DIR    ${CMAKE_CURRENT_SOURCE_DIR}/jemalloc
+    BUILD_IN_SOURCE     1
+    CONFIGURE_COMMAND   ./autogen.sh COMMAND ./configure --prefix=${CMAKE_BINARY_DIR}/build/ --disable-initial-exec-tls
+    BUILD_COMMAND       ${MAKE}
+  )
+  INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/build/include)
+ENDIF ()
+
+IF (NOT "${TSZ_ENABLED}" MATCHES "false")
+  ADD_SUBDIRECTORY(TSZ)
+ENDIF()

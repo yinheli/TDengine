@@ -15,7 +15,7 @@ from util.log import *
 from util.cases import *
 from util.sql import *
 from util.dnodes import *
-from util.taosadapter import *
+
 
 class TDTestCase:
     def caseDescription(self):
@@ -24,14 +24,11 @@ class TDTestCase:
         '''
         return
 
-    def init(self, conn, logSql, replicaVar=1):
-        self.replicaVar = int(replicaVar)
+    def init(self, conn, logSql):
         tdLog.debug("start to execute %s" % __file__)
         tdSql.init(conn.cursor(), logSql)
 
     def getPath(self, tool="taosBenchmark"):
-        if (platform.system().lower() == 'windows'):
-            tool = tool + ".exe"
         selfPath = os.path.dirname(os.path.realpath(__file__))
 
         if ("community" in selfPath):
@@ -54,9 +51,6 @@ class TDTestCase:
             return paths[0]
 
     def run(self):
-        tAdapter.init("")
-        tAdapter.deploy()
-        tAdapter.start()
         binPath = self.getPath()
         cmd = "%s -f ./5-taos-tools/taosbenchmark/json/taosc_insert_alltypes.json" %binPath
         tdLog.info("%s" % cmd)
@@ -81,7 +75,7 @@ class TDTestCase:
         tdSql.checkData(11, 1, "BIGINT UNSIGNED")
         tdSql.checkData(12, 1, "TINYINT UNSIGNED")
         tdSql.checkData(13, 1, "SMALLINT UNSIGNED")
-        tdSql.checkData(14, 1, "VARCHAR")
+        tdSql.checkData(14, 1, "BINARY")
         tdSql.checkData(14, 2, 23)
         tdSql.checkData(15, 1, "TIMESTAMP")
         tdSql.checkData(16, 1, "INT")
@@ -97,7 +91,7 @@ class TDTestCase:
         tdSql.checkData(25, 1, "BIGINT UNSIGNED")
         tdSql.checkData(26, 1, "TINYINT UNSIGNED")
         tdSql.checkData(27, 1, "SMALLINT UNSIGNED")
-        tdSql.checkData(28, 1, "VARCHAR")
+        tdSql.checkData(28, 1, "BINARY")
         tdSql.checkData(28, 2, 19)
         tdSql.query("select count(*) from db.stb where c1 >= 0 and c1 <= 10")
         tdSql.checkData(0, 0, 160)
@@ -166,13 +160,13 @@ class TDTestCase:
         tdSql.checkData(6, 1, "TINYINT")
         tdSql.checkData(7, 1, "BOOL")
         tdSql.checkData(8, 1, "NCHAR")
-        tdSql.checkData(8, 2, 32)
+        tdSql.checkData(8, 2, 29)
         tdSql.checkData(9, 1, "INT UNSIGNED")
         tdSql.checkData(10, 1, "BIGINT UNSIGNED")
         tdSql.checkData(11, 1, "TINYINT UNSIGNED")
         tdSql.checkData(12, 1, "SMALLINT UNSIGNED")
-        tdSql.checkData(13, 1, "VARCHAR")
-        tdSql.checkData(13, 2, 32)
+        tdSql.checkData(13, 1, "BINARY")
+        tdSql.checkData(13, 2, 23)
         tdSql.checkData(14, 1, "NCHAR")
         tdSql.checkData(15, 1, "NCHAR")
         tdSql.checkData(16, 1, "NCHAR")
@@ -210,7 +204,7 @@ class TDTestCase:
         tdSql.checkData(11, 1, "BIGINT UNSIGNED")
         tdSql.checkData(12, 1, "TINYINT UNSIGNED")
         tdSql.checkData(13, 1, "SMALLINT UNSIGNED")
-        tdSql.checkData(14, 1, "VARCHAR")
+        tdSql.checkData(14, 1, "BINARY")
         tdSql.checkData(14, 2, 23)
         tdSql.checkData(15, 1, "TIMESTAMP")
         tdSql.checkData(16, 1, "INT")
@@ -226,7 +220,7 @@ class TDTestCase:
         tdSql.checkData(25, 1, "BIGINT UNSIGNED")
         tdSql.checkData(26, 1, "TINYINT UNSIGNED")
         tdSql.checkData(27, 1, "SMALLINT UNSIGNED")
-        tdSql.checkData(28, 1, "VARCHAR")
+        tdSql.checkData(28, 1, "BINARY")
         tdSql.checkData(28, 2, 19)
 
         cmd = "%s -f ./5-taos-tools/taosbenchmark/json/stmt_insert_alltypes.json" %binPath
@@ -252,7 +246,7 @@ class TDTestCase:
         tdSql.checkData(11, 1, "BIGINT UNSIGNED")
         tdSql.checkData(12, 1, "TINYINT UNSIGNED")
         tdSql.checkData(13, 1, "SMALLINT UNSIGNED")
-        tdSql.checkData(14, 1, "VARCHAR")
+        tdSql.checkData(14, 1, "BINARY")
         tdSql.checkData(14, 2, 23)
         tdSql.checkData(15, 1, "TIMESTAMP")
         tdSql.checkData(16, 1, "INT")
@@ -268,7 +262,7 @@ class TDTestCase:
         tdSql.checkData(25, 1, "BIGINT UNSIGNED")
         tdSql.checkData(26, 1, "TINYINT UNSIGNED")
         tdSql.checkData(27, 1, "SMALLINT UNSIGNED")
-        tdSql.checkData(28, 1, "VARCHAR")
+        tdSql.checkData(28, 1, "BINARY")
         tdSql.checkData(28, 2, 19)
         tdSql.query("select count(*) from db.stb where c0 >= 0 and c0 <= 10")
         tdSql.checkData(0, 0, 160)
@@ -322,8 +316,7 @@ class TDTestCase:
         tdSql.checkData(0, 0, 160)
         tdSql.query("select count(*) from db.stb where t13 like 'b1%' or t13 like 'b2%'")
         tdSql.checkData(0, 0, 160)
-        
-        tAdapter.stop()
+
 
     def stop(self):
         tdSql.close()

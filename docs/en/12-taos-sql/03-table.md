@@ -1,158 +1,122 @@
 ---
+sidebar_label: Table
 title: Table
-description: This document describes how to create and perform operations on standard tables and subtables.
+description: create super table, normal table and sub table, drop tables and change tables
 ---
 
 ## Create Table
 
-You create standard tables and subtables with the `CREATE TABLE` statement.
-
-```sql
-CREATE TABLE [IF NOT EXISTS] [db_name.]tb_name (create_definition [, create_definition] ...) [table_options]
-
-CREATE TABLE create_subtable_clause
-
-CREATE TABLE [IF NOT EXISTS] [db_name.]tb_name (create_definition [, create_definition] ...)
-    [TAGS (create_definition [, create_definition] ...)]
-    [table_options]
-
-create_subtable_clause: {
-    create_subtable_clause [create_subtable_clause] ...
-  | [IF NOT EXISTS] [db_name.]tb_name USING [db_name.]stb_name [(tag_name [, tag_name] ...)] TAGS (tag_value [, tag_value] ...)
-}
-
-create_definition:
-    col_name column_definition
-
-column_definition:
-    type_name [comment 'string_value']
-
-table_options:
-    table_option ...
-
-table_option: {
-    COMMENT 'string_value'
-  | SMA(col_name [, col_name] ...)
-  | TTL value
-}
-
+```
+CREATE TABLE [IF NOT EXISTS] tb_name (timestamp_field_name TIMESTAMP, field1_name data_type1 [, field2_name data_type2 ...]);
 ```
 
-**More explanations**
+:::info
 
 1. The first column of a table MUST be of type TIMESTAMP. It is automatically set as the primary key.
 2. The maximum length of the table name is 192 bytes.
-3. The maximum length of each row is 48k(64k since version 3.0.5.0) bytes, please note that the extra 2 bytes used by each BINARY/NCHAR/GEOMETRY column are also counted.
+3. The maximum length of each row is 48k bytes (64k bytes since version 2.6.0.34), please note that the extra 2 bytes used by each BINARY/NCHAR column are also counted.
 4. The name of the subtable can only consist of characters from the English alphabet, digits and underscore. Table names can't start with a digit. Table names are case insensitive.
-5. The maximum length in bytes must be specified when using BINARY/NCHAR/GEOMETRY types.
-6. Escape character "\`" can be used to avoid the conflict between table names and reserved keywords, above rules will be bypassed when using escape character on table names, but the upper limit for the name length is still valid. The table names specified using escape character are case sensitive.
+5. The maximum length in bytes must be specified when using BINARY or NCHAR types.
+6. Escape character "\`" can be used to avoid the conflict between table names and reserved keywords, above rules will be bypassed when using escape character on table names, but the upper limit for the name length is still valid. The table names specified using escape character are case sensitive. Only ASCII visible characters can be used with escape character.
    For example \`aBc\` and \`abc\` are different table names but `abc` and `aBc` are same table names because they are both converted to `abc` internally.
-   Only ASCII visible characters can be used with escape character.
 
-**Parameter description**
-1. COMMENT: specifies comments for the table. This parameter can be used with supertables, standard tables, and subtables.
-2. SMA: specifies functions on which to enable small materialized aggregates (SMA). SMA is user-defined precomputation of aggregates based on data blocks. Enter one of the following values: max, min, or sum This parameter can be used with supertables and standard tables.
-3. TTL: specifies the time to live (TTL) for the table. If TTL is specified when creatinga table, after the time period for which the table has been existing is over TTL, TDengine will automatically delete the table. Please be noted that the system may not delete the table at the exact moment that the TTL expires but guarantee there is such a system and finally the table will be deleted. The unit of TTL is in days. The default value is 0, i.e. never expire.
+:::
 
-## Create Subtables
+### Create Subtable Using STable As Template
 
-### Create a Subtable
-
-```sql
+```
 CREATE TABLE [IF NOT EXISTS] tb_name USING stb_name TAGS (tag_value1, ...);
 ```
 
-### Create a Subtable with Specified Tags
+The above command creates a subtable using the specified super table as a template and the specified tag values.
 
-```sql
+### Create Subtable Using STable As Template With A Subset of Tags
+
+```
 CREATE TABLE [IF NOT EXISTS] tb_name USING stb_name (tag_name1, ...) TAGS (tag_value1, ...);
 ```
 
-The preceding SQL statement creates a subtable based on a supertable but specifies a subset of tags to use. Tags that are not included in this subset are assigned a null value.
+The tags for which no value is specified will be set to NULL.
 
-### Create Multiple Subtables
+### Create Tables in Batch
 
-```sql
+```
 CREATE TABLE [IF NOT EXISTS] tb_name1 USING stb_name TAGS (tag_value1, ...) [IF NOT EXISTS] tb_name2 USING stb_name TAGS (tag_value2, ...) ...;
 ```
 
-You can create multiple subtables in a single SQL statement provided that all subtables use the same supertable. For performance reasons, do not create more than 3000 tables per statement.
+This can be used to create a lot of tables in a single SQL statement while making table creation much faster.
 
-## Modify a Table
+:::info
 
-```sql
-ALTER TABLE [db_name.]tb_name alter_table_clause
+- Creating tables in batch must use a super table as a template.
+- The length of single statement is suggested to be between 1,000 and 3,000 bytes for best performance.
 
-alter_table_clause: {
-    alter_table_options
-  | ADD COLUMN col_name column_type
-  | DROP COLUMN col_name
-  | MODIFY COLUMN col_name column_type
-  | RENAME COLUMN old_col_name new_col_name
-}
+:::
 
-alter_table_options:
-    alter_table_option ...
-
-alter_table_option: {
-    TTL value
-  | COMMENT 'string_value'
-}
+## Drop Tables
 
 ```
+DROP TABLE [IF EXISTS] tb_name;
+```
 
-**More explanations**
-You can perform the following modifications on existing tables:
-1. ADD COLUMN: adds a column to the supertable.
-2. DROP COLUMN: deletes a column from the supertable.
-3. MODIFY COLUMN: changes the length of the data type specified for the column. Note that you can only specify a length greater than the current length.
-4. RENAME COLUMN: renames a specified column in the table.
+## Show All Tables In Current Database
 
-### Add a Column
+```
+SHOW TABLES [LIKE tb_name_wildcard];
+```
 
-```sql
+## Show Create Statement of A Table
+
+```
+SHOW CREATE TABLE tb_name;
+```
+
+This is useful when migrating the data in one TDengine cluster to another one because it can be used to create the exact same tables in the target database.
+
+## Show Table Definition
+
+```
+DESCRIBE tb_name;
+```
+
+## Change Table Definition
+
+### Add A Column
+
+```
 ALTER TABLE tb_name ADD COLUMN field_name data_type;
 ```
 
-### Delete a Column
+:::info
 
-```sql
+1. The maximum number of columns is 4096, the minimum number of columns is 2.
+2. The maximum length of a column name is 64 bytes.
+
+:::
+
+### Remove A Column
+
+```
 ALTER TABLE tb_name DROP COLUMN field_name;
 ```
 
-### Modify the Data Length
+:::note
+If a table is created using a super table as template, the table definition can only be changed on the corresponding super table, and the change will be automatically applied to all the subtables created using this super table as template. For tables created in the normal way, the table definition can be changed directly on the table.
 
-```sql
+:::
+
+### Change Column Length
+
+```
 ALTER TABLE tb_name MODIFY COLUMN field_name data_type(length);
 ```
 
-### Rename a Column
+If the type of a column is variable length, like BINARY or NCHAR, this command can be used to change the length of the column.
 
-```sql
-ALTER TABLE tb_name RENAME COLUMN old_col_name new_col_name
-```
+:::note
+If a table is created using a super table as template, the table definition can only be changed on the corresponding super table, and the change will be automatically applied to all the subtables created using this super table as template. For tables created in the normal way, the table definition can be changed directly on the table.
 
-## Modify a Subtable
-
-```sql
-ALTER TABLE [db_name.]tb_name alter_table_clause
-
-alter_table_clause: {
-    alter_table_options
-  | SET TAG tag_name = new_tag_value
-}
-
-alter_table_options:
-    alter_table_option ...
-
-alter_table_option: {
-    TTL value
-  | COMMENT 'string_value'
-}
-```
-
-**More explanations**
-1. Only the value of a tag can be modified directly. For all other modifications, you must modify the supertable from which the subtable was created.
+:::
 
 ### Change Tag Value Of Sub Table
 
@@ -160,34 +124,4 @@ alter_table_option: {
 ALTER TABLE tb_name SET TAG tag_name=new_tag_value;
 ```
 
-## Delete a Table
-
-The following SQL statement deletes one or more tables.
-
-```sql
-DROP TABLE [IF EXISTS] [db_name.]tb_name [, [IF EXISTS] [db_name.]tb_name] ...
-```
-
-## View Tables
-
-### View All Tables
-
-The following SQL statement shows all tables in the current database.
-
-```sql
-SHOW TABLES [LIKE tb_name_wildchar];
-```
-
-### View the CREATE Statement for a Table
-
-```
-SHOW CREATE TABLE tb_name;
-```
-
-This command is useful in migrating data from one TDengine cluster to another because it can be used to create the exact same tables in the target database.
-
-## View the Table Schema
-
-```
-DESCRIBE [db_name.]tb_name;
-```
+This command can be used to change the tag value if the table is created using a super table as template.

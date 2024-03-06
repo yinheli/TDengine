@@ -27,14 +27,11 @@ class TDTestCase:
         '''
         return
 
-    def init(self, conn, logSql, replicaVar=1):
-        self.replicaVar = int(replicaVar)
+    def init(self, conn, logSql):
         tdLog.debug("start to execute %s" % __file__)
         tdSql.init(conn.cursor(), logSql)
 
     def getPath(self, tool="taosBenchmark"):
-        if (platform.system().lower() == 'windows'):
-            tool = tool + ".exe"
         selfPath = os.path.dirname(os.path.realpath(__file__))
 
         if ("community" in selfPath):
@@ -68,26 +65,26 @@ class TDTestCase:
         tdSql.checkRows(8)
         tdSql.checkData(0, 1, "TIMESTAMP")
         tdSql.checkData(1, 1, "TINYINT")
-        tdSql.checkData(2, 1, "VARCHAR")
+        tdSql.checkData(2, 1, "BINARY")
         tdSql.checkData(2, 2, 23)
         tdSql.checkData(3, 1, "BOOL")
         tdSql.checkData(4, 1, "NCHAR")
         tdSql.checkData(4, 2, 29)
         tdSql.checkData(5, 1, "INT")
-        tdSql.checkData(6, 1, "VARCHAR")
+        tdSql.checkData(6, 1, "BINARY")
         tdSql.checkData(6, 2, 29)
         tdSql.checkData(6, 3, "TAG")
         tdSql.checkData(7, 1, "NCHAR")
         tdSql.checkData(7, 2, 31)
         tdSql.checkData(7, 3, "TAG")
-        tdSql.query("select distinct(tbname) from meters where tbname like '$%^*%'")
+        tdSql.query("select tbname from meters where tbname like '$%^*%'")
         tdSql.checkRows(2)
         tdSql.execute("drop database if exists newtest")
 
         cmd = "%s -F 7 -n 10 -t 2 -y -M -I stmt" %binPath
         tdLog.info("%s" % cmd)
         os.system("%s" % cmd)
-        tdSql.query("select count(*) from (select distinct(tbname) from test.meters)")
+        tdSql.query("select count(tbname) from test.meters")
         tdSql.checkData(0, 0, 2)
         tdSql.query("select count(*) from test.meters")
         tdSql.checkData(0, 0, 20)
@@ -280,14 +277,14 @@ class TDTestCase:
         os.system("%s" % cmd)
         tdSql.execute("reset query cache")
         tdSql.query("describe test.meters")
-        tdSql.checkData(1, 1, "VARCHAR")
+        tdSql.checkData(1, 1, "BINARY")
 
         cmd = "%s -n 1 -t 1 -y -b binary\(7\)" %binPath
         tdLog.info("%s" % cmd)
         os.system("%s" % cmd)
         tdSql.execute("reset query cache")
         tdSql.query("describe test.meters")
-        tdSql.checkData(1, 1, "VARCHAR")
+        tdSql.checkData(1, 1, "BINARY")
 
         cmd = "%s -n 1 -t 1 -y -A json\(7\)" %binPath
         tdLog.info("%s" % cmd)

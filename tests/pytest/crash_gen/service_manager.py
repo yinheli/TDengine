@@ -134,7 +134,8 @@ cDebugFlag 135
 rpcDebugFlag 135
 qDebugFlag 135
 # httpDebugFlag 143
-# asyncLog 0
+asyncLog 0
+debugflag 143
 # tables 10
 maxtablesPerVnode 10
 rpcMaxTime 101
@@ -163,9 +164,15 @@ quorum 2
 
     def getExecFile(self): # .../taosd
         return self._buildDir + "/build/bin/taosd"
+    
+    def getAdapterFile(self): # .../taosadapter for restful
+        return self._buildDir + "/build/bin/taosadapter"
 
     def getRunDir(self) -> DirPath : # TODO: rename to "root dir" ?!
-        return DirPath(self._buildDir + self._subdir)
+        if Config.getConfig().set_path =='': # use default path
+            return DirPath(self._buildDir + self._subdir)
+        else:
+            return str(Config.getConfig().set_path)+self._subdir
 
     def getCfgDir(self) -> DirPath : # path, not file
         return DirPath(self.getRunDir() + "/cfg")
@@ -183,9 +190,34 @@ quorum 2
         else:
             # TODO: move "exec -c" into Popen(), we can both "use shell" and NOT fork so ask to lose kill control
             return ["exec " + self.getExecFile(), '-c', self.getCfgDir()] # used in subproce.Popen()
+
+    def getAdapterCmdLine(self):
+        REST_PORT_INCREMENT = 11
+        Adapter_ports =str(self._port + REST_PORT_INCREMENT)
+        AdapterCmds = [self.getAdapterFile() + ' --port='+ Adapter_ports +
+        ' --log.path='+ self.getLogDir() + ' --taosConfigDir='+self.getCfgDir()+
+        ' --collectd.enable=false' +
+        ' --influxdb.enable=false --node_exporter.enable=false' + 
+        ' --opentsdb.enable=false --statsd.enable=false' + 
+        ' --prometheus.enable=false  --opentsdb_telnet.enable=false'] # get adapter cmd string
+        return AdapterCmds
+    
+    def start_Adapter(self,cmdLine):
+        # print('nohup '+' '.join(cmdLine)+ '>>taosadapter.log 2>&1 &')
+        cmds = 'nohup '+' '.join(cmdLine)+ '>>taosadapter.log 2>&1 &'
+        ret = Popen(            
+            cmds, 
+            shell=True, 
+            stdout=PIPE,
+            stderr=PIPE,
+            )  
+        time.sleep(0.1) # very brief wait, then let's check if sub process started successfully.
+        if ret.poll():
+            raise CrashGenError("Sub process failed to start with command line: {}".format(cmdLine))
+        return ret
     
     def _getDnodes(self, dbc):
-        dbc.query("select * from information_schema.ins_dnodes")
+        dbc.query("show dnodes")
         cols = dbc.getQueryResult() #  id,end_point,vnodes,cores,status,role,create_time,offline reason
         return {c[1]:c[4] for c in cols} # {'xxx:6030':'ready', 'xxx:6130':'ready'}
 
@@ -225,6 +257,10 @@ quorum 2
 
         # self._smThread.start(self.getServiceCmdLine(), self.getLogDir()) # May raise exceptions
         self._subProcess = TdeSubProcess(self.getServiceCmdLine(),  self.getLogDir())
+
+        # run taosadapter by subprocess ,taosadapter is stateless with TDengine ,so it don't need monitor
+        self.start_Adapter(self.getAdapterCmdLine())
+        print(' '.join(self.getAdapterCmdLine()))
 
     def stop(self):
         self._subProcess.stop()
@@ -378,7 +414,7 @@ class TdeSubProcess:
     @classmethod
     def _stopForSure(cls, proc: Popen, sig: int):
         ''' 
-        Stop a process and all sub processes with a signal, and SIGKILL if necessary
+        Stop a process and all sub processes with a singal, and SIGKILL if necessary
         '''
         def doKillTdService(proc: Popen, sig: int):
             Logging.info("Killing sub-sub process {} with signal {}".format(proc.pid, sig))
@@ -768,7 +804,7 @@ class ServiceManagerThread:
     def _verifyDnode(self, tInst: TdeInstance):
         dbc = DbConn.createNative(tInst.getDbTarget())
         dbc.open()
-        dbc.query("select * from information_schema.ins_dnodes")
+        dbc.query("show dnodes")
         # dbc.query("DESCRIBE {}.{}".format(dbName, self._stName))
         cols = dbc.getQueryResult() #  id,end_point,vnodes,cores,status,role,create_time,offline reason
         # ret = {row[0]:row[1] for row in stCols if row[3]=='TAG'} # name:type

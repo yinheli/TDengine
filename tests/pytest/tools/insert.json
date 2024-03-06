@@ -7,18 +7,17 @@
     "password": "taosdata",
     "thread_count": 2,
     "num_of_records_per_req": 10,
-    "create_table_thread_count": 4,
+    "thread_count_create_tbl": 4,
     "databases": [{
         "dbinfo": {
             "name": "db01",
             "drop": "yes",
             "replica": 1,
-
-
-
+            "days": 10,
+            "cache": 16,
+            "blocks": 8,
             "precision": "ms",
-            ,
-            "maxtablesPerVnode": 1000
+            "update": 0
         },
         "super_tables": [{
             "name": "stb01",

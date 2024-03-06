@@ -20,12 +20,18 @@ mvn clean compile exec:java -Dexec.mainClass="com.taosdata.example.JdbcDemo" -De
 ```
 
 ## Compile the Demo Code and Run It
+To compile taos-jdbcdriver, go to the source directory ``TDengine/src/connector/jdbc`` and execute
 ```
 mvn clean package -Dmaven.test.skip=true
 ```
 
-To run JDBCDemo.jar, execute
+To compile the demo project, go to the source directory ``TDengine/tests/examples/JDBC/JDBCDemo`` and execute
 ```
-java -jar target/JDBCDemo-SNAPSHOT-jar-with-dependencies.jar -host [HOSTNAME]
+mvn clean package assembly:single
+```
+
+To run JDBCDemo.jar, go to ``TDengine/tests/examples/JDBC/JDBCDemo`` and execute
+```
+java -Djava.ext.dirs=../../../../src/connector/jdbc/target:$JAVA_HOME/jre/lib/ext -jar target/JDBCDemo-SNAPSHOT-jar-with-dependencies.jar -host [HOSTNAME]
 ```
 

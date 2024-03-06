@@ -1,0 +1,120 @@
+---
+title: 部署 taoskeeper
+description: 如何在 TDengine 服务端部署 toaskeeper
+---
+
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+
+export const ToServerArchitecture = ()=>(<a href="./server-architecture">「服务端架构」</a>);
+
+是将监控数据产生的源头产生的监控数据转入存储监控数据的 TDengine 集群的服务。taosKeeper 无需独立安装。在安装了 TDengine server 之后，系统中就已经具备了 taosKeeper。但如果想在不同的服务器上分别部署 TDengine 集群 (taosd 组件) 和 taosKeeper，则需要在这些服务器上都安装 [TDengine server 安装包](../../server-installation)。关于 taoskeeper 的配置和使用细节，请参考 [taoskeeper](../../../tdengine-programs/taosadapter)。
+
+## 参数配置
+
+### 监控节点的 EP
+
+参照[taod FQDN 配置](../taosd#fqdn)中的方法，进行 FQDN 配置（如果 taosadapter 与 taosd 在同一节点上，则无需进行该操作）。完成后，通过以下 `taoskeeper.toml` 参数，配置 taoskeeper 的端口号：
+
+```bash title="taoskeeper.toml"
+port = 6043
+```
+
+### 被监控节点的配置
+
+在被监控集群中，需要打开监控开关，并指指定监控节点的 FQDN 和端口号，以使监控数据能够从被监控集群发送到 taosadapter；在被监控集群的 `toas.cfg` 中设置以下参数：
+
+```bash title='被监控节点的 toas.cfg'
+monitor 1
+monitorFqdn localhost
+monitorPort 6043
+```
+
+其中 `monitor` 为监控服务的开关；`monitorFqdn` 和 `monitorPort`（缺省值：6043）指定了接收监控信息的 taoskeeper。配置完成后，需要重启节点，以使参数生效。
+
+### 监控结果写入 TDengine
+
+taoskeeper 将监控数据写入 TDengine 集群，该集群可以是被监控集群，也可以是其他集群。通过 `taoskeeper.toml` 的如下配置参数，指定用来存储监控数据的集群：
+
+```bash title='taoskeeper.toml'
+host = "t1.taosdata.com"
+port = 6041
+username = "root"
+password = "taosdata"
+```
+
+上述示例中，`host` 和 `port`，是 taosadapter 的 FQDN 和端口号。`username` 和 `password` 使用了默认值。
+
+## 部署
+
+taoskeeper 的部署过程较为简单，直接运行服务即可：
+
+<Tabs>
+<TabItem label="Linux" value="linux">
+
+安装后，请使用 `systemctl` 命令来启动 taoskeeper 的服务进程。
+
+```bash
+systemctl start taoskeeper
+```
+
+检查服务是否正常工作：
+
+```bash
+systemctl status taoskeeper
+```
+
+如果服务进程处于活动状态，则 status 指令会显示如下的相关信息：
+
+```
+Active: active (running)
+```
+
+如果后台服务进程处于停止状态，则 status 指令会显示如下的相关信息：
+
+```
+Active: inactive (dead)
+```
+
+如下 `systemctl` 命令可以帮助你管理 taoskeeper 服务：
+
+- 启动服务进程：`systemctl start taoskeeper`
+
+- 停止服务进程：`systemctl stop taoskeeper`
+
+- 重启服务进程：`systemctl restart taoskeeper`
+
+- 查看服务状态：`systemctl status taoskeeper`
+
+:::info
+
+- `systemctl` 命令需要 _root_ 权限来运行，如果您非 _root_ 用户，请在命令前添加 `sudo`。
+- 如果系统中不支持 `systemd`，也可以用手动运行 `/usr/local/taos/bin/taoskeeper` 方式启动 taoskeeper 服务。
+- 故障排查：
+- 如果服务异常请查看系统日志获取更多信息。
+:::
+</TabItem>
+
+<TabItem label="macOS" value="macOS">
+
+安装后，可以运行 `sudo launchctl start com.tdengine.taoskeeper` 来启动 taoskeeper 服务进程。
+
+如下 `launchctl` 命令用于管理 taoskeeper 服务：
+
+- 启动服务进程：`sudo launchctl start com.tdengine.taoskeeper`
+
+- 停止服务进程：`sudo launchctl stop com.tdengine.taoskeeper`
+
+- 查看服务状态：`sudo launchctl list | grep taoskeeper`
+
+:::info
+
+- `launchctl` 命令管理`com.tdengine.taoskeeper`需要管理员权限，务必在前面加 `sudo` 来增强安全性。
+- `sudo launchctl list | grep taoskeeper` 指令返回的第一列是 `taoskeeper` 程序的 PID，若为 `-` 则说明 taoskeeper 服务未运行。
+- 故障排查：
+- 如果服务异常请查看系统日志获取更多信息。
+
+:::
+
+</TabItem>
+</Tabs>

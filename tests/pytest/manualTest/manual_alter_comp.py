@@ -71,10 +71,10 @@ class TDTestCase:
 
         #comp is at 14
         #check disk usage when comp=2
-        tdSql.query('select * from information_schema.ins_databases')
+        tdSql.query('show databases')
         tdSql.execute('alter database db blocks 3') # minimize the data in cache
         tdSql.checkData(0,14,2)
-        os.system("%staosdemo -f tools/taosdemoAllTest/manual_block1_comp.json" % binPath)
+        os.system("%staosBenchmark -f tools/taosdemoAllTest/manual_block1_comp.json" % binPath)
         print("default location is at /home/bryan/Documents/Github/TDengine/sim/dnode1/data/vnode")
         print('comp = 2')
         input("please check disk usage for taosd. After checking, press enter")
@@ -86,12 +86,12 @@ class TDTestCase:
 
         #check disk usage when comp=0
         tdSql.prepare()
-        tdSql.query('select * from information_schema.ins_databases')
+        tdSql.query('show databases')
         tdSql.checkData(0,14,2)
         tdSql.execute('alter database db comp 0')
-        tdSql.query('select * from information_schema.ins_databases')
+        tdSql.query('show databases')
         tdSql.checkData(0,14,0)
-        os.system("%staosdemo -f tools/taosdemoAllTest/manual_block1_comp.json" % binPath)
+        os.system("%staosBenchmark -f tools/taosdemoAllTest/manual_block1_comp.json" % binPath)
         print("default location is at /home/bryan/Documents/Github/TDengine/sim/dnode1/data")
         print('comp = 0')
         input("please check disk usage for taosd. After checking, press enter")
@@ -103,12 +103,12 @@ class TDTestCase:
 
         #check disk usage when comp=1
         tdSql.prepare()
-        tdSql.query('select * from information_schema.ins_databases')
+        tdSql.query('show databases')
         tdSql.checkData(0,14,2)
         tdSql.execute('alter database db comp 1')
-        tdSql.query('select * from information_schema.ins_databases')
+        tdSql.query('show databases')
         tdSql.checkData(0,14,1)
-        os.system("%staosdemo -f tools/taosdemoAllTest/manual_block1_comp.json" % binPath)
+        os.system("%staosBenchmark -f tools/taosdemoAllTest/manual_block1_comp.json" % binPath)
         print("default location is at /home/bryan/Documents/Github/TDengine/sim/dnode1/data")
         print('comp = 1')
         input("please check disk usage for taosd. After checking, press enter")

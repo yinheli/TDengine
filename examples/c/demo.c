@@ -20,10 +20,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "taos.h"  // TAOS header file
+#include <taos.h>  // TAOS header file
 
 static void queryDB(TAOS *taos, char *command) {
-  int i;
+  int       i;
   TAOS_RES *pSql = NULL;
   int32_t   code = -1;
 
@@ -53,7 +53,7 @@ static void queryDB(TAOS *taos, char *command) {
 void Test(TAOS *taos, char *qstr, int i);
 
 int main(int argc, char *argv[]) {
-  char      qstr[1024];
+  char qstr[1024];
 
   // connect to server
   if (argc < 2) {
@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
 
   TAOS *taos = taos_connect(argv[1], "root", "taosdata", NULL, 0);
   if (taos == NULL) {
-    printf("failed to connect to server, reason:%s\n", taos_errstr(NULL));
+    printf("failed to connect to server, reason:%s\n", "null taos" /*taos_errstr(taos)*/);
     exit(1);
   }
   for (int i = 0; i < 100; i++) {
@@ -72,19 +72,21 @@ int main(int argc, char *argv[]) {
   taos_close(taos);
   taos_cleanup();
 }
-void Test(TAOS *taos, char *qstr, int index)  {
+void Test(TAOS *taos, char *qstr, int index) {
   printf("==================test at %d\n================================", index);
   queryDB(taos, "drop database if exists demo");
   queryDB(taos, "create database demo");
   TAOS_RES *result;
   queryDB(taos, "use demo");
 
-  queryDB(taos, "create table m1 (ts timestamp, ti tinyint, si smallint, i int, bi bigint, f float, d double, b binary(10))");
+  queryDB(taos,
+          "create table m1 (ts timestamp, ti tinyint, si smallint, i int, bi bigint, f float, d double, b binary(10))");
   printf("success to create table\n");
 
   int i = 0;
   for (i = 0; i < 10; ++i) {
-    sprintf(qstr, "insert into m1 values (%" PRId64 ", %d, %d, %d, %d, %f, %lf, '%s')", (uint64_t)(1546300800000 + i * 1000), i, i, i, i*10000000, i*1.0, i*2.0, "hello");
+    sprintf(qstr, "insert into m1 values (%" PRId64 ", %d, %d, %d, %d, %f, %lf, '%s')",
+            (uint64_t)(1546300800000 + i * 1000), i, i, i, i * 10000000, i * 1.0, i * 2.0, "hello");
     printf("qstr: %s\n", qstr);
 
     // note: how do you wanna do if taos_query returns non-NULL
@@ -130,4 +132,3 @@ void Test(TAOS *taos, char *qstr, int index)  {
   taos_free_result(result);
   printf("====demo end====\n\n");
 }
-

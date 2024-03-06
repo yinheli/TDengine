@@ -1,0 +1,48 @@
+```csharp title="原生连接"
+using TDengine.Driver;
+using TDengine.Driver.Client;
+
+namespace TDengineExample
+{
+
+    internal class ConnectExample
+    {
+        static void Main(String[] args)
+        {
+            var builder = new ConnectionStringBuilder("host=localhost;port=6030;username=root;password=taosdata");
+            using (var client = DbDriver.Open(builder))
+            {
+                Console.WriteLine("connected");
+            }
+        }
+    }
+}
+
+```
+
+[查看源码](https://github.com/taosdata/TDengine/blob/main/docs/examples/csharp/connect/Program.cs)
+
+```csharp title="WebSocket 连接"
+using System;
+using TDengine.Driver;
+using TDengine.Driver.Client;
+
+namespace Examples
+{
+    public class WSConnExample
+    {
+        static void Main(string[] args)
+        {
+            var builder = new ConnectionStringBuilder("protocol=WebSocket;host=localhost;port=6041;useSSL=false;username=root;password=taosdata");
+            using (var client = DbDriver.Open(builder))
+            {
+                Console.WriteLine("connected");
+            }
+        }
+    }
+}
+
+```
+
+[查看源码](https://github.com/taosdata/TDengine/blob/main/docs/examples/csharp/wsConnect/Program.cs)
+
