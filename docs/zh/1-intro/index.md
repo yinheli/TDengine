@@ -40,8 +40,8 @@ TDengine OSS 的主要功能如下：
    - 支持与 [Grafana](../third-party/grafana/) 的无缝集成
    - 支持与 Google Data Studio 的无缝集成
 7. 集群
-   - [集群部署](../administration/server-setup)，可以通过增加节点进行水平扩展以提升处理能力
-   - 可以通过 [Kubernetes 部署 TDengine](../administration/deploy-on-cloud)
+   - [集群部署](../administration/deployment/server-setup)，可以通过增加节点进行水平扩展以提升处理能力
+   - 可以通过 [Kubernetes 部署 TDengine](../administration/)
    - 通过多副本提供高可用能力
 8. 管理
    - [监控](../administration/monitor)运行中的 TDengine 实例

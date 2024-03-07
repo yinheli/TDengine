@@ -13,7 +13,7 @@ TDengine 服务由以 taosd 为核心的一个到多个进程组成：
 
 TDengine 服务端、客户端的主要组成部分如下：
 
-- taosd：TDengine 服务端主进程；多个 taosd 可以[组成 TDengine 集群](../../administration/server-setup)
+- taosd：TDengine 服务端主进程；多个 taosd 可以[组成 TDengine 集群](../../administration/deployment/server-setup)
 - toasadapter：用于提供 [WebSocket、RESTful 接口](../../develop/connect)的服务端进程
 - taosc：客户端驱动程序，应用程序需要通过 taosc 连接 TDengine
 - APP：客户端应用程序，例如 Grafana、Power BI、用户自己开发的代码等

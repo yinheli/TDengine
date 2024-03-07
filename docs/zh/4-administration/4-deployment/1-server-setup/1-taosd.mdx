@@ -3,14 +3,12 @@ title: 部署 taosd
 description: 如何在 TDengine 服务端部署 toasd
 ---
 
-import FqdnSetting from "./_asset/_fqdn-setting.mdx";
-
-export const ToInstall = ()=>(<a href="../../server-installation">「服务端安装/卸载/升级」</a>);
-export const ToServerArchitecture = ()=>(<a href="./../../server-architecture">「服务端架构」</a>);
-export const ToArchitecture = ()=>(<a href="../../../tdinternal/arch">「技术内幕/集群架构」</a>);
-export const ToSql = ()=>(<a href="../../../taos-sql/node">「SQL 手册/集群管理」</a>);
-export const ToConf = ({head})=>(<a href={"../../configuration"+head}>「服务器配置」</a>);
-export const ToCloud = ()=>(<a href="../../deploy-on-cloud">「Docker 部署」</a>);
+export const ToInstall = ()=>(<a href="../../../server-installation">「服务端安装/卸载/升级」</a>);
+export const ToServerArchitecture = ()=>(<a href="../../../../tdinternal/arch">「服务端架构」</a>);
+export const ToArchitecture = ()=>(<a href="../../../../tdinternal/arch">「技术内幕/集群架构」</a>);
+export const ToSql = ()=>(<a href="../../../../taos-sql/node">「SQL 手册/集群管理」</a>);
+export const ToConf = ({head})=>(<a href={"../../../configuration"+head}>「服务器配置」</a>);
+export const ToCloud = ()=>(<a href="../../../deployment/docker">「Docker 部署」</a>);
 
 在 TDengine 集群由一至多个 dnode（数据节点）组成，每个 dnode 对于一个 taosd 实例（详见<ToServerArchitecture/>和<ToArchitecture/>）。一般而言，每个物理节点上运行一个 taosd。此处，物理节点指拥有自己的计算、存储和网络能力的计算机，比如装有操作系统的物理机、虚拟机或 Docker 容器。
 
