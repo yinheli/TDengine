@@ -1454,6 +1454,12 @@ static void stddevTransferInfo(SStddevRes* pInput, SStddevRes* pOutput) {
 int32_t stddevFunctionMerge(SqlFunctionCtx* pCtx) {
   SInputColumnInfoData* pInput = &pCtx->input;
   SColumnInfoData*      pCol = pInput->pData[0];
+
+  if (IS_NULL_TYPE(pCol->info.type)) {
+    SET_VAL(GET_RES_INFO(pCtx), 0, 1);
+    return TSDB_CODE_SUCCESS;
+  }
+
   if (pCol->info.type != TSDB_DATA_TYPE_BINARY) {
     return TSDB_CODE_FUNC_FUNTION_PARA_TYPE;
   }
@@ -1461,6 +1467,7 @@ int32_t stddevFunctionMerge(SqlFunctionCtx* pCtx) {
   SStddevRes* pInfo = GET_ROWCELL_INTERBUF(GET_RES_INFO(pCtx));
 
   for (int32_t i = pInput->startRowIndex; i < pInput->startRowIndex + pInput->numOfRows; ++i) {
+    if (colDataIsNull_s(pCol, i)) continue;
     char*       data = colDataGetData(pCol, i);
     SStddevRes* pInputInfo = (SStddevRes*)varDataVal(data);
     stddevTransferInfo(pInputInfo, pInfo);
@@ -3861,6 +3868,7 @@ int32_t spreadFunctionMerge(SqlFunctionCtx* pCtx) {
   SColumnInfoData*      pCol = pInput->pData[0];
 
   if (IS_NULL_TYPE(pCol->info.type)) {
+    SET_VAL(GET_RES_INFO(pCtx), 0, 1);
     return TSDB_CODE_SUCCESS;
   }
 
@@ -4601,6 +4609,11 @@ int32_t hllFunctionMerge(SqlFunctionCtx* pCtx) {
   SInputColumnInfoData* pInput = &pCtx->input;
   SColumnInfoData*      pCol = pInput->pData[0];
 
+  if (IS_NULL_TYPE(pCol->info.type)) {
+    SET_VAL(GET_RES_INFO(pCtx), 0, 1);
+    return TSDB_CODE_SUCCESS;
+  }
+
   if (pCol->info.type != TSDB_DATA_TYPE_BINARY) {
     return TSDB_CODE_SUCCESS;
   }
@@ -4610,6 +4623,7 @@ int32_t hllFunctionMerge(SqlFunctionCtx* pCtx) {
   int32_t start = pInput->startRowIndex;
 
   for (int32_t i = start; i < start + pInput->numOfRows; ++i) {
+    if (colDataIsNull_s(pCol, i)) continue;
     char*     data = colDataGetData(pCol, i);
     SHLLInfo* pInputInfo = (SHLLInfo*)varDataVal(data);
     hllTransferInfo(pInputInfo, pInfo);
