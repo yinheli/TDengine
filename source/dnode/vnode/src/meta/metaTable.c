@@ -610,9 +610,19 @@ int metaAddIndexToSTable(SMeta *pMeta, int64_t version, SVCreateStbReq *pReq) {
       if (IS_VAR_DATA_TYPE(pCol->type)) {
         pTagData = tagVal.pData;
         nTagData = (int32_t)tagVal.nData;
+        if (pCol->bytes < nTagData + VARSTR_HEADER_SIZE) {
+          tdbFree(pKey);
+          tdbFree(pVal);
+          continue;
+        }
       } else {
         pTagData = &(tagVal.i64);
         nTagData = tDataTypes[pCol->type].bytes;
+        if (pCol->bytes < nTagData) {
+          tdbFree(pKey);
+          tdbFree(pVal);
+          continue;
+        }
       }
     } else {
       if (!IS_VAR_DATA_TYPE(pCol->type)) {
@@ -2355,18 +2365,30 @@ static int metaUpdateTagIdx(SMeta *pMeta, const SMetaEntry *pCtbEntry) {
         if (IS_VAR_DATA_TYPE(pTagColumn->type)) {
           pTagData = tagVal.pData;
           nTagData = (int32_t)tagVal.nData;
+          if (pTagColumn->bytes < nTagData + VARSTR_HEADER_SIZE) {
+            goto end;
+          }
         } else {
           pTagData = &(tagVal.i64);
           nTagData = tDataTypes[pTagColumn->type].bytes;
+          if (pTagColumn->bytes < nTagData) {
+            goto end;
+          }
         }
       } else {
         if (!IS_VAR_DATA_TYPE(pTagColumn->type)) {
           nTagData = tDataTypes[pTagColumn->type].bytes;
         }
       }
-      if (metaCreateTagIdxKey(pCtbEntry->ctbEntry.suid, pTagColumn->colId, pTagData, nTagData, pTagColumn->type,
-                              pCtbEntry->uid, &pTagIdxKey, &nTagIdxKey) < 0) {
-        ret = -1;
+      if (pTagColumn->bytes >= nTagData) {
+        if (metaCreateTagIdxKey(pCtbEntry->ctbEntry.suid, pTagColumn->colId, pTagData, nTagData, pTagColumn->type,
+                                pCtbEntry->uid, &pTagIdxKey, &nTagIdxKey) < 0) {
+          ret = -1;
+          goto end;
+        }
+      } else {
+        metaError("vgId:%d, failed to get invalid table tag for update, datalen: %d, expected datalen: %d " PRId64,
+                  TD_VID(pMeta->pVnode), pTagColumn->bytes, nTagData);
         goto end;
       }
       tdbTbUpsert(pMeta->pTagIdx, pTagIdxKey, nTagIdxKey, NULL, 0, pMeta->txn);
