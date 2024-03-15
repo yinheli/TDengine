@@ -118,6 +118,7 @@ typedef struct SInputColumnInfoData {
   int32_t           numOfInputCols;   // PTS is not included
   bool              colDataSMAIsSet;  // if agg is set or not
   SColumnInfoData  *pPTS;             // primary timestamp column
+  SColumnInfoData  *pPrimaryKey;      // primary key column
   SColumnInfoData **pData;
   SColumnDataAgg  **pColumnDataAgg;
   uint64_t uid;  // table uid, used to set the tag value when building the final query result for selectivity functions.
@@ -209,6 +210,7 @@ typedef struct SqlFunctionCtx {
   int32_t              exprIdx;
   char                *udfName;
   SFunctionStateStore *pStore;
+  bool                 hasPrimaryKey;
 } SqlFunctionCtx;
 
 typedef struct tExprNode {
