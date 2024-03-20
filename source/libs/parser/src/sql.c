@@ -6393,252 +6393,254 @@ static YYACTIONTYPE yy_reduce(
 #line 6393 "sql.c"
         break;
       case 190: /* full_table_name ::= table_name */
+      case 328: /* full_tsma_name ::= tsma_name */ yytestcase(yyruleno==328);
 #line 380 "sql.y"
 { yylhsminor.yy1000 = createRealTableNode(pCxt, NULL, &yymsp[0].minor.yy305, NULL); }
-#line 6398 "sql.c"
+#line 6399 "sql.c"
   yymsp[0].minor.yy1000 = yylhsminor.yy1000;
         break;
       case 191: /* full_table_name ::= db_name NK_DOT table_name */
+      case 329: /* full_tsma_name ::= db_name NK_DOT tsma_name */ yytestcase(yyruleno==329);
 #line 381 "sql.y"
 { yylhsminor.yy1000 = createRealTableNode(pCxt, &yymsp[-2].minor.yy305, &yymsp[0].minor.yy305, NULL); }
-#line 6404 "sql.c"
+#line 6406 "sql.c"
   yymsp[-2].minor.yy1000 = yylhsminor.yy1000;
         break;
       case 194: /* column_def ::= column_name type_name */
 #line 388 "sql.y"
 { yylhsminor.yy1000 = createColumnDefNode(pCxt, &yymsp[-1].minor.yy305, yymsp[0].minor.yy56, NULL); }
-#line 6410 "sql.c"
+#line 6412 "sql.c"
   yymsp[-1].minor.yy1000 = yylhsminor.yy1000;
         break;
       case 195: /* type_name ::= BOOL */
 #line 393 "sql.y"
 { yymsp[0].minor.yy56 = createDataType(TSDB_DATA_TYPE_BOOL); }
-#line 6416 "sql.c"
+#line 6418 "sql.c"
         break;
       case 196: /* type_name ::= TINYINT */
 #line 394 "sql.y"
 { yymsp[0].minor.yy56 = createDataType(TSDB_DATA_TYPE_TINYINT); }
-#line 6421 "sql.c"
+#line 6423 "sql.c"
         break;
       case 197: /* type_name ::= SMALLINT */
 #line 395 "sql.y"
 { yymsp[0].minor.yy56 = createDataType(TSDB_DATA_TYPE_SMALLINT); }
-#line 6426 "sql.c"
+#line 6428 "sql.c"
         break;
       case 198: /* type_name ::= INT */
       case 199: /* type_name ::= INTEGER */ yytestcase(yyruleno==199);
 #line 396 "sql.y"
 { yymsp[0].minor.yy56 = createDataType(TSDB_DATA_TYPE_INT); }
-#line 6432 "sql.c"
+#line 6434 "sql.c"
         break;
       case 200: /* type_name ::= BIGINT */
 #line 398 "sql.y"
 { yymsp[0].minor.yy56 = createDataType(TSDB_DATA_TYPE_BIGINT); }
-#line 6437 "sql.c"
+#line 6439 "sql.c"
         break;
       case 201: /* type_name ::= FLOAT */
 #line 399 "sql.y"
 { yymsp[0].minor.yy56 = createDataType(TSDB_DATA_TYPE_FLOAT); }
-#line 6442 "sql.c"
+#line 6444 "sql.c"
         break;
       case 202: /* type_name ::= DOUBLE */
 #line 400 "sql.y"
 { yymsp[0].minor.yy56 = createDataType(TSDB_DATA_TYPE_DOUBLE); }
-#line 6447 "sql.c"
+#line 6449 "sql.c"
         break;
       case 203: /* type_name ::= BINARY NK_LP NK_INTEGER NK_RP */
 #line 401 "sql.y"
 { yymsp[-3].minor.yy56 = createVarLenDataType(TSDB_DATA_TYPE_BINARY, &yymsp[-1].minor.yy0); }
-#line 6452 "sql.c"
+#line 6454 "sql.c"
         break;
       case 204: /* type_name ::= TIMESTAMP */
 #line 402 "sql.y"
 { yymsp[0].minor.yy56 = createDataType(TSDB_DATA_TYPE_TIMESTAMP); }
-#line 6457 "sql.c"
+#line 6459 "sql.c"
         break;
       case 205: /* type_name ::= NCHAR NK_LP NK_INTEGER NK_RP */
 #line 403 "sql.y"
 { yymsp[-3].minor.yy56 = createVarLenDataType(TSDB_DATA_TYPE_NCHAR, &yymsp[-1].minor.yy0); }
-#line 6462 "sql.c"
+#line 6464 "sql.c"
         break;
       case 206: /* type_name ::= TINYINT UNSIGNED */
 #line 404 "sql.y"
 { yymsp[-1].minor.yy56 = createDataType(TSDB_DATA_TYPE_UTINYINT); }
-#line 6467 "sql.c"
+#line 6469 "sql.c"
         break;
       case 207: /* type_name ::= SMALLINT UNSIGNED */
 #line 405 "sql.y"
 { yymsp[-1].minor.yy56 = createDataType(TSDB_DATA_TYPE_USMALLINT); }
-#line 6472 "sql.c"
+#line 6474 "sql.c"
         break;
       case 208: /* type_name ::= INT UNSIGNED */
 #line 406 "sql.y"
 { yymsp[-1].minor.yy56 = createDataType(TSDB_DATA_TYPE_UINT); }
-#line 6477 "sql.c"
+#line 6479 "sql.c"
         break;
       case 209: /* type_name ::= BIGINT UNSIGNED */
 #line 407 "sql.y"
 { yymsp[-1].minor.yy56 = createDataType(TSDB_DATA_TYPE_UBIGINT); }
-#line 6482 "sql.c"
+#line 6484 "sql.c"
         break;
       case 210: /* type_name ::= JSON */
 #line 408 "sql.y"
 { yymsp[0].minor.yy56 = createDataType(TSDB_DATA_TYPE_JSON); }
-#line 6487 "sql.c"
+#line 6489 "sql.c"
         break;
       case 211: /* type_name ::= VARCHAR NK_LP NK_INTEGER NK_RP */
 #line 409 "sql.y"
 { yymsp[-3].minor.yy56 = createVarLenDataType(TSDB_DATA_TYPE_VARCHAR, &yymsp[-1].minor.yy0); }
-#line 6492 "sql.c"
+#line 6494 "sql.c"
         break;
       case 212: /* type_name ::= MEDIUMBLOB */
 #line 410 "sql.y"
 { yymsp[0].minor.yy56 = createDataType(TSDB_DATA_TYPE_MEDIUMBLOB); }
-#line 6497 "sql.c"
+#line 6499 "sql.c"
         break;
       case 213: /* type_name ::= BLOB */
 #line 411 "sql.y"
 { yymsp[0].minor.yy56 = createDataType(TSDB_DATA_TYPE_BLOB); }
-#line 6502 "sql.c"
+#line 6504 "sql.c"
         break;
       case 214: /* type_name ::= VARBINARY NK_LP NK_INTEGER NK_RP */
 #line 412 "sql.y"
 { yymsp[-3].minor.yy56 = createVarLenDataType(TSDB_DATA_TYPE_VARBINARY, &yymsp[-1].minor.yy0); }
-#line 6507 "sql.c"
+#line 6509 "sql.c"
         break;
       case 215: /* type_name ::= GEOMETRY NK_LP NK_INTEGER NK_RP */
 #line 413 "sql.y"
 { yymsp[-3].minor.yy56 = createVarLenDataType(TSDB_DATA_TYPE_GEOMETRY, &yymsp[-1].minor.yy0); }
-#line 6512 "sql.c"
+#line 6514 "sql.c"
         break;
       case 216: /* type_name ::= DECIMAL */
 #line 414 "sql.y"
 { yymsp[0].minor.yy56 = createDataType(TSDB_DATA_TYPE_DECIMAL); }
-#line 6517 "sql.c"
+#line 6519 "sql.c"
         break;
       case 217: /* type_name ::= DECIMAL NK_LP NK_INTEGER NK_RP */
 #line 415 "sql.y"
 { yymsp[-3].minor.yy56 = createDataType(TSDB_DATA_TYPE_DECIMAL); }
-#line 6522 "sql.c"
+#line 6524 "sql.c"
         break;
       case 218: /* type_name ::= DECIMAL NK_LP NK_INTEGER NK_COMMA NK_INTEGER NK_RP */
 #line 416 "sql.y"
 { yymsp[-5].minor.yy56 = createDataType(TSDB_DATA_TYPE_DECIMAL); }
-#line 6527 "sql.c"
+#line 6529 "sql.c"
         break;
       case 219: /* type_name_default_len ::= BINARY */
 #line 420 "sql.y"
 { yymsp[0].minor.yy56 = createVarLenDataType(TSDB_DATA_TYPE_BINARY, NULL); }
-#line 6532 "sql.c"
+#line 6534 "sql.c"
         break;
       case 220: /* type_name_default_len ::= NCHAR */
 #line 421 "sql.y"
 { yymsp[0].minor.yy56 = createVarLenDataType(TSDB_DATA_TYPE_NCHAR, NULL); }
-#line 6537 "sql.c"
+#line 6539 "sql.c"
         break;
       case 221: /* type_name_default_len ::= VARCHAR */
 #line 422 "sql.y"
 { yymsp[0].minor.yy56 = createVarLenDataType(TSDB_DATA_TYPE_VARCHAR, NULL); }
-#line 6542 "sql.c"
+#line 6544 "sql.c"
         break;
       case 222: /* type_name_default_len ::= VARBINARY */
 #line 423 "sql.y"
 { yymsp[0].minor.yy56 = createVarLenDataType(TSDB_DATA_TYPE_VARBINARY, NULL); }
-#line 6547 "sql.c"
+#line 6549 "sql.c"
         break;
       case 225: /* tags_def ::= TAGS NK_LP column_def_list NK_RP */
       case 390: /* tag_def_or_ref_opt ::= TAGS NK_LP col_name_list NK_RP */ yytestcase(yyruleno==390);
 #line 432 "sql.y"
 { yymsp[-3].minor.yy72 = yymsp[-1].minor.yy72; }
-#line 6553 "sql.c"
+#line 6555 "sql.c"
         break;
       case 226: /* table_options ::= */
 #line 434 "sql.y"
 { yymsp[1].minor.yy1000 = createDefaultTableOptions(pCxt); }
-#line 6558 "sql.c"
+#line 6560 "sql.c"
         break;
       case 227: /* table_options ::= table_options COMMENT NK_STRING */
 #line 435 "sql.y"
 { yylhsminor.yy1000 = setTableOption(pCxt, yymsp[-2].minor.yy1000, TABLE_OPTION_COMMENT, &yymsp[0].minor.yy0); }
-#line 6563 "sql.c"
+#line 6565 "sql.c"
   yymsp[-2].minor.yy1000 = yylhsminor.yy1000;
         break;
       case 228: /* table_options ::= table_options MAX_DELAY duration_list */
 #line 436 "sql.y"
 { yylhsminor.yy1000 = setTableOption(pCxt, yymsp[-2].minor.yy1000, TABLE_OPTION_MAXDELAY, yymsp[0].minor.yy72); }
-#line 6569 "sql.c"
+#line 6571 "sql.c"
   yymsp[-2].minor.yy1000 = yylhsminor.yy1000;
         break;
       case 229: /* table_options ::= table_options WATERMARK duration_list */
 #line 437 "sql.y"
 { yylhsminor.yy1000 = setTableOption(pCxt, yymsp[-2].minor.yy1000, TABLE_OPTION_WATERMARK, yymsp[0].minor.yy72); }
-#line 6575 "sql.c"
+#line 6577 "sql.c"
   yymsp[-2].minor.yy1000 = yylhsminor.yy1000;
         break;
       case 230: /* table_options ::= table_options ROLLUP NK_LP rollup_func_list NK_RP */
 #line 438 "sql.y"
 { yylhsminor.yy1000 = setTableOption(pCxt, yymsp[-4].minor.yy1000, TABLE_OPTION_ROLLUP, yymsp[-1].minor.yy72); }
-#line 6581 "sql.c"
+#line 6583 "sql.c"
   yymsp[-4].minor.yy1000 = yylhsminor.yy1000;
         break;
       case 231: /* table_options ::= table_options TTL NK_INTEGER */
 #line 439 "sql.y"
 { yylhsminor.yy1000 = setTableOption(pCxt, yymsp[-2].minor.yy1000, TABLE_OPTION_TTL, &yymsp[0].minor.yy0); }
-#line 6587 "sql.c"
+#line 6589 "sql.c"
   yymsp[-2].minor.yy1000 = yylhsminor.yy1000;
         break;
       case 232: /* table_options ::= table_options SMA NK_LP col_name_list NK_RP */
 #line 440 "sql.y"
 { yylhsminor.yy1000 = setTableOption(pCxt, yymsp[-4].minor.yy1000, TABLE_OPTION_SMA, yymsp[-1].minor.yy72); }
-#line 6593 "sql.c"
+#line 6595 "sql.c"
   yymsp[-4].minor.yy1000 = yylhsminor.yy1000;
         break;
       case 233: /* table_options ::= table_options DELETE_MARK duration_list */
 #line 441 "sql.y"
 { yylhsminor.yy1000 = setTableOption(pCxt, yymsp[-2].minor.yy1000, TABLE_OPTION_DELETE_MARK, yymsp[0].minor.yy72); }
-#line 6599 "sql.c"
+#line 6601 "sql.c"
   yymsp[-2].minor.yy1000 = yylhsminor.yy1000;
         break;
       case 234: /* alter_table_options ::= alter_table_option */
 #line 443 "sql.y"
 { yylhsminor.yy1000 = createAlterTableOptions(pCxt); yylhsminor.yy1000 = setTableOption(pCxt, yylhsminor.yy1000, yymsp[0].minor.yy941.type, &yymsp[0].minor.yy941.val); }
-#line 6605 "sql.c"
+#line 6607 "sql.c"
   yymsp[0].minor.yy1000 = yylhsminor.yy1000;
         break;
       case 235: /* alter_table_options ::= alter_table_options alter_table_option */
 #line 444 "sql.y"
 { yylhsminor.yy1000 = setTableOption(pCxt, yymsp[-1].minor.yy1000, yymsp[0].minor.yy941.type, &yymsp[0].minor.yy941.val); }
-#line 6611 "sql.c"
+#line 6613 "sql.c"
   yymsp[-1].minor.yy1000 = yylhsminor.yy1000;
         break;
       case 236: /* alter_table_option ::= COMMENT NK_STRING */
 #line 448 "sql.y"
 { yymsp[-1].minor.yy941.type = TABLE_OPTION_COMMENT; yymsp[-1].minor.yy941.val = yymsp[0].minor.yy0; }
-#line 6617 "sql.c"
+#line 6619 "sql.c"
         break;
       case 237: /* alter_table_option ::= TTL NK_INTEGER */
 #line 449 "sql.y"
 { yymsp[-1].minor.yy941.type = TABLE_OPTION_TTL; yymsp[-1].minor.yy941.val = yymsp[0].minor.yy0; }
-#line 6622 "sql.c"
+#line 6624 "sql.c"
         break;
       case 238: /* duration_list ::= duration_literal */
       case 518: /* expression_list ::= expr_or_subquery */ yytestcase(yyruleno==518);
 #line 453 "sql.y"
 { yylhsminor.yy72 = createNodeList(pCxt, releaseRawExprNode(pCxt, yymsp[0].minor.yy1000)); }
-#line 6628 "sql.c"
+#line 6630 "sql.c"
   yymsp[0].minor.yy72 = yylhsminor.yy72;
         break;
       case 239: /* duration_list ::= duration_list NK_COMMA duration_literal */
       case 519: /* expression_list ::= expression_list NK_COMMA expr_or_subquery */ yytestcase(yyruleno==519);
 #line 454 "sql.y"
 { yylhsminor.yy72 = addNodeToList(pCxt, yymsp[-2].minor.yy72, releaseRawExprNode(pCxt, yymsp[0].minor.yy1000)); }
-#line 6635 "sql.c"
+#line 6637 "sql.c"
   yymsp[-2].minor.yy72 = yylhsminor.yy72;
         break;
       case 242: /* rollup_func_name ::= function_name */
 #line 461 "sql.y"
 { yylhsminor.yy1000 = createFunctionNode(pCxt, &yymsp[0].minor.yy305, NULL); }
-#line 6641 "sql.c"
+#line 6643 "sql.c"
   yymsp[0].minor.yy1000 = yylhsminor.yy1000;
         break;
       case 243: /* rollup_func_name ::= FIRST */
@@ -6646,30 +6648,30 @@ static YYACTIONTYPE yy_reduce(
       case 316: /* tag_item ::= QTAGS */ yytestcase(yyruleno==316);
 #line 462 "sql.y"
 { yylhsminor.yy1000 = createFunctionNode(pCxt, &yymsp[0].minor.yy0, NULL); }
-#line 6649 "sql.c"
+#line 6651 "sql.c"
   yymsp[0].minor.yy1000 = yylhsminor.yy1000;
         break;
       case 247: /* col_name ::= column_name */
       case 317: /* tag_item ::= column_name */ yytestcase(yyruleno==317);
 #line 470 "sql.y"
 { yylhsminor.yy1000 = createColumnNode(pCxt, NULL, &yymsp[0].minor.yy305); }
-#line 6656 "sql.c"
+#line 6658 "sql.c"
   yymsp[0].minor.yy1000 = yylhsminor.yy1000;
         break;
       case 248: /* cmd ::= SHOW DNODES */
 #line 473 "sql.y"
 { pCxt->pRootNode = createShowStmt(pCxt, QUERY_NODE_SHOW_DNODES_STMT); }
-#line 6662 "sql.c"
+#line 6664 "sql.c"
         break;
       case 249: /* cmd ::= SHOW USERS */
 #line 474 "sql.y"
 { pCxt->pRootNode = createShowStmt(pCxt, QUERY_NODE_SHOW_USERS_STMT); }
-#line 6667 "sql.c"
+#line 6669 "sql.c"
         break;
       case 250: /* cmd ::= SHOW USER PRIVILEGES */
 #line 475 "sql.y"
 { pCxt->pRootNode = createShowStmt(pCxt, QUERY_NODE_SHOW_USER_PRIVILEGES_STMT); }
-#line 6672 "sql.c"
+#line 6674 "sql.c"
         break;
       case 251: /* cmd ::= SHOW db_kind_opt DATABASES */
 #line 476 "sql.y"
@@ -6677,389 +6679,387 @@ static YYACTIONTYPE yy_reduce(
                                                                                     pCxt->pRootNode = createShowStmt(pCxt, QUERY_NODE_SHOW_DATABASES_STMT);
                                                                                     setShowKind(pCxt, pCxt->pRootNode, yymsp[-1].minor.yy761);
                                                                                   }
-#line 6680 "sql.c"
+#line 6682 "sql.c"
         break;
       case 252: /* cmd ::= SHOW table_kind_db_name_cond_opt TABLES like_pattern_opt */
 #line 480 "sql.y"
 {
                                                                                     pCxt->pRootNode = createShowTablesStmt(pCxt, yymsp[-2].minor.yy517, yymsp[0].minor.yy1000, OP_TYPE_LIKE);
                                                                                   }
-#line 6687 "sql.c"
+#line 6689 "sql.c"
         break;
       case 253: /* cmd ::= SHOW db_name_cond_opt STABLES like_pattern_opt */
 #line 483 "sql.y"
 { pCxt->pRootNode = createShowStmtWithCond(pCxt, QUERY_NODE_SHOW_STABLES_STMT, yymsp[-2].minor.yy1000, yymsp[0].minor.yy1000, OP_TYPE_LIKE); }
-#line 6692 "sql.c"
+#line 6694 "sql.c"
         break;
       case 254: /* cmd ::= SHOW db_name_cond_opt VGROUPS */
 #line 484 "sql.y"
 { pCxt->pRootNode = createShowStmtWithCond(pCxt, QUERY_NODE_SHOW_VGROUPS_STMT, yymsp[-1].minor.yy1000, NULL, OP_TYPE_LIKE); }
-#line 6697 "sql.c"
+#line 6699 "sql.c"
         break;
       case 255: /* cmd ::= SHOW MNODES */
 #line 485 "sql.y"
 { pCxt->pRootNode = createShowStmt(pCxt, QUERY_NODE_SHOW_MNODES_STMT); }
-#line 6702 "sql.c"
+#line 6704 "sql.c"
         break;
       case 256: /* cmd ::= SHOW QNODES */
 #line 487 "sql.y"
 { pCxt->pRootNode = createShowStmt(pCxt, QUERY_NODE_SHOW_QNODES_STMT); }
-#line 6707 "sql.c"
+#line 6709 "sql.c"
         break;
       case 257: /* cmd ::= SHOW ARBGROUPS */
 #line 488 "sql.y"
 { pCxt->pRootNode = createShowStmt(pCxt, QUERY_NODE_SHOW_ARBGROUPS_STMT); }
-#line 6712 "sql.c"
+#line 6714 "sql.c"
         break;
       case 258: /* cmd ::= SHOW FUNCTIONS */
 #line 489 "sql.y"
 { pCxt->pRootNode = createShowStmt(pCxt, QUERY_NODE_SHOW_FUNCTIONS_STMT); }
-#line 6717 "sql.c"
+#line 6719 "sql.c"
         break;
       case 259: /* cmd ::= SHOW INDEXES FROM table_name_cond from_db_opt */
 #line 490 "sql.y"
 { pCxt->pRootNode = createShowStmtWithCond(pCxt, QUERY_NODE_SHOW_INDEXES_STMT, yymsp[0].minor.yy1000, yymsp[-1].minor.yy1000, OP_TYPE_EQUAL); }
-#line 6722 "sql.c"
+#line 6724 "sql.c"
         break;
       case 260: /* cmd ::= SHOW INDEXES FROM db_name NK_DOT table_name */
 #line 491 "sql.y"
 { pCxt->pRootNode = createShowStmtWithCond(pCxt, QUERY_NODE_SHOW_INDEXES_STMT, createIdentifierValueNode(pCxt, &yymsp[-2].minor.yy305), createIdentifierValueNode(pCxt, &yymsp[0].minor.yy305), OP_TYPE_EQUAL); }
-#line 6727 "sql.c"
+#line 6729 "sql.c"
         break;
       case 261: /* cmd ::= SHOW STREAMS */
 #line 492 "sql.y"
 { pCxt->pRootNode = createShowStmt(pCxt, QUERY_NODE_SHOW_STREAMS_STMT); }
-#line 6732 "sql.c"
+#line 6734 "sql.c"
         break;
       case 262: /* cmd ::= SHOW ACCOUNTS */
 #line 493 "sql.y"
 { pCxt->errCode = generateSyntaxErrMsg(&pCxt->msgBuf, TSDB_CODE_PAR_EXPRIE_STATEMENT); }
-#line 6737 "sql.c"
+#line 6739 "sql.c"
         break;
       case 263: /* cmd ::= SHOW APPS */
 #line 494 "sql.y"
 { pCxt->pRootNode = createShowStmt(pCxt, QUERY_NODE_SHOW_APPS_STMT); }
-#line 6742 "sql.c"
+#line 6744 "sql.c"
         break;
       case 264: /* cmd ::= SHOW CONNECTIONS */
 #line 495 "sql.y"
 { pCxt->pRootNode = createShowStmt(pCxt, QUERY_NODE_SHOW_CONNECTIONS_STMT); }
-#line 6747 "sql.c"
+#line 6749 "sql.c"
         break;
       case 265: /* cmd ::= SHOW LICENCES */
       case 266: /* cmd ::= SHOW GRANTS */ yytestcase(yyruleno==266);
 #line 496 "sql.y"
 { pCxt->pRootNode = createShowStmt(pCxt, QUERY_NODE_SHOW_LICENCES_STMT); }
-#line 6753 "sql.c"
+#line 6755 "sql.c"
         break;
       case 267: /* cmd ::= SHOW GRANTS FULL */
 #line 498 "sql.y"
 { pCxt->pRootNode = createShowStmt(pCxt, QUERY_NODE_SHOW_GRANTS_FULL_STMT); }
-#line 6758 "sql.c"
+#line 6760 "sql.c"
         break;
       case 268: /* cmd ::= SHOW GRANTS LOGS */
 #line 499 "sql.y"
 { pCxt->pRootNode = createShowStmt(pCxt, QUERY_NODE_SHOW_GRANTS_LOGS_STMT); }
-#line 6763 "sql.c"
+#line 6765 "sql.c"
         break;
       case 269: /* cmd ::= SHOW CLUSTER MACHINES */
 #line 500 "sql.y"
 { pCxt->pRootNode = createShowStmt(pCxt, QUERY_NODE_SHOW_CLUSTER_MACHINES_STMT); }
-#line 6768 "sql.c"
+#line 6770 "sql.c"
         break;
       case 270: /* cmd ::= SHOW CREATE DATABASE db_name */
 #line 501 "sql.y"
 { pCxt->pRootNode = createShowCreateDatabaseStmt(pCxt, &yymsp[0].minor.yy305); }
-#line 6773 "sql.c"
+#line 6775 "sql.c"
         break;
       case 271: /* cmd ::= SHOW CREATE TABLE full_table_name */
 #line 502 "sql.y"
 { pCxt->pRootNode = createShowCreateTableStmt(pCxt, QUERY_NODE_SHOW_CREATE_TABLE_STMT, yymsp[0].minor.yy1000); }
-#line 6778 "sql.c"
+#line 6780 "sql.c"
         break;
       case 272: /* cmd ::= SHOW CREATE STABLE full_table_name */
 #line 503 "sql.y"
 { pCxt->pRootNode = createShowCreateTableStmt(pCxt, QUERY_NODE_SHOW_CREATE_STABLE_STMT, yymsp[0].minor.yy1000); }
-#line 6783 "sql.c"
+#line 6785 "sql.c"
         break;
       case 273: /* cmd ::= SHOW QUERIES */
 #line 504 "sql.y"
 { pCxt->pRootNode = createShowStmt(pCxt, QUERY_NODE_SHOW_QUERIES_STMT); }
-#line 6788 "sql.c"
+#line 6790 "sql.c"
         break;
       case 274: /* cmd ::= SHOW SCORES */
 #line 505 "sql.y"
 { pCxt->pRootNode = createShowStmt(pCxt, QUERY_NODE_SHOW_SCORES_STMT); }
-#line 6793 "sql.c"
+#line 6795 "sql.c"
         break;
       case 275: /* cmd ::= SHOW TOPICS */
 #line 506 "sql.y"
 { pCxt->pRootNode = createShowStmt(pCxt, QUERY_NODE_SHOW_TOPICS_STMT); }
-#line 6798 "sql.c"
+#line 6800 "sql.c"
         break;
       case 276: /* cmd ::= SHOW VARIABLES */
       case 277: /* cmd ::= SHOW CLUSTER VARIABLES */ yytestcase(yyruleno==277);
 #line 507 "sql.y"
 { pCxt->pRootNode = createShowStmt(pCxt, QUERY_NODE_SHOW_VARIABLES_STMT); }
-#line 6804 "sql.c"
+#line 6806 "sql.c"
         break;
       case 278: /* cmd ::= SHOW LOCAL VARIABLES */
 #line 509 "sql.y"
 { pCxt->pRootNode = createShowStmt(pCxt, QUERY_NODE_SHOW_LOCAL_VARIABLES_STMT); }
-#line 6809 "sql.c"
+#line 6811 "sql.c"
         break;
       case 279: /* cmd ::= SHOW DNODE NK_INTEGER VARIABLES like_pattern_opt */
 #line 510 "sql.y"
 { pCxt->pRootNode = createShowDnodeVariablesStmt(pCxt, createValueNode(pCxt, TSDB_DATA_TYPE_BIGINT, &yymsp[-2].minor.yy0), yymsp[0].minor.yy1000); }
-#line 6814 "sql.c"
+#line 6816 "sql.c"
         break;
       case 280: /* cmd ::= SHOW BNODES */
 #line 511 "sql.y"
 { pCxt->pRootNode = createShowStmt(pCxt, QUERY_NODE_SHOW_BNODES_STMT); }
-#line 6819 "sql.c"
+#line 6821 "sql.c"
         break;
       case 281: /* cmd ::= SHOW SNODES */
 #line 512 "sql.y"
 { pCxt->pRootNode = createShowStmt(pCxt, QUERY_NODE_SHOW_SNODES_STMT); }
-#line 6824 "sql.c"
+#line 6826 "sql.c"
         break;
       case 282: /* cmd ::= SHOW CLUSTER */
 #line 513 "sql.y"
 { pCxt->pRootNode = createShowStmt(pCxt, QUERY_NODE_SHOW_CLUSTER_STMT); }
-#line 6829 "sql.c"
+#line 6831 "sql.c"
         break;
       case 283: /* cmd ::= SHOW TRANSACTIONS */
 #line 514 "sql.y"
 { pCxt->pRootNode = createShowStmt(pCxt, QUERY_NODE_SHOW_TRANSACTIONS_STMT); }
-#line 6834 "sql.c"
+#line 6836 "sql.c"
         break;
       case 284: /* cmd ::= SHOW TABLE DISTRIBUTED full_table_name */
 #line 515 "sql.y"
 { pCxt->pRootNode = createShowTableDistributedStmt(pCxt, yymsp[0].minor.yy1000); }
-#line 6839 "sql.c"
+#line 6841 "sql.c"
         break;
       case 285: /* cmd ::= SHOW CONSUMERS */
 #line 516 "sql.y"
 { pCxt->pRootNode = createShowStmt(pCxt, QUERY_NODE_SHOW_CONSUMERS_STMT); }
-#line 6844 "sql.c"
+#line 6846 "sql.c"
         break;
       case 286: /* cmd ::= SHOW SUBSCRIPTIONS */
 #line 517 "sql.y"
 { pCxt->pRootNode = createShowStmt(pCxt, QUERY_NODE_SHOW_SUBSCRIPTIONS_STMT); }
-#line 6849 "sql.c"
+#line 6851 "sql.c"
         break;
       case 287: /* cmd ::= SHOW TAGS FROM table_name_cond from_db_opt */
 #line 518 "sql.y"
 { pCxt->pRootNode = createShowStmtWithCond(pCxt, QUERY_NODE_SHOW_TAGS_STMT, yymsp[0].minor.yy1000, yymsp[-1].minor.yy1000, OP_TYPE_EQUAL); }
-#line 6854 "sql.c"
+#line 6856 "sql.c"
         break;
       case 288: /* cmd ::= SHOW TAGS FROM db_name NK_DOT table_name */
 #line 519 "sql.y"
 { pCxt->pRootNode = createShowStmtWithCond(pCxt, QUERY_NODE_SHOW_TAGS_STMT, createIdentifierValueNode(pCxt, &yymsp[-2].minor.yy305), createIdentifierValueNode(pCxt, &yymsp[0].minor.yy305), OP_TYPE_EQUAL); }
-#line 6859 "sql.c"
+#line 6861 "sql.c"
         break;
       case 289: /* cmd ::= SHOW TABLE TAGS tag_list_opt FROM table_name_cond from_db_opt */
 #line 520 "sql.y"
 { pCxt->pRootNode = createShowTableTagsStmt(pCxt, yymsp[-1].minor.yy1000, yymsp[0].minor.yy1000, yymsp[-3].minor.yy72); }
-#line 6864 "sql.c"
+#line 6866 "sql.c"
         break;
       case 290: /* cmd ::= SHOW TABLE TAGS tag_list_opt FROM db_name NK_DOT table_name */
 #line 521 "sql.y"
 { pCxt->pRootNode = createShowTableTagsStmt(pCxt, createIdentifierValueNode(pCxt, &yymsp[0].minor.yy305), createIdentifierValueNode(pCxt, &yymsp[-2].minor.yy305), yymsp[-4].minor.yy72); }
-#line 6869 "sql.c"
+#line 6871 "sql.c"
         break;
       case 291: /* cmd ::= SHOW VNODES ON DNODE NK_INTEGER */
 #line 522 "sql.y"
 { pCxt->pRootNode = createShowVnodesStmt(pCxt, createValueNode(pCxt, TSDB_DATA_TYPE_BIGINT, &yymsp[0].minor.yy0), NULL); }
-#line 6874 "sql.c"
+#line 6876 "sql.c"
         break;
       case 292: /* cmd ::= SHOW VNODES */
 #line 523 "sql.y"
 { pCxt->pRootNode = createShowVnodesStmt(pCxt, NULL, NULL); }
-#line 6879 "sql.c"
+#line 6881 "sql.c"
         break;
       case 293: /* cmd ::= SHOW db_name_cond_opt ALIVE */
 #line 525 "sql.y"
 { pCxt->pRootNode = createShowAliveStmt(pCxt, yymsp[-1].minor.yy1000,    QUERY_NODE_SHOW_DB_ALIVE_STMT); }
-#line 6884 "sql.c"
+#line 6886 "sql.c"
         break;
       case 294: /* cmd ::= SHOW CLUSTER ALIVE */
 #line 526 "sql.y"
 { pCxt->pRootNode = createShowAliveStmt(pCxt, NULL, QUERY_NODE_SHOW_CLUSTER_ALIVE_STMT); }
-#line 6889 "sql.c"
+#line 6891 "sql.c"
         break;
       case 295: /* cmd ::= SHOW db_name_cond_opt VIEWS like_pattern_opt */
 #line 527 "sql.y"
 { pCxt->pRootNode = createShowStmtWithCond(pCxt, QUERY_NODE_SHOW_VIEWS_STMT, yymsp[-2].minor.yy1000, yymsp[0].minor.yy1000, OP_TYPE_LIKE); }
-#line 6894 "sql.c"
+#line 6896 "sql.c"
         break;
       case 296: /* cmd ::= SHOW CREATE VIEW full_table_name */
 #line 528 "sql.y"
 { pCxt->pRootNode = createShowCreateViewStmt(pCxt, QUERY_NODE_SHOW_CREATE_VIEW_STMT, yymsp[0].minor.yy1000); }
-#line 6899 "sql.c"
+#line 6901 "sql.c"
         break;
       case 297: /* cmd ::= SHOW COMPACTS */
 #line 529 "sql.y"
 { pCxt->pRootNode = createShowCompactsStmt(pCxt, QUERY_NODE_SHOW_COMPACTS_STMT); }
-#line 6904 "sql.c"
+#line 6906 "sql.c"
         break;
       case 298: /* cmd ::= SHOW COMPACT NK_INTEGER */
 #line 530 "sql.y"
 { pCxt->pRootNode = createShowCompactDetailsStmt(pCxt, createValueNode(pCxt, TSDB_DATA_TYPE_BIGINT, &yymsp[0].minor.yy0)); }
-#line 6909 "sql.c"
+#line 6911 "sql.c"
         break;
       case 299: /* table_kind_db_name_cond_opt ::= */
 #line 534 "sql.y"
 { yymsp[1].minor.yy517.kind = SHOW_KIND_ALL; yymsp[1].minor.yy517.dbName = nil_token; }
-#line 6914 "sql.c"
+#line 6916 "sql.c"
         break;
       case 300: /* table_kind_db_name_cond_opt ::= table_kind */
 #line 535 "sql.y"
 { yylhsminor.yy517.kind = yymsp[0].minor.yy761; yylhsminor.yy517.dbName = nil_token; }
-#line 6919 "sql.c"
+#line 6921 "sql.c"
   yymsp[0].minor.yy517 = yylhsminor.yy517;
         break;
       case 301: /* table_kind_db_name_cond_opt ::= db_name NK_DOT */
 #line 536 "sql.y"
 { yylhsminor.yy517.kind = SHOW_KIND_ALL; yylhsminor.yy517.dbName = yymsp[-1].minor.yy305; }
-#line 6925 "sql.c"
+#line 6927 "sql.c"
   yymsp[-1].minor.yy517 = yylhsminor.yy517;
         break;
       case 302: /* table_kind_db_name_cond_opt ::= table_kind db_name NK_DOT */
 #line 537 "sql.y"
 { yylhsminor.yy517.kind = yymsp[-2].minor.yy761; yylhsminor.yy517.dbName = yymsp[-1].minor.yy305; }
-#line 6931 "sql.c"
+#line 6933 "sql.c"
   yymsp[-2].minor.yy517 = yylhsminor.yy517;
         break;
       case 303: /* table_kind ::= NORMAL */
 #line 541 "sql.y"
 { yymsp[0].minor.yy761 = SHOW_KIND_TABLES_NORMAL; }
-#line 6937 "sql.c"
+#line 6939 "sql.c"
         break;
       case 304: /* table_kind ::= CHILD */
 #line 542 "sql.y"
 { yymsp[0].minor.yy761 = SHOW_KIND_TABLES_CHILD; }
-#line 6942 "sql.c"
+#line 6944 "sql.c"
         break;
       case 305: /* db_name_cond_opt ::= */
       case 310: /* from_db_opt ::= */ yytestcase(yyruleno==310);
 #line 544 "sql.y"
 { yymsp[1].minor.yy1000 = createDefaultDatabaseCondValue(pCxt); }
-#line 6948 "sql.c"
+#line 6950 "sql.c"
         break;
       case 306: /* db_name_cond_opt ::= db_name NK_DOT */
 #line 545 "sql.y"
 { yylhsminor.yy1000 = createIdentifierValueNode(pCxt, &yymsp[-1].minor.yy305); }
-#line 6953 "sql.c"
+#line 6955 "sql.c"
   yymsp[-1].minor.yy1000 = yylhsminor.yy1000;
         break;
       case 308: /* like_pattern_opt ::= LIKE NK_STRING */
 #line 548 "sql.y"
 { yymsp[-1].minor.yy1000 = createValueNode(pCxt, TSDB_DATA_TYPE_BINARY, &yymsp[0].minor.yy0); }
-#line 6959 "sql.c"
+#line 6961 "sql.c"
         break;
       case 309: /* table_name_cond ::= table_name */
 #line 550 "sql.y"
 { yylhsminor.yy1000 = createIdentifierValueNode(pCxt, &yymsp[0].minor.yy305); }
-#line 6964 "sql.c"
+#line 6966 "sql.c"
   yymsp[0].minor.yy1000 = yylhsminor.yy1000;
         break;
       case 311: /* from_db_opt ::= FROM db_name */
 #line 553 "sql.y"
 { yymsp[-1].minor.yy1000 = createIdentifierValueNode(pCxt, &yymsp[0].minor.yy305); }
-#line 6970 "sql.c"
+#line 6972 "sql.c"
         break;
       case 315: /* tag_item ::= TBNAME */
 #line 561 "sql.y"
 { yylhsminor.yy1000 = setProjectionAlias(pCxt, createFunctionNode(pCxt, &yymsp[0].minor.yy0, NULL), &yymsp[0].minor.yy0); }
-#line 6975 "sql.c"
+#line 6977 "sql.c"
   yymsp[0].minor.yy1000 = yylhsminor.yy1000;
         break;
       case 318: /* tag_item ::= column_name column_alias */
 #line 564 "sql.y"
 { yylhsminor.yy1000 = setProjectionAlias(pCxt, createColumnNode(pCxt, NULL, &yymsp[-1].minor.yy305), &yymsp[0].minor.yy305); }
-#line 6981 "sql.c"
+#line 6983 "sql.c"
   yymsp[-1].minor.yy1000 = yylhsminor.yy1000;
         break;
       case 319: /* tag_item ::= column_name AS column_alias */
 #line 565 "sql.y"
 { yylhsminor.yy1000 = setProjectionAlias(pCxt, createColumnNode(pCxt, NULL, &yymsp[-2].minor.yy305), &yymsp[0].minor.yy305); }
-#line 6987 "sql.c"
+#line 6989 "sql.c"
   yymsp[-2].minor.yy1000 = yylhsminor.yy1000;
         break;
       case 320: /* db_kind_opt ::= */
 #line 569 "sql.y"
 { yymsp[1].minor.yy761 = SHOW_KIND_ALL; }
-#line 6993 "sql.c"
+#line 6995 "sql.c"
         break;
       case 321: /* db_kind_opt ::= USER */
 #line 570 "sql.y"
 { yymsp[0].minor.yy761 = SHOW_KIND_DATABASES_USER; }
-#line 6998 "sql.c"
+#line 7000 "sql.c"
         break;
       case 322: /* db_kind_opt ::= SYSTEM */
 #line 571 "sql.y"
 { yymsp[0].minor.yy761 = SHOW_KIND_DATABASES_SYSTEM; }
-#line 7003 "sql.c"
+#line 7005 "sql.c"
         break;
       case 323: /* cmd ::= CREATE TSMA not_exists_opt tsma_name ON full_table_name tsma_func_list INTERVAL NK_LP duration_literal NK_RP */
 #line 577 "sql.y"
 { pCxt->pRootNode = createCreateTSMAStmt(pCxt, yymsp[-8].minor.yy985, &yymsp[-7].minor.yy305, yymsp[-4].minor.yy1000, yymsp[-5].minor.yy1000, releaseRawExprNode(pCxt, yymsp[-1].minor.yy1000)); }
-#line 7008 "sql.c"
+#line 7010 "sql.c"
         break;
       case 324: /* cmd ::= CREATE RECURSIVE TSMA not_exists_opt tsma_name ON full_table_name INTERVAL NK_LP duration_literal NK_RP */
 #line 579 "sql.y"
 { pCxt->pRootNode = createCreateTSMAStmt(pCxt, yymsp[-7].minor.yy985, &yymsp[-6].minor.yy305, NULL, yymsp[-4].minor.yy1000, releaseRawExprNode(pCxt, yymsp[-1].minor.yy1000)); }
-#line 7013 "sql.c"
+#line 7015 "sql.c"
         break;
       case 325: /* cmd ::= DROP TSMA exists_opt full_tsma_name */
 #line 580 "sql.y"
 { pCxt->pRootNode = createDropTSMAStmt(pCxt, yymsp[-1].minor.yy985, yymsp[0].minor.yy1000); }
-#line 7018 "sql.c"
+#line 7020 "sql.c"
         break;
       case 326: /* cmd ::= SHOW CREATE TSMA full_tsma_name */
 #line 581 "sql.y"
 { pCxt->pRootNode = createShowCreateTSMAStmt(pCxt, yymsp[0].minor.yy1000); }
-#line 7023 "sql.c"
+#line 7025 "sql.c"
         break;
       case 327: /* cmd ::= SHOW db_name_cond_opt TSMAS */
 #line 582 "sql.y"
 { pCxt->pRootNode = createShowTSMASStmt(pCxt, yymsp[-1].minor.yy1000); }
-#line 7028 "sql.c"
-        break;
-      case 328: /* full_tsma_name ::= tsma_name */
-      case 334: /* full_index_name ::= index_name */ yytestcase(yyruleno==334);
-#line 584 "sql.y"
-{ yylhsminor.yy1000 = createRealTableNodeForIndexName(pCxt, NULL, &yymsp[0].minor.yy305); }
-#line 7034 "sql.c"
-  yymsp[0].minor.yy1000 = yylhsminor.yy1000;
-        break;
-      case 329: /* full_tsma_name ::= db_name NK_DOT tsma_name */
-      case 335: /* full_index_name ::= db_name NK_DOT index_name */ yytestcase(yyruleno==335);
-#line 585 "sql.y"
-{ yylhsminor.yy1000 = createRealTableNodeForIndexName(pCxt, &yymsp[-2].minor.yy305, &yymsp[0].minor.yy305); }
-#line 7041 "sql.c"
-  yymsp[-2].minor.yy1000 = yylhsminor.yy1000;
+#line 7030 "sql.c"
         break;
       case 330: /* tsma_func_list ::= FUNCTION NK_LP func_list NK_RP */
 #line 589 "sql.y"
 { yymsp[-3].minor.yy1000 = createTSMAOptions(pCxt, yymsp[-1].minor.yy72); }
-#line 7047 "sql.c"
+#line 7035 "sql.c"
         break;
       case 331: /* cmd ::= CREATE SMA INDEX not_exists_opt col_name ON full_table_name index_options */
 #line 593 "sql.y"
 { pCxt->pRootNode = createCreateIndexStmt(pCxt, INDEX_TYPE_SMA, yymsp[-4].minor.yy985, yymsp[-3].minor.yy1000, yymsp[-1].minor.yy1000, NULL, yymsp[0].minor.yy1000); }
-#line 7052 "sql.c"
+#line 7040 "sql.c"
         break;
       case 332: /* cmd ::= CREATE INDEX not_exists_opt col_name ON full_table_name NK_LP col_name_list NK_RP */
 #line 595 "sql.y"
 { pCxt->pRootNode = createCreateIndexStmt(pCxt, INDEX_TYPE_NORMAL, yymsp[-6].minor.yy985, yymsp[-5].minor.yy1000, yymsp[-3].minor.yy1000, yymsp[-1].minor.yy72, NULL); }
-#line 7057 "sql.c"
+#line 7045 "sql.c"
         break;
       case 333: /* cmd ::= DROP INDEX exists_opt full_index_name */
 #line 596 "sql.y"
 { pCxt->pRootNode = createDropIndexStmt(pCxt, yymsp[-1].minor.yy985, yymsp[0].minor.yy1000); }
-#line 7062 "sql.c"
+#line 7050 "sql.c"
+        break;
+      case 334: /* full_index_name ::= index_name */
+#line 598 "sql.y"
+{ yylhsminor.yy1000 = createRealTableNodeForIndexName(pCxt, NULL, &yymsp[0].minor.yy305); }
+#line 7055 "sql.c"
+  yymsp[0].minor.yy1000 = yylhsminor.yy1000;
+        break;
+      case 335: /* full_index_name ::= db_name NK_DOT index_name */
+#line 599 "sql.y"
+{ yylhsminor.yy1000 = createRealTableNodeForIndexName(pCxt, &yymsp[-2].minor.yy305, &yymsp[0].minor.yy305); }
+#line 7061 "sql.c"
+  yymsp[-2].minor.yy1000 = yylhsminor.yy1000;
         break;
       case 336: /* index_options ::= FUNCTION NK_LP func_list NK_RP INTERVAL NK_LP duration_literal NK_RP sliding_opt sma_stream_opt */
 #line 602 "sql.y"
