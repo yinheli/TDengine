@@ -360,7 +360,7 @@ TDengine provides abundant developing tools for users to develop on TDengine. Fo
 
 Please follow the [contribution guidelines](CONTRIBUTING.md) to contribute to the project.
 
-# Join the TDengine Community
+# Join the TDengine Community 
 
 For more information about TDengine, you can follow us on social media and join our Discord server:
 
