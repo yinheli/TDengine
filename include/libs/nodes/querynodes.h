@@ -275,6 +275,7 @@ typedef struct SIntervalWindowNode {
   SNode*    pOffset;    // SValueNode
   SNode*    pSliding;   // SValueNode
   SNode*    pFill;
+  SNode*    pPkCol;    // pk col
 } SIntervalWindowNode;
 
 typedef struct SEventWindowNode {

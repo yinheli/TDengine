@@ -1009,6 +1009,7 @@ static int32_t createWindowLogicNodeByInterval(SLogicPlanContext* pCxt, SInterva
     nodesDestroyNode((SNode*)pWindow);
     return TSDB_CODE_OUT_OF_MEMORY;
   }
+  pWindow->pPkCol = nodesCloneNode(pInterval->pPkCol);
   pWindow->isPartTb = pSelect->pPartitionByList ? keysHasTbname(pSelect->pPartitionByList) : 0;
 
   return createWindowLogicNodeFinalize(pCxt, pSelect, pWindow, pLogicNode);

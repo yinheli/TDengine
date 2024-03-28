@@ -287,6 +287,7 @@ typedef struct SWindowLogicNode {
   bool             isPartTb;
   int64_t          windowCount;
   int64_t          windowSliding;
+  SNode*           pPkCol;
 } SWindowLogicNode;
 
 typedef struct SFillLogicNode {

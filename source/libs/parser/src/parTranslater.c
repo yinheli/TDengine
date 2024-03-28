@@ -4781,6 +4781,29 @@ static int32_t translateSelectWithoutFrom(STranslateContext* pCxt, SSelectStmt* 
   return translateExprList(pCxt, pSelect->pProjectionList);
 }
 
+static int32_t setPkColNode(STranslateContext* pCxt, SSelectStmt* pSelect) {
+  if (nodeType(pSelect->pFromTable) != QUERY_NODE_REAL_TABLE || nodeType(pSelect->pWindow) != QUERY_NODE_INTERVAL_WINDOW) {
+    return TSDB_CODE_SUCCESS;
+  }
+
+  SRealTableNode* pTable = (SRealTableNode*)pSelect->pFromTable;
+  if (TSDB_CHILD_TABLE != pTable->pMeta->tableType && TSDB_NORMAL_TABLE != pTable->pMeta->tableType &&
+      TSDB_SUPER_TABLE != pTable->pMeta->tableType) {
+    return TSDB_CODE_SUCCESS;
+  }
+  
+  if (!hasPkInTable(pTable->pMeta)) {
+    return TSDB_CODE_SUCCESS;
+  }
+  SNode* pPk = NULL;
+  pCxt->errCode = createPkColByTable(pCxt, pTable, &pPk);
+  
+  if (pCxt->errCode == TSDB_CODE_SUCCESS) {
+    ((SIntervalWindowNode*)pSelect->pWindow)->pPkCol = pPk;
+  }
+  return TSDB_CODE_SUCCESS;  
+}
+
 static int32_t translateSelectFrom(STranslateContext* pCxt, SSelectStmt* pSelect) {
   pCxt->pCurrStmt = (SNode*)pSelect;
   int32_t code = translateFrom(pCxt, &pSelect->pFromTable);
@@ -4833,6 +4856,9 @@ static int32_t translateSelectFrom(STranslateContext* pCxt, SSelectStmt* pSelect
   }
   if (TSDB_CODE_SUCCESS == code) {
     code = appendPkParamForPkFunc(pCxt, pSelect);
+  }
+  if (TSDB_CODE_SUCCESS == code) {
+    code = setPkColNode(pCxt, pSelect);
   }  
   if (TSDB_CODE_SUCCESS == code) {
     code = replaceOrderByAliasForSelect(pCxt, pSelect);
