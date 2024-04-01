@@ -48,7 +48,7 @@ typedef TSKEY (*GetTsFun)(void*);
 typedef struct SMetaEntry {
   int64_t  version;
   int8_t   type;
-  int8_t   flags;  // TODO: need refactor?
+  int8_t   flags;
   tb_uid_t uid;
   char*    name;
   union {

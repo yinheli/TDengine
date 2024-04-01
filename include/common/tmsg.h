@@ -60,8 +60,8 @@ extern int32_t tMsgRangeDict[];
 
 typedef uint16_t tmsg_t;
 
-#define TMSG_SEG_CODE(TYPE) (((TYPE)&0xff00) >> 8)
-#define TMSG_SEG_SEQ(TYPE)  ((TYPE)&0xff)
+#define TMSG_SEG_CODE(TYPE) (((TYPE) & 0xff00) >> 8)
+#define TMSG_SEG_SEQ(TYPE)  ((TYPE) & 0xff)
 #define TMSG_INDEX(TYPE)    (tMsgDict[TMSG_SEG_CODE(TYPE)] + TMSG_SEG_SEQ(TYPE))
 
 static inline bool tmsgIsValid(tmsg_t type) {
@@ -202,7 +202,7 @@ typedef enum _mgmt_table {
 #define TSDB_COL_IS_TAG(f)        (((f & (~(TSDB_COL_NULL))) & TSDB_COL_TAG) != 0)
 #define TSDB_COL_IS_NORMAL_COL(f) ((f & (~(TSDB_COL_NULL))) == TSDB_COL_NORMAL)
 #define TSDB_COL_IS_UD_COL(f)     ((f & (~(TSDB_COL_NULL))) == TSDB_COL_UDC)
-#define TSDB_COL_REQ_NULL(f)      (((f)&TSDB_COL_NULL) != 0)
+#define TSDB_COL_REQ_NULL(f)      (((f) & TSDB_COL_NULL) != 0)
 
 #define TD_SUPER_TABLE  TSDB_SUPER_TABLE
 #define TD_CHILD_TABLE  TSDB_CHILD_TABLE
@@ -586,7 +586,7 @@ typedef struct {
 // int32_t tEncodeSSubmitRsp(SEncoder* pEncoder, const SSubmitRsp* pRsp);
 // int32_t tDecodeSSubmitRsp(SDecoder* pDecoder, SSubmitRsp* pRsp);
 // void    tFreeSSubmitBlkRsp(void* param);
-void    tFreeSSubmitRsp(SSubmitRsp* pRsp);
+void tFreeSSubmitRsp(SSubmitRsp* pRsp);
 
 #define COL_SMA_ON     ((int8_t)0x1)
 #define COL_IDX_ON     ((int8_t)0x2)
@@ -623,20 +623,20 @@ typedef struct {
   SSchema* pSchema;
 } SSchemaWrapper;
 
+static FORCE_INLINE void tCloneSSchemaWrapperTo(const SSchemaWrapper* from, SSchemaWrapper* to) {
+  to->nCols = from->nCols;
+  to->version = from->version;
+  to->pSchema = (SSchema*)taosMemoryMalloc(to->nCols * sizeof(SSchema));
+  memcpy(to->pSchema, from->pSchema, to->nCols * sizeof(SSchema));
+}
+
 static FORCE_INLINE SSchemaWrapper* tCloneSSchemaWrapper(const SSchemaWrapper* pSchemaWrapper) {
   if (pSchemaWrapper->pSchema == NULL) return NULL;
 
   SSchemaWrapper* pSW = (SSchemaWrapper*)taosMemoryMalloc(sizeof(SSchemaWrapper));
-  if (pSW == NULL) return pSW;
-  pSW->nCols = pSchemaWrapper->nCols;
-  pSW->version = pSchemaWrapper->version;
-  pSW->pSchema = (SSchema*)taosMemoryCalloc(pSW->nCols, sizeof(SSchema));
-  if (pSW->pSchema == NULL) {
-    taosMemoryFree(pSW);
-    return NULL;
+  if (pSW) {
+    tCloneSSchemaWrapperTo(pSchemaWrapper, pSW);
   }
-
-  memcpy(pSW->pSchema, pSchemaWrapper->pSchema, pSW->nCols * sizeof(SSchema));
   return pSW;
 }
 
@@ -1587,13 +1587,13 @@ int32_t tDeserializeSStatusReq(void* buf, int32_t bufLen, SStatusReq* pReq);
 void    tFreeSStatusReq(SStatusReq* pReq);
 
 typedef struct {
-  int32_t     contLen;
-  char*       pCont;
+  int32_t contLen;
+  char*   pCont;
 } SStatisReq;
 
 int32_t tSerializeSStatisReq(void* buf, int32_t bufLen, SStatisReq* pReq);
 int32_t tDeserializeSStatisReq(void* buf, int32_t bufLen, SStatisReq* pReq);
-void tFreeSStatisReq(SStatisReq *pReq);
+void    tFreeSStatisReq(SStatisReq* pReq);
 
 typedef struct {
   int32_t dnodeId;
@@ -1951,7 +1951,7 @@ typedef struct {
 
 int32_t tSerializeSShowReq(void* buf, int32_t bufLen, SShowReq* pReq);
 // int32_t tDeserializeSShowReq(void* buf, int32_t bufLen, SShowReq* pReq);
-void    tFreeSShowReq(SShowReq* pReq);
+void tFreeSShowReq(SShowReq* pReq);
 
 typedef struct {
   int64_t       showId;
@@ -2183,10 +2183,10 @@ int32_t tDeserializeSVArbHeartBeatRsp(void* buf, int32_t bufLen, SVArbHeartBeatR
 void    tFreeSVArbHeartBeatRsp(SVArbHeartBeatRsp* pRsp);
 
 typedef struct {
-  char* arbToken;
+  char*   arbToken;
   int64_t arbTerm;
-  char* member0Token;
-  char* member1Token;
+  char*   member0Token;
+  char*   member1Token;
 } SVArbCheckSyncReq;
 
 int32_t tSerializeSVArbCheckSyncReq(void* buf, int32_t bufLen, SVArbCheckSyncReq* pReq);
@@ -2206,9 +2206,9 @@ int32_t tDeserializeSVArbCheckSyncRsp(void* buf, int32_t bufLen, SVArbCheckSyncR
 void    tFreeSVArbCheckSyncRsp(SVArbCheckSyncRsp* pRsp);
 
 typedef struct {
-  char*    arbToken;
-  int64_t  arbTerm;
-  char*    memberToken;
+  char*   arbToken;
+  int64_t arbTerm;
+  char*   memberToken;
 } SVArbSetAssignedLeaderReq;
 
 int32_t tSerializeSVArbSetAssignedLeaderReq(void* buf, int32_t bufLen, SVArbSetAssignedLeaderReq* pReq);
@@ -2231,8 +2231,8 @@ typedef struct {
 } SMArbUpdateGroupReqMember;
 
 typedef struct {
-  int32_t vgId;
-  int64_t dbUid;
+  int32_t                   vgId;
+  int64_t                   dbUid;
   SMArbUpdateGroupReqMember members[2];
   int8_t                    isSync;
   SMArbUpdateGroupReqMember assignedLeader;
@@ -2833,7 +2833,7 @@ typedef struct {
     SVCreateTbReq* pReqs;
     SArray*        pArray;
   };
-  int8_t   source;  // TD_REQ_FROM_TAOX-taosX or TD_REQ_FROM_APP-taosClient
+  int8_t source;  // TD_REQ_FROM_TAOX-taosX or TD_REQ_FROM_APP-taosClient
 } SVCreateTbBatchReq;
 
 int tEncodeSVCreateTbBatchReq(SEncoder* pCoder, const SVCreateTbBatchReq* pReq);
@@ -2928,7 +2928,7 @@ typedef struct {
   int32_t newCommentLen;
   char*   newComment;
   int64_t ctimeMs;  // fill by vnode
-  int8_t  source;  // TD_REQ_FROM_TAOX-taosX or TD_REQ_FROM_APP-taosClient
+  int8_t  source;   // TD_REQ_FROM_TAOX-taosX or TD_REQ_FROM_APP-taosClient
 } SVAlterTbReq;
 
 int32_t tEncodeSVAlterTbReq(SEncoder* pEncoder, const SVAlterTbReq* pReq);
@@ -4034,7 +4034,7 @@ int32_t tDeserializeSMqSeekReq(void* buf, int32_t bufLen, SMqSeekReq* pReq);
 #define SUBMIT_REQ_FROM_FILE          0x4
 #define TD_REQ_FROM_TAOX              0x8
 
-#define TD_REQ_FROM_TAOX_OLD          0x1     // for compatibility
+#define TD_REQ_FROM_TAOX_OLD 0x1  // for compatibility
 
 typedef struct {
   int32_t        flags;

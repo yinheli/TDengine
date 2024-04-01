@@ -108,17 +108,17 @@ typedef struct SQueryNode         SQueryNode;
 
 #define VNODE_METRIC_SQL_COUNT "taosd_sql_req:count"
 
-#define VNODE_METRIC_TAG_NAME_SQL_TYPE "sql_type"
+#define VNODE_METRIC_TAG_NAME_SQL_TYPE   "sql_type"
 #define VNODE_METRIC_TAG_NAME_CLUSTER_ID "cluster_id"
-#define VNODE_METRIC_TAG_NAME_DNODE_ID "dnode_id"
-#define VNODE_METRIC_TAG_NAME_DNODE_EP "dnode_ep"
-#define VNODE_METRIC_TAG_NAME_VGROUP_ID "vgroup_id"
-#define VNODE_METRIC_TAG_NAME_USERNAME "username"
-#define VNODE_METRIC_TAG_NAME_RESULT "result"
+#define VNODE_METRIC_TAG_NAME_DNODE_ID   "dnode_id"
+#define VNODE_METRIC_TAG_NAME_DNODE_EP   "dnode_ep"
+#define VNODE_METRIC_TAG_NAME_VGROUP_ID  "vgroup_id"
+#define VNODE_METRIC_TAG_NAME_USERNAME   "username"
+#define VNODE_METRIC_TAG_NAME_RESULT     "result"
 
 #define VNODE_METRIC_TAG_VALUE_INSERT_AFFECTED_ROWS "inserted_rows"
-//#define VNODE_METRIC_TAG_VALUE_INSERT "insert"
-//#define VNODE_METRIC_TAG_VALUE_DELETE "delete"
+// #define VNODE_METRIC_TAG_VALUE_INSERT "insert"
+// #define VNODE_METRIC_TAG_VALUE_DELETE "delete"
 
 // vnd.h
 typedef int32_t (*_query_reseek_func_t)(void* pQHandle);
@@ -170,9 +170,9 @@ int             metaCommit(SMeta* pMeta, TXN* txn);
 int             metaFinishCommit(SMeta* pMeta, TXN* txn);
 int             metaPrepareAsyncCommit(SMeta* pMeta);
 int             metaAbort(SMeta* pMeta);
-int             metaCreateSTable(SMeta* pMeta, int64_t version, SVCreateStbReq* pReq);
+int             metaCreateSuperTable(SMeta* pMeta, int64_t version, SVCreateStbReq* pReq);
 int             metaAlterSTable(SMeta* pMeta, int64_t version, SVCreateStbReq* pReq);
-int             metaDropSTable(SMeta* pMeta, int64_t verison, SVDropStbReq* pReq, SArray* tbUidList);
+int             metaDropSuperTable(SMeta* pMeta, int64_t verison, SVDropStbReq* pReq, SArray* tbUidList);
 int             metaCreateTable(SMeta* pMeta, int64_t version, SVCreateTbReq* pReq, STableMetaRsp** pMetaRsp);
 int             metaDropTable(SMeta* pMeta, int64_t version, SVDropTbReq* pReq, SArray* tbUids, int64_t* tbUid);
 int32_t         metaTrimTables(SMeta* pMeta);
@@ -461,12 +461,12 @@ typedef struct SVCommitSched {
   int64_t maxWaitMs;
 } SVCommitSched;
 
-typedef struct SVMonitorObj{
-  char strClusterId[TSDB_CLUSTER_ID_LEN];
-  char strDnodeId[TSDB_NODE_ID_LEN];
-  char strVgId[TSDB_VGROUP_ID_LEN];
-  taos_counter_t *insertCounter;
-}SVMonitorObj;
+typedef struct SVMonitorObj {
+  char            strClusterId[TSDB_CLUSTER_ID_LEN];
+  char            strDnodeId[TSDB_NODE_ID_LEN];
+  char            strVgId[TSDB_VGROUP_ID_LEN];
+  taos_counter_t* insertCounter;
+} SVMonitorObj;
 
 struct SVnode {
   char*     path;

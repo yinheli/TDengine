@@ -44,8 +44,10 @@ int32_t metaWLock(SMeta* pMeta);
 int32_t metaULock(SMeta* pMeta);
 
 // metaEntry ==================
-int metaEncodeEntry(SEncoder* pCoder, const SMetaEntry* pME);
-int metaDecodeEntry(SDecoder* pCoder, SMetaEntry* pME);
+int32_t metaEntryInit(const SMetaEntry* fromEntry, SMetaEntry** entry);
+int32_t metaEntryDestroy(SMetaEntry* entry);
+int     metaEncodeEntry(SEncoder* pCoder, const SMetaEntry* pME);
+int     metaDecodeEntry(SDecoder* pCoder, SMetaEntry* pME);
 
 // metaQuery ==================
 int metaGetTableEntryByVersion(SMetaReader* pReader, int64_t version, tb_uid_t uid);
@@ -160,10 +162,10 @@ int metaCreateTagIdxKey(tb_uid_t suid, int32_t cid, const void* pTagData, int32_
                         STagIdxKey** ppTagIdxKey, int32_t* nTagIdxKey);
 
 // TODO, refactor later
-int32_t metaFilterTableIds(void *pVnode, SMetaFltParam *param, SArray *results);
-int32_t metaFilterCreateTime(void *pVnode, SMetaFltParam *parm, SArray *pUids);
-int32_t metaFilterTableName(void *pVnode, SMetaFltParam *param, SArray *pUids);
-int32_t metaFilterTtl(void *pVnode, SMetaFltParam *param, SArray *pUids);
+int32_t metaFilterTableIds(void* pVnode, SMetaFltParam* param, SArray* results);
+int32_t metaFilterCreateTime(void* pVnode, SMetaFltParam* parm, SArray* pUids);
+int32_t metaFilterTableName(void* pVnode, SMetaFltParam* param, SArray* pUids);
+int32_t metaFilterTtl(void* pVnode, SMetaFltParam* param, SArray* pUids);
 
 #ifndef META_REFACT
 // SMetaDB

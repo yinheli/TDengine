@@ -130,7 +130,7 @@ static int32_t tdProcessTSmaCreateImpl(SSma *pSma, int64_t ver, const char *pMsg
     pReq.schemaRow = pCfg->schemaRow;
     pReq.schemaTag = pCfg->schemaTag;
 
-    if (metaCreateSTable(SMA_META(pSma), ver, &pReq) < 0) {
+    if (metaCreateSuperTable(SMA_META(pSma), ver, &pReq) < 0) {
       code = terrno;
       TSDB_CHECK_CODE(code, lino, _exit);
     }

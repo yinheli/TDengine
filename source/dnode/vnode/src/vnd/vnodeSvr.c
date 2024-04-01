@@ -32,14 +32,14 @@ static int32_t vnodeProcessAlterTbReq(SVnode *pVnode, int64_t ver, void *pReq, i
 static int32_t vnodeProcessDropTbReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp,
                                      SRpcMsg *pOriginRpc);
 static int32_t vnodeProcessSubmitReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp,
-                                    SRpcMsg *pOriginalMsg);
+                                     SRpcMsg *pOriginalMsg);
 static int32_t vnodeProcessCreateTSmaReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp);
 static int32_t vnodeProcessAlterConfirmReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp);
 static int32_t vnodeProcessAlterConfigReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp);
 static int32_t vnodeProcessDropTtlTbReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp);
 static int32_t vnodeProcessTrimReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp);
 static int32_t vnodeProcessDeleteReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp,
-                                      SRpcMsg *pOriginalMsg);
+                                     SRpcMsg *pOriginalMsg);
 static int32_t vnodeProcessBatchDeleteReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp);
 static int32_t vnodeProcessCreateIndexReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp);
 static int32_t vnodeProcessDropIndexReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp);
@@ -914,7 +914,7 @@ static int32_t vnodeProcessCreateStbReq(SVnode *pVnode, int64_t ver, void *pReq,
     goto _err;
   }
 
-  if (metaCreateSTable(pVnode->pMeta, ver, &req) < 0) {
+  if (metaCreateSuperTable(pVnode->pMeta, ver, &req) < 0) {
     pRsp->code = terrno;
     goto _err;
   }
@@ -1128,7 +1128,7 @@ static int32_t vnodeProcessDropStbReq(SVnode *pVnode, int64_t ver, void *pReq, i
   // process request
   tbUidList = taosArrayInit(8, sizeof(int64_t));
   if (tbUidList == NULL) goto _exit;
-  if (metaDropSTable(pVnode->pMeta, ver, &req, tbUidList) < 0) {
+  if (metaDropSuperTable(pVnode->pMeta, ver, &req, tbUidList) < 0) {
     rcode = terrno;
     goto _exit;
   }
@@ -1516,7 +1516,7 @@ static int32_t vnodeRebuildSubmitReqMsg(SSubmitReq2 *pSubmitReq, void **ppMsg) {
 }
 
 static int32_t vnodeProcessSubmitReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp,
-                                    SRpcMsg *pOriginalMsg) {
+                                     SRpcMsg *pOriginalMsg) {
   int32_t code = 0;
   terrno = 0;
 
@@ -1735,10 +1735,14 @@ _exit:
   atomic_add_fetch_64(&pVnode->statis.nInsertSuccess, pSubmitRsp->affectedRows);
   atomic_add_fetch_64(&pVnode->statis.nBatchInsert, 1);
 
-  if(tsEnableMonitor && pSubmitRsp->affectedRows > 0 && strlen(pOriginalMsg->info.conn.user) > 0){
-    const char *sample_labels[] = {VNODE_METRIC_TAG_VALUE_INSERT_AFFECTED_ROWS, pVnode->monitor.strClusterId,
-                                    pVnode->monitor.strDnodeId, tsLocalEp, pVnode->monitor.strVgId,
-                                    pOriginalMsg->info.conn.user, "Success"};
+  if (tsEnableMonitor && pSubmitRsp->affectedRows > 0 && strlen(pOriginalMsg->info.conn.user) > 0) {
+    const char *sample_labels[] = {VNODE_METRIC_TAG_VALUE_INSERT_AFFECTED_ROWS,
+                                   pVnode->monitor.strClusterId,
+                                   pVnode->monitor.strDnodeId,
+                                   tsLocalEp,
+                                   pVnode->monitor.strVgId,
+                                   pOriginalMsg->info.conn.user,
+                                   "Success"};
     taos_counter_add(pVnode->monitor.insertCounter, pSubmitRsp->affectedRows, sample_labels);
   }
 
@@ -2019,7 +2023,7 @@ static int32_t vnodeProcessBatchDeleteReq(SVnode *pVnode, int64_t ver, void *pRe
 }
 
 static int32_t vnodeProcessDeleteReq(SVnode *pVnode, int64_t ver, void *pReq, int32_t len, SRpcMsg *pRsp,
-                                    SRpcMsg *pOriginalMsg) {
+                                     SRpcMsg *pOriginalMsg) {
   int32_t     code = 0;
   SDecoder   *pCoder = &(SDecoder){0};
   SDeleteRes *pRes = &(SDeleteRes){0};
