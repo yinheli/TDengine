@@ -26,10 +26,10 @@ extern "C" {
 #include "query.h"
 #include "taos.h"
 #include "tcommon.h"
-#include "tmisce.h"
 #include "tdef.h"
 #include "thash.h"
 #include "tlist.h"
+#include "tmisce.h"
 #include "tmsg.h"
 #include "tmsgtype.h"
 #include "trpc.h"
@@ -84,7 +84,7 @@ typedef struct {
   int8_t        threadStop;
   int8_t        quitByKill;
   TdThread      thread;
-  TdThreadMutex lock;       // used when app init and cleanup
+  TdThreadMutex lock;  // used when app init and cleanup
   SHashObj*     appSummary;
   SHashObj*     appHbHash;  // key: clusterId
   SArray*       appHbMgrs;  // SArray<SAppHbMgr*> one for each cluster
@@ -93,11 +93,11 @@ typedef struct {
 } SClientHbMgr;
 
 typedef struct SQueryExecMetric {
-  int64_t start;        // start timestamp, us
-  int64_t ctgStart;     // start to parse, us
-  int64_t execStart;     // start to parse, us
+  int64_t start;      // start timestamp, us
+  int64_t ctgStart;   // start to parse, us
+  int64_t execStart;  // start to parse, us
 
-  int64_t parseCostUs;   
+  int64_t parseCostUs;
   int64_t ctgCostUs;
   int64_t analyseCostUs;
   int64_t planCostUs;
@@ -190,7 +190,7 @@ typedef struct SReqResultInfo {
   char**         convertBuf;
   TAOS_ROW       row;
   SResultColumn* pCol;
-  uint64_t       numOfRows; // from int32_t change to int64_t
+  uint64_t       numOfRows;  // from int32_t change to int64_t
   uint64_t       totalRows;
   uint64_t       current;
   bool           localResultFetched;
@@ -311,9 +311,10 @@ TAOS_RES* taosQueryImplWithReqid(TAOS* taos, const char* sql, bool validateOnly,
 void taosAsyncQueryImpl(uint64_t connId, const char* sql, __taos_async_fn_t fp, void* param, bool validateOnly);
 void taosAsyncQueryImplWithReqid(uint64_t connId, const char* sql, __taos_async_fn_t fp, void* param, bool validateOnly,
                                  int64_t reqid);
-void taosAsyncFetchImpl(SRequestObj *pRequest, __taos_async_fn_t fp, void *param);
-int32_t clientParseSql(void* param, const char* dbName, const char* sql, bool parseOnly, const char* effectiveUser, SParseSqlRes* pRes);
-void syncQueryFn(void* param, void* res, int32_t code);
+void taosAsyncFetchImpl(SRequestObj* pRequest, __taos_async_fn_t fp, void* param);
+int32_t clientParseSql(void* param, const char* dbName, const char* sql, bool parseOnly, const char* effectiveUser,
+                       SParseSqlRes* pRes);
+void    syncQueryFn(void* param, void* res, int32_t code);
 
 int32_t getVersion1BlockMetaSize(const char* p, int32_t numOfCols);
 
@@ -334,6 +335,7 @@ extern int32_t  clientReqRefPool;
 extern int32_t  clientConnRefPool;
 extern int32_t  timestampDeltaLimit;
 extern int64_t  lastClusterId;
+extern int32_t  clientTrimStop;
 
 __async_send_cb_fn_t getMsgRspHandle(int32_t msgType);
 
@@ -361,7 +363,7 @@ void  resetConnectDB(STscObj* pTscObj);
 int taos_options_imp(TSDB_OPTION option, const char* str);
 
 void* openTransporter(const char* user, const char* auth, int32_t numOfThreads);
-void tscStopCrashReport();
+void  tscStopCrashReport();
 
 typedef struct AsyncArg {
   SRpcMsg msg;
@@ -420,17 +422,18 @@ int32_t handleCreateTbExecRes(void* res, SCatalog* pCatalog);
 bool    qnodeRequired(SRequestObj* pRequest);
 void    continueInsertFromCsv(SSqlCallbackWrapper* pWrapper, SRequestObj* pRequest);
 void    destorySqlCallbackWrapper(SSqlCallbackWrapper* pWrapper);
-void    handleQueryAnslyseRes(SSqlCallbackWrapper *pWrapper, SMetaData *pResultMeta, int32_t code);
-void    restartAsyncQuery(SRequestObj *pRequest, int32_t code);
-int32_t buildPreviousRequest(SRequestObj *pRequest, const char* sql, SRequestObj** pNewRequest);
-int32_t prepareAndParseSqlSyntax(SSqlCallbackWrapper **ppWrapper, SRequestObj *pRequest, bool updateMetaForce);
+void    handleQueryAnslyseRes(SSqlCallbackWrapper* pWrapper, SMetaData* pResultMeta, int32_t code);
+void    restartAsyncQuery(SRequestObj* pRequest, int32_t code);
+int32_t buildPreviousRequest(SRequestObj* pRequest, const char* sql, SRequestObj** pNewRequest);
+int32_t prepareAndParseSqlSyntax(SSqlCallbackWrapper** ppWrapper, SRequestObj* pRequest, bool updateMetaForce);
 void    returnToUser(SRequestObj* pRequest);
-void    stopAllQueries(SRequestObj *pRequest);
+void    stopAllQueries(SRequestObj* pRequest);
 void    doRequestCallback(SRequestObj* pRequest, int32_t code);
 void    freeQueryParam(SSyncQueryParam* param);
 
 #ifdef TD_ENTERPRISE
-int32_t clientParseSqlImpl(void* param, const char* dbName, const char* sql, bool parseOnly, const char* effeciveUser, SParseSqlRes* pRes);
+int32_t clientParseSqlImpl(void* param, const char* dbName, const char* sql, bool parseOnly, const char* effeciveUser,
+                           SParseSqlRes* pRes);
 #endif
 
 void clientSlowQueryMonitorInit(const char* clusterKey);
@@ -438,13 +441,9 @@ void SlowQueryLog(int64_t rid, bool killed, int32_t code, int32_t cost);
 
 void clientSQLReqMonitorInit(const char* clusterKey);
 
-enum {
-  MONITORSQLTYPESELECT = 0,
-  MONITORSQLTYPEINSERT = 1,
-  MONITORSQLTYPEDELETE = 2
-};
+enum { MONITORSQLTYPESELECT = 0, MONITORSQLTYPEINSERT = 1, MONITORSQLTYPEDELETE = 2 };
 
-void sqlReqLog(int64_t rid,  bool killed, int32_t code, int8_t type);
+void sqlReqLog(int64_t rid, bool killed, int32_t code, int8_t type);
 
 void clientMonitorClose(const char* clusterKey);
 

@@ -45,6 +45,7 @@ int64_t  lastClusterId = 0;
 int32_t  clientReqRefPool = -1;
 int32_t  clientConnRefPool = -1;
 int32_t  clientStop = -1;
+int32_t  clientTrimStop = 0;
 
 int32_t timestampDeltaLimit = 900;  // s
 
@@ -106,7 +107,7 @@ static void deregisterRequest(SRequestObj *pRequest) {
 
       atomic_add_fetch_64((int64_t *)&pActivity->queryElapsedTime, duration);
       reqType = SLOW_LOG_TYPE_QUERY;
-    } 
+    }
   }
 
   if (QUERY_NODE_VNODE_MODIFY_STMT == pRequest->stmtType || QUERY_NODE_INSERT_STMT == pRequest->stmtType) {
@@ -642,6 +643,29 @@ void tscStopCrashReport() {
   }
 }
 
+static void *trimThreadFp(void *param) {
+  // SMnode *pMnode = param;
+  int64_t lastTime = 0;
+  setThreadName("trim-thread");
+
+  while (clientTrimStop == 0) {
+    lastTime++;
+    taosMsleep(1000);
+    if (lastTime % tscTrimCron != 0) continue;
+  }
+  return NULL;
+}
+static int32_t tscInitTrimThread() {
+  TdThread     thread;
+  TdThreadAttr thAttr;
+  taosThreadAttrInit(&thAttr);
+  taosThreadAttrSetDetachState(&thAttr, PTHREAD_CREATE_JOINABLE);
+  if (taosThreadCreate(&thread, &thAttr, trimThreadFp, NULL) != 0) {
+    return -1;
+  }
+  taosThreadAttrDestroy(&thAttr);
+  return 0;
+}
 void tscWriteCrashInfo(int signum, void *sigInfo, void *context) {
   char       *pMsg = NULL;
   const char *flags = "UTL FATAL ";
@@ -728,7 +752,7 @@ void taos_init_imp(void) {
   clientConnRefPool = taosOpenRef(200, destroyTscObj);
   clientReqRefPool = taosOpenRef(40960, doDestroyRequest);
 
-  // transDestroyBuffer(&conn->readBuf);
+  tscInitTrimThread();
   taosGetAppName(appInfo.appName, NULL);
   taosThreadMutexInit(&appInfo.mutex, NULL);
 
@@ -748,12 +772,12 @@ int taos_options_imp(TSDB_OPTION option, const char *str) {
     char newstr[PATH_MAX];
     int  len = strlen(str);
     if (len > 1 && str[0] != '"' && str[0] != '\'') {
-        if (len + 2 >= PATH_MAX) {
+      if (len + 2 >= PATH_MAX) {
         tscError("Too long path %s", str);
         return -1;
       }
       newstr[0] = '"';
-      memcpy(newstr+1, str, len);
+      memcpy(newstr + 1, str, len);
       newstr[len + 1] = '"';
       newstr[len + 2] = '\0';
       str = newstr;

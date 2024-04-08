@@ -111,9 +111,9 @@ extern int32_t  tsMonitorIntervalForBasic;
 extern bool     tsMonitorForceV2;
 
 // audit
-extern bool     tsEnableAudit;
-extern bool     tsEnableAuditCreateTable;
-extern int32_t  tsAuditInterval;
+extern bool    tsEnableAudit;
+extern bool    tsEnableAuditCreateTable;
+extern int32_t tsAuditInterval;
 
 // telem
 extern bool     tsEnableTelem;
@@ -121,9 +121,9 @@ extern int32_t  tsTelemInterval;
 extern char     tsTelemServer[];
 extern uint16_t tsTelemPort;
 extern bool     tsEnableCrashReport;
-extern char *   tsTelemUri;
-extern char *   tsClientCrashReportUri;
-extern char *   tsSvrCrashReportUri;
+extern char    *tsTelemUri;
+extern char    *tsClientCrashReportUri;
+extern char    *tsSvrCrashReportUri;
 
 // query buffer management
 extern int32_t tsQueryBufferSize;  // maximum allowed usage buffer size in MB for each data node during query processing
@@ -220,6 +220,7 @@ extern int32_t tsMaxStreamBackendCache;
 extern int32_t tsPQSortMemThreshold;
 extern int32_t tsResolveFQDNRetryTime;
 extern bool    tsDisableCount;
+extern int16_t tscTrimCron;
 
 extern bool tsExperimental;
 // #define NEEDTO_COMPRESSS_MSG(size) (tsCompressMsgSize != -1 && (size) > tsCompressMsgSize)
@@ -234,10 +235,10 @@ int32_t taosCfgDynamicOptions(SConfig *pCfg, char *name, bool forServer);
 
 struct SConfig *taosGetCfg();
 
-void    taosSetAllDebugFlag(int32_t flag);
-void    taosSetDebugFlag(int32_t *pFlagPtr, const char *flagName, int32_t flagVal);
-void    taosLocalCfgForbiddenToChange(char *name, bool *forbidden);
-int8_t  taosGranted(int8_t type);
+void   taosSetAllDebugFlag(int32_t flag);
+void   taosSetDebugFlag(int32_t *pFlagPtr, const char *flagName, int32_t flagVal);
+void   taosLocalCfgForbiddenToChange(char *name, bool *forbidden);
+int8_t taosGranted(int8_t type);
 
 #ifdef __cplusplus
 }
