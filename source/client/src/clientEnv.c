@@ -652,6 +652,7 @@ static void *trimThreadFp(void *param) {
     lastTime++;
     taosMsleep(1000);
     if (lastTime % tscTrimCron != 0) continue;
+    taosMemoryTrim(0);
   }
   return NULL;
 }
