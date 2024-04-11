@@ -15,7 +15,6 @@ import sys
 import time
 import random
 
-
 import taos
 import frame
 
