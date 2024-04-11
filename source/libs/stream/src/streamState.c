@@ -63,10 +63,26 @@ int sessionWinKeyCmpr(const SSessionKey* pWin1, const SSessionKey* pWin2) {
     return -1;
   }
 
+  if (pWin1->pStartPk && pWin2->pStartPk) {
+    __compar_fn_t cmpFn = getKeyComparFunc(pWin1->pkType, TSDB_ORDER_ASC);
+    int res = cmpFn(pWin1->pStartPk, pWin2->pStartPk);
+    if (res != 0) {
+      return res;
+    }
+  }
+
   if (pWin1->win.ekey > pWin2->win.ekey) {
     return 1;
   } else if (pWin1->win.ekey < pWin2->win.ekey) {
     return -1;
+  }
+
+  if (pWin1->pEndPk && pWin2->pEndPk) {
+    __compar_fn_t cmpFn = getKeyComparFunc(pWin1->pkType, TSDB_ORDER_ASC);
+    int res = cmpFn(pWin1->pEndPk, pWin2->pEndPk);
+    if (res != 0) {
+      return res;
+    }
   }
 
   return 0;

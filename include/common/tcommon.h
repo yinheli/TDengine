@@ -49,9 +49,15 @@ typedef struct SWinKey {
   TSKEY    ts;
 } SWinKey;
 
+typedef struct winPrimaryKeyInfo {
+  int8_t type;
+  int32_t bytes;
+} winPrimaryKeyInfo;
+
 typedef struct SSessionKey {
-  STimeWindow win;
-  uint64_t    groupId;
+  STimeWindow       win;
+  uint64_t          groupId;
+  winPrimaryKeyInfo pPkInfo[];
 } SSessionKey;
 
 typedef int64_t COUNT_TYPE;

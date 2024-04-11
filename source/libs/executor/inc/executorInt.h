@@ -414,6 +414,10 @@ typedef struct SStreamAggSupporter {
   struct SUpdateInfo* pUpdateInfo;
   int32_t             windowCount;
   int32_t             windowSliding;
+  int32_t             primaryKeyIndex;
+  int32_t             pkBytes;
+  // int8_t              pkType;
+  void*               pKeyBuff;
 } SStreamAggSupporter;
 
 typedef struct SWindowSupporter {

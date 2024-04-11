@@ -155,6 +155,7 @@ static int32_t savePullWindow(SPullWindowInfo* pPullInfo, SArray* pPullWins) {
   return TSDB_CODE_SUCCESS;
 }
 
+//todo(liuyao) 需要调用getSessionHashKey
 int32_t saveResult(SResultWindowInfo winInfo, SSHashObj* pStUpdated) {
   winInfo.sessionWin.win.ekey = winInfo.sessionWin.win.skey;
   return tSimpleHashPut(pStUpdated, &winInfo.sessionWin, sizeof(SSessionKey), &winInfo, sizeof(SResultWindowInfo));
@@ -1732,6 +1733,7 @@ void initDownStream(SOperatorInfo* downstream, SStreamAggSupporter* pAggSup, uin
   }
   pScanInfo->twAggSup = *pTwSup;
   pAggSup->pUpdateInfo = pScanInfo->pUpdateInfo;
+  pAggSup->primaryKeyIndex = pScanInfo->primaryKeyIndex;
 }
 
 static TSKEY sesionTs(void* pKey) {
@@ -1854,6 +1856,7 @@ void saveDeleteInfo(SArray* pWins, SSessionKey key) {
 }
 
 void saveDeleteRes(SSHashObj* pStDelete, SSessionKey key) {
+  // todo(liuyao) 这里需要用start ts 、start pk、group id 作为key
   key.win.ekey = key.win.skey;
   tSimpleHashPut(pStDelete, &key, sizeof(SSessionKey), NULL, 0);
 }
@@ -1874,6 +1877,7 @@ void removeSessionResult(SStreamAggSupporter* pAggSup, SSHashObj* pHashMap, SSHa
   tSimpleHashRemove(pResMap, &key, sizeof(SSessionKey));
 }
 
+ // todo(liuyao) 对于pk，输出带有pk的buff，注意要与saveDeleteRes统一。
 void getSessionHashKey(const SSessionKey* pKey, SSessionKey* pHashKey) {
   *pHashKey = *pKey;
   pHashKey->win.ekey = pKey->win.skey;
@@ -2178,6 +2182,7 @@ void doDeleteTimeWindows(SStreamAggSupporter* pAggSup, SSDataBlock* pBlock, SArr
   }
 }
 
+// todo(liuyao) 考虑pk，与sessionWinKeyCmpr保持一致。
 inline int32_t sessionKeyCompareAsc(const void* pKey1, const void* pKey2) {
   SResultWindowInfo* pWinInfo1 = (SResultWindowInfo*)pKey1;
   SResultWindowInfo* pWinInfo2 = (SResultWindowInfo*)pKey2;
@@ -2329,6 +2334,7 @@ int32_t closeSessionWindow(SSHashObj* pHashMap, STimeWindowAggSupp* pTwSup, SSHa
         }
       }
       SSessionKey* pKey = tSimpleHashGetKey(pIte, NULL);
+      //todo(liuyao) 这里需要考虑pk
       tSimpleHashIterateRemove(pHashMap, pKey, sizeof(SSessionKey), &pIte, &iter);
     }
   }
@@ -3342,6 +3348,7 @@ void getStateWindowInfoByKey(SStreamAggSupporter* pAggSup, SSessionKey* pKey, SS
          pNextWin->winInfo.sessionWin.win.skey, pNextWin->winInfo.sessionWin.win.ekey);
 }
 
+//todo(liuyao) 传递pk
 void setStateOutputBuf(SStreamAggSupporter* pAggSup, TSKEY ts, uint64_t groupId, char* pKeyData,
                        SStateWindowInfo* pCurWin, SStateWindowInfo* pNextWin) {
   int32_t size = pAggSup->resultRowSize;
@@ -3431,6 +3438,7 @@ int32_t updateStateWindowInfo(SStreamAggSupporter* pAggSup, SStateWindowInfo* pW
       }
     }
 
+    // todo(liuyao) 这里要判断pk
     if (pWinInfo->winInfo.sessionWin.win.skey > pTs[i]) {
       if (pSeDeleted && pWinInfo->winInfo.isOutput) {
         saveDeleteRes(pSeDeleted, pWinInfo->winInfo.sessionWin);
@@ -3497,8 +3505,10 @@ static void doStreamStateAggImpl(SOperatorInfo* pOperator, SSDataBlock* pSDataBl
                                     pAggSup->pResultRows, pSeUpdated, pStDeleted);
     if (!allEqual) {
       uint64_t uid = 0;
+      // todo(liuyao) 需要把pk信息也存进去。
       appendDataToSpecialBlock(pAggSup->pScanBlock, &curWin.winInfo.sessionWin.win.skey,
                                        &curWin.winInfo.sessionWin.win.ekey, &uid, &groupId, NULL);
+      // todo(liuyao) 封装一个函数，在函数里用pk删除。
       tSimpleHashRemove(pSeUpdated, &curWin.winInfo.sessionWin, sizeof(SSessionKey));
       doDeleteSessionWindow(pAggSup, &curWin.winInfo.sessionWin);
       releaseOutputBuf(pAggSup->pState, curWin.winInfo.pStatePos, &pAPI->stateStore);
