@@ -1898,8 +1898,9 @@ static int32_t translateFirstLastState(SFunctionNode* pFunc, char* pErrBuf, int3
   SNode*  pPara = nodesListGetNode(pFunc->pParameterList, 0);
   int32_t paraBytes = getSDataTypeFromNode(pPara)->bytes;
 
+  int32_t pkBytes = (pFunc->hasPk) ? pFunc->pkBytes : 0;
   pFunc->node.resType =
-    (SDataType){.bytes = getFirstLastInfoSize(paraBytes) + VARSTR_HEADER_SIZE, .type = TSDB_DATA_TYPE_BINARY};
+    (SDataType){.bytes = getFirstLastInfoSize(paraBytes, pkBytes) + VARSTR_HEADER_SIZE, .type = TSDB_DATA_TYPE_BINARY};
   return TSDB_CODE_SUCCESS;
 }
 
@@ -4041,7 +4042,7 @@ const SBuiltinFuncDefinition funcMgtBuiltins[] = {
     .name = "_first_state",
     .type = FUNCTION_TYPE_FIRST_STATE,
     .classification = FUNC_MGT_AGG_FUNC | FUNC_MGT_SELECT_FUNC | FUNC_MGT_MULTI_RES_FUNC | FUNC_MGT_IMPLICIT_TS_FUNC |
-                      FUNC_MGT_KEEP_ORDER_FUNC | FUNC_MGT_FORBID_SYSTABLE_FUNC | FUNC_MGT_TSMA_FUNC,
+                      FUNC_MGT_KEEP_ORDER_FUNC | FUNC_MGT_FORBID_SYSTABLE_FUNC | FUNC_MGT_TSMA_FUNC | FUNC_MGT_PRIMARY_KEY_FUNC,
     .translateFunc = translateFirstLastState,
     .getEnvFunc = getFirstLastFuncEnv,
     .initFunc = functionSetup,
@@ -4054,7 +4055,7 @@ const SBuiltinFuncDefinition funcMgtBuiltins[] = {
     .name = "_first_state_merge",
     .type = FUNCTION_TYPE_FIRST_STATE_MERGE,
     .classification = FUNC_MGT_AGG_FUNC | FUNC_MGT_SELECT_FUNC | FUNC_MGT_MULTI_RES_FUNC | FUNC_MGT_IMPLICIT_TS_FUNC |
-                      FUNC_MGT_KEEP_ORDER_FUNC | FUNC_MGT_FORBID_SYSTABLE_FUNC | FUNC_MGT_TSMA_FUNC,
+                      FUNC_MGT_KEEP_ORDER_FUNC | FUNC_MGT_FORBID_SYSTABLE_FUNC | FUNC_MGT_TSMA_FUNC | FUNC_MGT_PRIMARY_KEY_FUNC,
     .translateFunc = translateFirstLastStateMerge,
     .getEnvFunc = getFirstLastFuncEnv,
     .initFunc = functionSetup,
@@ -4065,7 +4066,7 @@ const SBuiltinFuncDefinition funcMgtBuiltins[] = {
     .name = "_last_state",
     .type = FUNCTION_TYPE_LAST_STATE,
     .classification = FUNC_MGT_AGG_FUNC | FUNC_MGT_SELECT_FUNC | FUNC_MGT_MULTI_RES_FUNC | FUNC_MGT_IMPLICIT_TS_FUNC |
-                      FUNC_MGT_KEEP_ORDER_FUNC | FUNC_MGT_FORBID_SYSTABLE_FUNC | FUNC_MGT_TSMA_FUNC,
+                      FUNC_MGT_KEEP_ORDER_FUNC | FUNC_MGT_FORBID_SYSTABLE_FUNC | FUNC_MGT_TSMA_FUNC | FUNC_MGT_PRIMARY_KEY_FUNC,
     .translateFunc = translateFirstLastState,
     .getEnvFunc = getFirstLastFuncEnv,
     .initFunc = functionSetup,
@@ -4078,7 +4079,7 @@ const SBuiltinFuncDefinition funcMgtBuiltins[] = {
     .name = "_last_state_merge",
     .type = FUNCTION_TYPE_LAST_STATE_MERGE,
     .classification = FUNC_MGT_AGG_FUNC | FUNC_MGT_SELECT_FUNC | FUNC_MGT_MULTI_RES_FUNC | FUNC_MGT_IMPLICIT_TS_FUNC |
-                      FUNC_MGT_KEEP_ORDER_FUNC | FUNC_MGT_FORBID_SYSTABLE_FUNC | FUNC_MGT_TSMA_FUNC,
+                      FUNC_MGT_KEEP_ORDER_FUNC | FUNC_MGT_FORBID_SYSTABLE_FUNC | FUNC_MGT_TSMA_FUNC | FUNC_MGT_PRIMARY_KEY_FUNC,
     .translateFunc = translateFirstLastStateMerge,
     .getEnvFunc = getFirstLastFuncEnv,
     .initFunc = functionSetup,
