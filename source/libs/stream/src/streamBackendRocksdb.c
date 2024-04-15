@@ -1586,6 +1586,49 @@ int32_t valueEncode(void* value, int32_t vlen, int64_t ttl, char** dest) {
   return len;
 }
 
+/*
+ *  ret >= 0 : found valid value
+ *  ret < 0 : error or timeout
+ */
+int32_t valueDecode(void* value, int32_t vlen, int64_t* ttl, char** dest) {
+  SStreamValue key = {0};
+  char*        p = value;
+  if (streamStateValueIsStale(p)) {
+    goto _EXCEPT;
+  }
+  p = taosDecodeFixedI64(p, &key.unixTimestamp);
+  p = taosDecodeFixedI32(p, &key.len);
+  p = taosDecodeFixedI32(p, &key.rawLen);
+  p = taosDecodeFixedI8(p, &key.compress);
+
+  if (vlen != (sizeof(key.unixTimestamp) + sizeof(key.len) + sizeof(key.rawLen) + sizeof(key.compress) + key.len)) {
+    stError("vlen: %d, read len: %d", vlen, key.len);
+    goto _EXCEPT;
+  }
+  if (key.compress == 1) {
+    char* pCompressData = NULL;
+    if (key.len != 0) {
+      p = taosDecodeBinary(p, (void**)&pCompressData, key.len);
+      *dest = taosMemoryCalloc(1, key.rawLen);
+      int32_t decompressSize = LZ4_decompress_safe(pCompressData, *dest, key.len, key.rawLen);
+      ASSERT(decompressSize == key.rawLen);
+      key.len = decompressSize;
+    }
+    taosMemoryFree(pCompressData);
+
+  } else {
+    if (key.len != 0 && dest != NULL) p = taosDecodeBinary(p, (void**)dest, key.len);
+  }
+
+  if (ttl != NULL) *ttl = key.unixTimestamp == 0 ? 0 : key.unixTimestamp - taosGetTimestampMs();
+  return key.len;
+
+_EXCEPT:
+  if (dest != NULL) *dest = NULL;
+  if (ttl != NULL) *ttl = 0;
+  return -1;
+}
+
 const char* compareDefaultName(void* arg) {
   (void)arg;
   return ginitDict[0].key;
