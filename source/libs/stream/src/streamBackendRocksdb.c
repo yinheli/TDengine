@@ -1544,12 +1544,6 @@ int32_t valueIsStale(void* k, int64_t ts) {
   }
   return 0;
 }
-
-void destroyCompare(void* arg) {
-  (void)arg;
-  return;
-}
-
 int32_t valueEncode(void* value, int32_t vlen, int64_t ttl, char** dest) {
   SStreamValue key = {.unixTimestamp = ttl, .len = vlen, .rawLen = vlen, .compress = 0, .data = (char*)(value)};
   int32_t      len = 0;
@@ -1583,7 +1577,6 @@ int32_t valueEncode(void* value, int32_t vlen, int64_t ttl, char** dest) {
     len += taosEncodeFixedI8((void**)&buf, key.compress);
     len += taosEncodeBinary((void**)&buf, (char*)value, key.len);
   }
-
   return len;
 }
 /*
@@ -1627,6 +1620,11 @@ _EXCEPT:
   if (dest != NULL) *dest = NULL;
   if (ttl != NULL) *ttl = 0;
   return -1;
+}
+
+void destroyCompare(void* arg) {
+  (void)arg;
+  return;
 }
 
 const char* compareDefaultName(void* arg) {
