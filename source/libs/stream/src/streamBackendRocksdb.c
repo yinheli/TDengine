@@ -1560,10 +1560,9 @@ int32_t valueEncode(void* value, int32_t vlen, int64_t ttl, char** dest) {
     if (compressedSize < vlen) {
       key.compress = 1;
       key.len = compressedSize;
-
       value = dst;
-      vlen = compressedSize;
     }
+    stInfo("vlen: raw size: %d, compressed size: %d", vlen, compressedSize);
   }
 
   if (*dest == NULL) {
@@ -1607,11 +1606,10 @@ int32_t valueDecode(void* value, int32_t vlen, int64_t* ttl, char** dest) {
     goto _EXCEPT;
   }
   if (key.compress == 1) {
-    char* pCompressData = taosMemoryCalloc(1, key.len);
-    if (key.len != 0 && pCompressData != NULL) {
-      p = taosDecodeBinary(p, (void**)pCompressData, key.len);
-
-      *dest = taosMemoryRealloc((char*)(*dest), key.rawLen);
+    char* pCompressData = NULL;
+    if (key.len != 0) {
+      p = taosDecodeBinary(p, (void**)&pCompressData, key.len);
+      *dest = taosMemoryCalloc(1, key.rawLen);
       int32_t decompressSize = LZ4_decompress_safe(pCompressData, *dest, key.len, key.rawLen);
       ASSERT(decompressSize == key.rawLen);
       key.len = decompressSize;
