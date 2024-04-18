@@ -463,7 +463,8 @@ int32_t schNotifyUserFetchRes(SSchJob *pJob, void* pRes) {
   return TSDB_CODE_SUCCESS;
 }
 
-void schPostJobFetchRes(SSchJob *pJob, void** pFetchRes) {
+int32_t schPostJobFetchRes(SSchJob *pJob, void** pFetchRes, bool preFetch) {
+  int32_t code = 0;
   SCH_LOCK(SCH_WRITE, &pJob->opStatus.lock);
 
   if (pJob->opStatus.op != SCH_OP_FETCH) {
@@ -476,6 +477,16 @@ void schPostJobFetchRes(SSchJob *pJob, void** pFetchRes) {
     tsem_post(&pJob->rspSem);
   } else if (SCH_JOB_IN_ASYNC_FETCH_OP(pJob)) {
     SCH_UNLOCK(SCH_WRITE, &pJob->opStatus.lock);
+    
+    if (preFetch) {
+      SCH_JOB_DLOG("start to launch prefetch, pJob:%p", pJob);
+      code = schLaunchFetchTask(pJob, NULL);
+      if (TSDB_CODE_SUCCESS != code) {
+        taosMemoryFree(*pFetchRes);
+        return code;
+      }
+    }
+
     schNotifyUserFetchRes(pJob, *pFetchRes);
     *pFetchRes = NULL;
   } else {
@@ -483,11 +494,12 @@ void schPostJobFetchRes(SSchJob *pJob, void** pFetchRes) {
     SCH_JOB_ELOG("job not in any operation, status:%s", jobTaskStatusStr(pJob->status));
   }
 
-  return;
+  return code;
 
 _return:
 
   SCH_UNLOCK(SCH_WRITE, &pJob->opStatus.lock);
+  return code;
 }
 
 
@@ -587,7 +599,7 @@ int32_t schProcessOnExplainDone(SSchJob *pJob, SSchTask *pTask, SRetrieveTableRs
   SCH_SET_TASK_STATUS(pTask, JOB_TASK_STATUS_SUCC);
 
   if (!SCH_IS_INSERT_JOB(pJob)) {
-    schPostJobFetchRes(pJob, &pJob->fetchRes);
+    SCH_ERR_RET(schPostJobFetchRes(pJob, &pJob->fetchRes, false));
   }
 
   return TSDB_CODE_SUCCESS;
@@ -752,6 +764,7 @@ int32_t schJobFetchRows(SSchJob *pJob) {
   if (!(pJob->attr.explainMode == EXPLAIN_MODE_STATIC) && !(SCH_IS_EXPLAIN_JOB(pJob) && SCH_IS_INSERT_JOB(pJob))) {
     SCH_LOCK(SCH_WRITE, &pJob->resLock);
     if (schIsFetchResponsed(pJob)) {
+      SCH_JOB_DLOG("fetch already responsed, no need to handle fetch, op:%d", pJob->opStatus.op);
       SCH_UNLOCK(SCH_WRITE, &pJob->resLock);
       return TSDB_CODE_SUCCESS;
     }
@@ -759,8 +772,8 @@ int32_t schJobFetchRows(SSchJob *pJob) {
       code = schDumpJobFetchRes(pJob, &pRes, false);
     }
     if (pRes) {
-      SCH_JOB_DLOG("res already fetched, res:%p", pRes);
-      schPostJobFetchRes(pJob, &pRes);
+      SCH_JOB_DLOG("res already prefetched, res:%p", pRes);
+      code = schPostJobFetchRes(pJob, &pRes, false);
       ASSERT(NULL == pRes);
     }
 
@@ -785,7 +798,9 @@ int32_t schJobFetchRows(SSchJob *pJob) {
       SCH_RET(schDumpJobFetchRes(pJob, pJob->userRes.fetchRes, true));
     } else {
       code = schDumpJobFetchRes(pJob, &pRes, true);
-      schPostJobFetchRes(pJob, &pRes);
+      if (TSDB_CODE_SUCCESS == code) {
+        code = schPostJobFetchRes(pJob, &pRes, false);
+      }
       ASSERT(NULL == pRes);
     }
   }

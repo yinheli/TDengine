@@ -117,7 +117,7 @@ int32_t schProcessFetchRsp(SSchJob *pJob, SSchTask *pTask, char *msg, int32_t rs
 
   pJob->fetched = true;
   
-  schPostJobFetchRes(pJob, (void**)&rsp);
+  SCH_ERR_JRET(schPostJobFetchRes(pJob, (void**)&rsp, true));
   if (rsp) {
     SCH_LOCK(SCH_WRITE, &pJob->resLock);
     if (pJob->fetchRes) {
@@ -128,15 +128,13 @@ int32_t schProcessFetchRsp(SSchJob *pJob, SSchTask *pTask, char *msg, int32_t rs
     pJob->fetchRes = rsp;
     pJob->inFetch = false;
     SCH_UNLOCK(SCH_WRITE, &pJob->resLock);
+  } else {
+    SCH_JOB_DLOG("fetch rsp directly delivered, complete:%d", rspComplete);
   }
   
   SCH_ERR_JRET(code);
   
   msg = NULL;
-
-  if (pJob->inFetch) {
-    SCH_ERR_JRET(schLaunchFetchTask(pJob, NULL));
-  }
   
 _return:
 
