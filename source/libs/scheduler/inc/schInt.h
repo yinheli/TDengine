@@ -305,6 +305,7 @@ typedef struct SSchJob {
   char                *sql;
   SQueryProfileSummary summary;
   int8_t               source;
+  int8_t               inFetch;
 } SSchJob;
 
 typedef struct SSchTaskCtx {
@@ -545,7 +546,8 @@ int32_t  schDecTaskFlowQuota(SSchJob *pJob, SSchTask *pTask);
 int32_t  schCheckIncTaskFlowQuota(SSchJob *pJob, SSchTask *pTask, bool *enough);
 int32_t  schLaunchTasksInFlowCtrlList(SSchJob *pJob, SSchTask *pTask);
 int32_t  schAsyncLaunchTaskImpl(SSchJob *pJob, SSchTask *pTask);
-int32_t  schLaunchFetchTask(SSchJob *pJob);
+int32_t  schLaunchFetchTask(SSchJob *pJob, bool* launched);
+int32_t  schLaunchPreFetchTask(SSchJob *pJob);
 int32_t  schProcessOnTaskFailure(SSchJob *pJob, SSchTask *pTask, int32_t errCode);
 int32_t  schBuildAndSendHbMsg(SQueryNodeEpId *nodeEpId, SArray *taskAction);
 int32_t  schCloneSMsgSendInfo(void *src, void **dst);
@@ -619,6 +621,7 @@ int32_t  schChkResetJobRetry(SSchJob *pJob, int32_t rspCode);
 void     schResetTaskForRetry(SSchJob *pJob, SSchTask *pTask);
 int32_t  schChkUpdateRedirectCtx(SSchJob *pJob, SSchTask *pTask, SEpSet *pEpSet, int32_t rspCode);
 int32_t  schNotifyJobAllTasks(SSchJob *pJob, SSchTask *pTask, ETaskNotifyType type);
+void     schPostJobFetchRes(SSchJob *pJob, void** pFetchRes);
 
 extern SSchDebug gSCHDebug;
 

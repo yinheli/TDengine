@@ -75,6 +75,7 @@ int32_t schValidateRspMsgType(SSchJob *pJob, SSchTask *pTask, int32_t msgType) {
 int32_t schProcessFetchRsp(SSchJob *pJob, SSchTask *pTask, char *msg, int32_t rspCode) {
   SRetrieveTableRsp *rsp = (SRetrieveTableRsp *)msg;
   int32_t code = 0;
+  bool rspComplete = false;
   
   SCH_ERR_JRET(rspCode);
   
@@ -97,30 +98,46 @@ int32_t schProcessFetchRsp(SSchJob *pJob, SSchTask *pTask, char *msg, int32_t rs
       return TSDB_CODE_SUCCESS;
     }
   
-    SCH_ERR_JRET(schLaunchFetchTask(pJob));
+    SCH_ERR_JRET(schLaunchFetchTask(pJob, NULL));
   
     taosMemoryFreeClear(msg);
   
     return TSDB_CODE_SUCCESS;
   }
-  
-  if (pJob->fetchRes) {
-    SCH_TASK_ELOG("got fetch rsp while res already exists, res:%p", pJob->fetchRes);
-    SCH_ERR_JRET(TSDB_CODE_SCH_STATUS_ERROR);
-  }
-  
-  atomic_store_ptr(&pJob->fetchRes, rsp);
-  atomic_add_fetch_64(&pJob->resNumOfRows, htobe64(rsp->numOfRows));
+
+  SCH_TASK_DLOG("got fetch rsp, rows:%" PRId64 ", complete:%d", htobe64(rsp->numOfRows), rsp->completed);
   
   if (rsp->completed) {
     SCH_SET_TASK_STATUS(pTask, JOB_TASK_STATUS_SUCC);
+    rspComplete = true;
+  }
+
+  atomic_add_fetch_64(&pJob->resNumOfRows, htobe64(rsp->numOfRows));
+  SCH_JOB_DLOG("fetch totalRows:%" PRId64 " for now", pJob->resNumOfRows);
+
+  pJob->fetched = true;
+  
+  schPostJobFetchRes(pJob, (void**)&rsp);
+  if (rsp) {
+    SCH_LOCK(SCH_WRITE, &pJob->resLock);
+    if (pJob->fetchRes) {
+      SCH_TASK_ELOG("got fetch rsp while res already exists, res:%p", pJob->fetchRes);
+      code = TSDB_CODE_SCH_STATUS_ERROR;
+    }
+    
+    pJob->fetchRes = rsp;
+    pJob->inFetch = false;
+    SCH_UNLOCK(SCH_WRITE, &pJob->resLock);
   }
   
-  SCH_TASK_DLOG("got fetch rsp, rows:%" PRId64 ", complete:%d", htobe64(rsp->numOfRows), rsp->completed);
-
+  SCH_ERR_JRET(code);
+  
   msg = NULL;
-  schProcessOnDataFetched(pJob);
 
+  if (pJob->inFetch) {
+    SCH_ERR_JRET(schLaunchFetchTask(pJob, NULL));
+  }
+  
 _return:
 
   taosMemoryFreeClear(msg);

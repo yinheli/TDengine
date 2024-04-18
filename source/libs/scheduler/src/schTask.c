@@ -1320,26 +1320,37 @@ _return:
 }
 
 // Note: no more error processing, handled in function internal
-int32_t schLaunchFetchTask(SSchJob *pJob) {
+int32_t schLaunchFetchTask(SSchJob *pJob, bool* launched) {
   int32_t code = 0;
 
-  void *fetchRes = atomic_load_ptr(&pJob->fetchRes);
-  if (fetchRes) {
-    SCH_JOB_DLOG("res already fetched, res:%p", fetchRes);
+  if (JOB_TASK_STATUS_PART_SUCC != pJob->status && JOB_TASK_STATUS_FETCH != pJob->status) {
+    if (launched) {
+      *launched = false;
+    }
+    
     return TSDB_CODE_SUCCESS;
   }
 
   SCH_SET_TASK_STATUS(pJob->fetchTask, JOB_TASK_STATUS_FETCH);
 
+  pJob->inFetch = true;
+  
   if (SCH_IS_LOCAL_EXEC_TASK(pJob, pJob->fetchTask)) {
     SCH_ERR_JRET(schExecLocalFetch(pJob, pJob->fetchTask));
   } else {
     SCH_ERR_JRET(schExecRemoteFetch(pJob, pJob->fetchTask));
   }
 
+  if (launched) {
+    *launched = true;
+  }
+  
   return TSDB_CODE_SUCCESS;
 
 _return:
 
   SCH_RET(schProcessOnTaskFailure(pJob, pJob->fetchTask, code));
 }
+
+
+

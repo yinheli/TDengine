@@ -399,15 +399,11 @@ int32_t schDumpJobExecRes(SSchJob *pJob, SExecResult *pRes) {
   return TSDB_CODE_SUCCESS;
 }
 
-int32_t schDumpJobFetchRes(SSchJob *pJob, void **pData) {
+int32_t schDumpJobFetchRes(SSchJob *pJob, void **pData, bool needLock) {
   int32_t code = 0;
 
-  SCH_LOCK(SCH_WRITE, &pJob->resLock);
-
-  pJob->fetched = true;
-
-  if (pJob->fetchRes && ((SRetrieveTableRsp *)pJob->fetchRes)->completed) {
-    SCH_ERR_JRET(schSwitchJobStatus(pJob, JOB_TASK_STATUS_SUCC, NULL));
+  if (needLock) {
+    SCH_LOCK(SCH_WRITE, &pJob->resLock);
   }
 
   while (true) {
@@ -429,12 +425,16 @@ int32_t schDumpJobFetchRes(SSchJob *pJob, void **pData) {
     SCH_JOB_DLOG("empty res and set query complete, code:%x", code);
   }
 
-  SCH_JOB_DLOG("fetch done, totalRows:%" PRId64, pJob->resNumOfRows);
+  atomic_add_fetch_64(&pJob->resNumOfRows, htobe64(((SRetrieveTableRsp*)(*pData))->numOfRows));
+
+  SCH_JOB_DLOG("dump fetch res, totalRows:%" PRId64, pJob->resNumOfRows);
 
 _return:
 
-  SCH_UNLOCK(SCH_WRITE, &pJob->resLock);
-
+  if (needLock) {
+    SCH_UNLOCK(SCH_WRITE, &pJob->resLock);
+  }
+  
   return code;
 }
 
@@ -451,10 +451,10 @@ int32_t schNotifyUserExecRes(SSchJob *pJob) {
   return TSDB_CODE_SUCCESS;
 }
 
-int32_t schNotifyUserFetchRes(SSchJob *pJob) {
-  void *pRes = NULL;
-
-  schDumpJobFetchRes(pJob, &pRes);
+int32_t schNotifyUserFetchRes(SSchJob *pJob, void* pRes) {
+  if (((SRetrieveTableRsp *)pRes)->completed) {
+    SCH_ERR_RET(schSwitchJobStatus(pJob, JOB_TASK_STATUS_SUCC, NULL));
+  }
 
   SCH_JOB_DLOG("sch start to invoke fetch cb, code: %s", tstrerror(pJob->errCode));
   (*pJob->userRes.fetchFp)(pRes, pJob->userRes.cbParam, atomic_load_32(&pJob->errCode));
@@ -462,6 +462,34 @@ int32_t schNotifyUserFetchRes(SSchJob *pJob) {
 
   return TSDB_CODE_SUCCESS;
 }
+
+void schPostJobFetchRes(SSchJob *pJob, void** pFetchRes) {
+  SCH_LOCK(SCH_WRITE, &pJob->opStatus.lock);
+
+  if (pJob->opStatus.op != SCH_OP_FETCH) {
+    SCH_JOB_ELOG("job in operation %s mis-match with expected %s", schGetOpStr(pJob->opStatus.op), schGetOpStr(SCH_OP_FETCH));
+    goto _return;
+  }
+
+  if (SCH_JOB_IN_SYNC_OP(pJob)) {
+    SCH_UNLOCK(SCH_WRITE, &pJob->opStatus.lock);
+    tsem_post(&pJob->rspSem);
+  } else if (SCH_JOB_IN_ASYNC_FETCH_OP(pJob)) {
+    SCH_UNLOCK(SCH_WRITE, &pJob->opStatus.lock);
+    schNotifyUserFetchRes(pJob, *pFetchRes);
+    *pFetchRes = NULL;
+  } else {
+    SCH_UNLOCK(SCH_WRITE, &pJob->opStatus.lock);
+    SCH_JOB_ELOG("job not in any operation, status:%s", jobTaskStatusStr(pJob->status));
+  }
+
+  return;
+
+_return:
+
+  SCH_UNLOCK(SCH_WRITE, &pJob->opStatus.lock);
+}
+
 
 void schPostJobRes(SSchJob *pJob, SCH_OP_TYPE op) {
   SCH_LOCK(SCH_WRITE, &pJob->opStatus.lock);
@@ -484,7 +512,7 @@ void schPostJobRes(SSchJob *pJob, SCH_OP_TYPE op) {
     schNotifyUserExecRes(pJob);
   } else if (SCH_JOB_IN_ASYNC_FETCH_OP(pJob)) {
     SCH_UNLOCK(SCH_WRITE, &pJob->opStatus.lock);
-    schNotifyUserFetchRes(pJob);
+    schNotifyUserFetchRes(pJob, NULL);
   } else {
     SCH_UNLOCK(SCH_WRITE, &pJob->opStatus.lock);
     SCH_JOB_ELOG("job not in any operation, status:%s", jobTaskStatusStr(pJob->status));
@@ -536,7 +564,7 @@ int32_t schHandleJobDrop(SSchJob *pJob, int32_t errCode) {
 
 int32_t schProcessOnJobPartialSuccess(SSchJob *pJob) {
   if (schChkCurrentOp(pJob, SCH_OP_FETCH, -1)) {
-    SCH_ERR_RET(schLaunchFetchTask(pJob));
+    SCH_ERR_RET(schLaunchFetchTask(pJob, NULL));
   } else {
     schPostJobRes(pJob, 0);
   }
@@ -549,13 +577,17 @@ void schProcessOnDataFetched(SSchJob *pJob) { schPostJobRes(pJob, SCH_OP_FETCH);
 int32_t schProcessOnExplainDone(SSchJob *pJob, SSchTask *pTask, SRetrieveTableRsp *pRsp) {
   SCH_TASK_DLOG("got explain rsp, rows:%" PRId64 ", complete:%d", htobe64(pRsp->numOfRows), pRsp->completed);
 
+  SCH_LOCK(SCH_WRITE, &pJob->resLock);
+
   atomic_store_64(&pJob->resNumOfRows, htobe64(pRsp->numOfRows));
   atomic_store_ptr(&pJob->fetchRes, pRsp);
+
+  SCH_UNLOCK(SCH_WRITE, &pJob->resLock);
 
   SCH_SET_TASK_STATUS(pTask, JOB_TASK_STATUS_SUCC);
 
   if (!SCH_IS_INSERT_JOB(pJob)) {
-    schProcessOnDataFetched(pJob);
+    schPostJobFetchRes(pJob, &pJob->fetchRes);
   }
 
   return TSDB_CODE_SUCCESS;
@@ -703,22 +735,58 @@ void schFreeJobImpl(void *job) {
   qDebug("QID:0x%" PRIx64 " sch job freed, refId:0x%" PRIx64 ", pointer:%p", queryId, refId, pJob);
 }
 
+bool schIsFetchResponsed(SSchJob *pJob) {
+  if (atomic_load_32(&pJob->opStatus.op) != SCH_OP_FETCH) {
+    return true;
+  }
+
+  return false;
+}
+
 int32_t schJobFetchRows(SSchJob *pJob) {
   int32_t code = 0;
+  void *pRes = NULL;
+  bool needFetch = true;
+  bool launched = false;
 
   if (!(pJob->attr.explainMode == EXPLAIN_MODE_STATIC) && !(SCH_IS_EXPLAIN_JOB(pJob) && SCH_IS_INSERT_JOB(pJob))) {
-    SCH_ERR_RET(schLaunchFetchTask(pJob));
+    SCH_LOCK(SCH_WRITE, &pJob->resLock);
+    if (schIsFetchResponsed(pJob)) {
+      SCH_UNLOCK(SCH_WRITE, &pJob->resLock);
+      return TSDB_CODE_SUCCESS;
+    }
+    if (pJob->fetchRes) {
+      code = schDumpJobFetchRes(pJob, &pRes, false);
+    }
+    if (pRes) {
+      SCH_JOB_DLOG("res already fetched, res:%p", pRes);
+      schPostJobFetchRes(pJob, &pRes);
+      ASSERT(NULL == pRes);
+    }
 
-    if (schChkCurrentOp(pJob, SCH_OP_FETCH, true)) {
+    if (pJob->inFetch) {
+      needFetch = false;
+    }
+    SCH_UNLOCK(SCH_WRITE, &pJob->resLock);
+
+    SCH_ERR_RET(code);
+
+    if (needFetch) {
+      SCH_ERR_RET(schLaunchFetchTask(pJob, &launched));
+    }
+
+    if (launched && schChkCurrentOp(pJob, SCH_OP_FETCH, true)) {
       SCH_JOB_DLOG("sync wait for rsp now, job status:%s", SCH_GET_JOB_STATUS_STR(pJob));
       tsem_wait(&pJob->rspSem);
-      SCH_RET(schDumpJobFetchRes(pJob, pJob->userRes.fetchRes));
+      SCH_RET(schDumpJobFetchRes(pJob, pJob->userRes.fetchRes, true));
     }
   } else {
     if (schChkCurrentOp(pJob, SCH_OP_FETCH, true)) {
-      SCH_RET(schDumpJobFetchRes(pJob, pJob->userRes.fetchRes));
+      SCH_RET(schDumpJobFetchRes(pJob, pJob->userRes.fetchRes, true));
     } else {
-      schPostJobRes(pJob, SCH_OP_FETCH);
+      code = schDumpJobFetchRes(pJob, &pRes, true);
+      schPostJobFetchRes(pJob, &pRes);
+      ASSERT(NULL == pRes);
     }
   }
 
