@@ -67,7 +67,11 @@ static int32_t createDiskFile(SDiskbasedBuf* pBuf) {
     return TAOS_SYSTEM_ERROR(errno);
   }
 
+#ifdef WINDOWS
+  uDebug("diskBasedFile %s created, pFile:%p, fp:%p", pBuf->path, pBuf->pFile, pBuf->pFile->fp);
+#else
   uDebug("diskBasedFile %s created, pFile:%p, fd:%d, fp:%p", pBuf->path, pBuf->pFile, pBuf->pFile->fd, pBuf->pFile->fp);
+#endif
 
   return TSDB_CODE_SUCCESS;
 }
@@ -580,7 +584,11 @@ void destroyDiskbasedBuf(SDiskbasedBuf* pBuf) {
         pBuf->totalBufSize / 1024.0, pBuf->numOfPages, listNEles(pBuf->lruList) * pBuf->pageSize / 1024.0,
         listNEles(pBuf->lruList), pBuf->fileSize / 1024.0, pBuf->pageSize / 1024.0f, pBuf->id);
 
+#ifdef WINDOWS
+    uDebug("try to close file %s, pFile:%p, fp:%p", pBuf->path, pBuf->pFile, pBuf->pFile->fp);
+#else
     uDebug("try to close file %s, pFile:%p, fd:%d, fp:%p", pBuf->path, pBuf->pFile, pBuf->pFile->fd, pBuf->pFile->fp);
+#endif
     taosCloseFile(&pBuf->pFile);
   } else {
     uDebug("Paged buffer closed, total:%.2f Kb, no file created, %s", pBuf->totalBufSize / 1024.0, pBuf->id);
