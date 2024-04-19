@@ -388,7 +388,8 @@ class TDSql:
         real = self.res[row][col]
         if real and len(str(real))< slen:
             tdLog.exit("%s(%d) failed: sql:%s, len:%d is larger than result:%d" % slen)
-            new_res = str(real)[:slen]
+
+        new_res = str(real)[:slen]
 
         if  new_res == str(data):
             tdLog.info("check successfully")
