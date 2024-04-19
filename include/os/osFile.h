@@ -52,6 +52,26 @@ extern "C" {
 #define TD_PATH_MAX _POSIX_PATH_MAX
 #endif
 
+typedef int32_t FileFd;
+
+#ifdef WINDOWS
+typedef struct TdFile {
+  TdThreadRwlock rwlock;
+  int            refId;
+  HANDLE         hFile;
+  FILE          *fp;
+  int32_t        tdFileOptions;
+} TdFile;
+#else
+typedef struct TdFile {
+  TdThreadRwlock rwlock;
+  int            refId;
+  FileFd         fd;
+  FILE          *fp;
+} TdFile;
+#endif  // WINDOWS
+
+
 typedef struct TdFile *TdFilePtr;
 
 #define TD_FILE_CREATE        0x0001

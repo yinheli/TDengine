@@ -43,25 +43,6 @@
 #define _SEND_FILE_STEP_ 1000
 #endif
 
-typedef int32_t FileFd;
-
-#ifdef WINDOWS
-typedef struct TdFile {
-  TdThreadRwlock rwlock;
-  int            refId;
-  HANDLE         hFile;
-  FILE*          fp;
-  int32_t        tdFileOptions;
-} TdFile;
-#else
-typedef struct TdFile {
-  TdThreadRwlock rwlock;
-  int            refId;
-  FileFd         fd;
-  FILE          *fp;
-} TdFile;
-#endif  // WINDOWS
-
 #define FILE_WITH_LOCK 1
 
 void taosGetTmpfilePath(const char *inputTmpDir, const char *fileNamePrefix, char *dstPath) {
