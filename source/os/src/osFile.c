@@ -1070,7 +1070,7 @@ int32_t taosCloseFile(TdFilePtr *ppFile) {
     }
     (*ppFile)->hFile = NULL;
 #else
-  if ((*ppFile)->fd >= 0) {
+  if ((*ppFile)->fd != -1) {
     // warning: never fsync silently in base lib
     /*fsync((*ppFile)->fd);*/
     code = close((*ppFile)->fd);

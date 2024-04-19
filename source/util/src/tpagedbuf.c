@@ -589,7 +589,13 @@ void destroyDiskbasedBuf(SDiskbasedBuf* pBuf) {
 #else
     uDebug("try to close file %s, pFile:%p, fd:%d, fp:%p", pBuf->path, pBuf->pFile, pBuf->pFile->fd, pBuf->pFile->fp);
 #endif
-    taosCloseFile(&pBuf->pFile);
+    if (0 != taosCloseFile(&pBuf->pFile)) {
+#ifdef WINDOWS
+      uError("failed to close file %s, pFile:%p, fp:%p, error:%s", pBuf->path, pBuf->pFile, pBuf->pFile->fp, strerror(errno));
+#else
+      uError("failed to close file %s, pFile:%p, fd:%d, fp:%p, error:%s", pBuf->path, pBuf->pFile, pBuf->pFile->fd, pBuf->pFile->fp, strerror(errno));
+#endif
+    }
   } else {
     uDebug("Paged buffer closed, total:%.2f Kb, no file created, %s", pBuf->totalBufSize / 1024.0, pBuf->id);
   }
