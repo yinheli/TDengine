@@ -66,7 +66,7 @@ static void *dmNotifyThreadFp(void *param) {
     if (taosGetTimestampMs() - lastNotify < tsTimeSeriesInterval) {
       taosMsleep(tsTimeSeriesInterval);
     }
-    dmSendNotifyReq(pMgmt);
+    // dmSendNotifyReq(pMgmt);
     lastNotify = taosGetTimestampMs();
     if (1 == atomic_val_compare_exchange_8(&dmNotifyHdl.state, 1, 0)) {
       wait = true;
