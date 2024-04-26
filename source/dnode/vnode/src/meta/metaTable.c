@@ -14,7 +14,6 @@
  */
 
 #include "meta.h"
-#include "vnd.h"
 
 extern SDmNotifyHandle dmNotifyHdl;
 
@@ -196,9 +195,6 @@ int metaDelJsonVarFromIdx(SMeta *pMeta, const SMetaEntry *pCtbEntry, const SSche
 
 static inline void metaTimeSeriesNotifyCheck(SMeta *pMeta) {
 #ifdef TD_ENTERPRISE
-  if (!vnodeIsRoleLeader(pMeta->pVnode)) {
-    return;
-  }
   int64_t nTimeSeries = metaGetTimeSeriesNum(pMeta, 0);
   int64_t deltaTS = nTimeSeries - pMeta->pVnode->config.vndStats.numOfReportedTimeSeries;
   if (deltaTS > tsTimeSeriesThreshold) {
