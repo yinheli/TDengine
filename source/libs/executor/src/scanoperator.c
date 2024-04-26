@@ -328,10 +328,10 @@ static int32_t loadDataBlock(SOperatorInfo* pOperator, STableScanBase* pTableSca
     pAPI->tsdReader.tsdReaderReleaseDataBlock(pTableScanInfo->dataReader);
     return TSDB_CODE_SUCCESS;
   } else if (*status == FUNC_DATA_REQUIRED_SMA_LOAD) {
-    pCost->loadBlockStatis += 1;
     loadSMA = true;  // mark the operation of load sma;
     bool success = doLoadBlockSMA(pTableScanInfo, pBlock, pTaskInfo);
     if (success) {  // failed to load the block sma data, data block statistics does not exist, load data block instead
+      pCost->loadBlockStatis += 1;
       qDebug("%s data block SMA loaded, brange:%" PRId64 "-%" PRId64 ", rows:%" PRId64, GET_TASKID(pTaskInfo),
              pBlockInfo->window.skey, pBlockInfo->window.ekey, pBlockInfo->rows);
       doSetTagColumnData(pTableScanInfo, pBlock, pTaskInfo, pBlock->info.rows);
