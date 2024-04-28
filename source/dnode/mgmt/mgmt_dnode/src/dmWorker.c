@@ -15,6 +15,7 @@
 
 #define _DEFAULT_SOURCE
 #include "dmInt.h"
+#include "tgrant.h"
 #include "thttp.h"
 
 static void *dmStatusThreadFp(void *param) {
