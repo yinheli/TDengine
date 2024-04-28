@@ -1032,7 +1032,7 @@ _exit:
   taosArrayDestroy(tbUids);
   tDecoderClear(&decoder);
   tEncoderClear(&encoder);
-  taosArrayDestroy(tbNames);
+  taosArrayDestroyP(tbNames, taosMemoryFree);
   return rcode;
 }
 
