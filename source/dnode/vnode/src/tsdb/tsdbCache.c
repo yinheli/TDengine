@@ -499,6 +499,10 @@ int tsdbCacheFlushDirty(const void *key, size_t klen, void *value, void *ud) {
   SLastCol *pLastCol = (SLastCol *)value;
 
   if (pLastCol->dirty) {
+    if (pLastCol->rowKey.ts == 0 && pLastCol->rowKey.numOfPKs == 0) {
+      tsdbError("vgId:%d, %s ##ZERO TS## at line %d, key: %p, dirty:%"PRId8, TD_VID(((SCacheFlushState *)ud)->pTsdb->pVnode),
+                __func__, __LINE__, key, pLastCol->dirty);
+    }
     tsdbCachePutBatch(pLastCol, key, klen, (SCacheFlushState *)ud);
 
     pLastCol->dirty = 0;
@@ -553,6 +557,10 @@ static void tsdbCacheDeleter(const void *key, size_t klen, void *value, void *ud
   SLastCol *pLastCol = (SLastCol *)value;
 
   if (pLastCol->dirty) {
+    if (pLastCol->rowKey.ts == 0 && pLastCol->rowKey.numOfPKs == 0) {
+      tsdbError("vgId:%d, %s ##ZERO TS## at line %d, key: %p, dirty:%"PRId8, TD_VID(((SCacheFlushState *)ud)->pTsdb->pVnode),
+                __func__, __LINE__, key, pLastCol->dirty);
+    }
     tsdbCachePutBatch(pLastCol, key, klen, (SCacheFlushState *)ud);
   }
 
@@ -1099,6 +1107,10 @@ int32_t tsdbCacheUpdate(STsdb *pTsdb, tb_uid_t suid, tb_uid_t uid, TSDBROW *pRow
           // SLastKey key = (SLastKey){.ltype = 0, .uid = uid, .cid = pColVal->cid};
           taosThreadMutexLock(&pTsdb->rCache.rMutex);
 
+          if (pRowKey->ts == 0 && pRowKey->numOfPKs == 0) {
+            tsdbError("vgId:%d, %s ##ZERO TS## at line %d, key: %p", TD_VID(pTsdb->pVnode), __func__,
+                      __LINE__, &idxKey->key);
+          }
           rocksdb_writebatch_put(wb, (char *)&idxKey->key, ROCKS_KEY_LEN, value, vlen);
 
           taosThreadMutexUnlock(&pTsdb->rCache.rMutex);
@@ -1139,6 +1151,10 @@ int32_t tsdbCacheUpdate(STsdb *pTsdb, tb_uid_t suid, tb_uid_t uid, TSDBROW *pRow
             // SLastKey key = (SLastKey){.ltype = 1, .uid = uid, .cid = pColVal->cid};
             taosThreadMutexLock(&pTsdb->rCache.rMutex);
 
+            if (pRowKey->ts == 0 && pRowKey->numOfPKs == 0) {
+              tsdbError("vgId:%d, %s ##ZERO TS## at line %d, key: %p", TD_VID(pTsdb->pVnode), __func__,
+                        __LINE__, &idxKey->key);
+            }
             rocksdb_writebatch_put(wb, (char *)&idxKey->key, ROCKS_KEY_LEN, value, vlen);
 
             taosThreadMutexUnlock(&pTsdb->rCache.rMutex);
@@ -1501,6 +1517,10 @@ static int32_t tsdbCacheLoadFromRaw(STsdb *pTsdb, tb_uid_t uid, SArray *pLastArr
 
     SLastKey *key = &idxKey->key;
     size_t    klen = ROCKS_KEY_LEN;
+    if (pLastCol->rowKey.ts == 0 && pLastCol->rowKey.numOfPKs == 0) {
+      tsdbError("vgId:%d, %s ##ZERO TS## at line %d, key: %p, dirty:%"PRId8, TD_VID(pTsdb->pVnode), __func__, __LINE__,
+                key, pLastCol->dirty);
+    }
     rocksdb_writebatch_put(wb, (char *)key, klen, value, vlen);
     taosMemoryFree(value);
   }
