@@ -470,6 +470,15 @@ static void tsdbCachePutBatch(SLastCol *pLastCol, const void *key, size_t klen, 
 
   tsdbCacheSerialize(pLastCol, &rocks_value, &vlen);
 
+  SLastCol *pLastColDes = tsdbCacheDeserialize(rocks_value);
+  if (pLastColDes->rowKey.ts == 0 && pLastColDes->rowKey.pks == 0) {
+    tsdbError("vgId:%d, %s ##ZERO TS## DES ## at line %d, dirty:%" PRId8 ", value-cid:%" PRId16 ", value-type:%" PRId8
+              ", value-val:%" PRId64,
+              TD_VID(pTsdb->pVnode), __func__, __LINE__, pLastCol->dirty, pLastCol->colVal.cid,
+              pLastCol->colVal.value.type, pLastCol->colVal.value.val);
+  }
+  taosMemoryFreeClear(pLastColDes);
+
   taosThreadMutexLock(&rCache->rMutex);
 
   rocksdb_writebatch_put(wb, (char *)key, klen, rocks_value, vlen);
@@ -1115,6 +1124,16 @@ int32_t tsdbCacheUpdate(STsdb *pTsdb, tb_uid_t suid, tb_uid_t uid, TSDBROW *pRow
           char  *value = NULL;
           size_t vlen = 0;
           tsdbCacheSerialize(&(SLastCol){.rowKey = *pRowKey, .colVal = *pColVal}, &value, &vlen);
+
+          SLastCol *pLastColDes = tsdbCacheDeserialize(value);
+          if (pLastColDes->rowKey.ts == 0 && pLastColDes->rowKey.pks == 0) {
+            tsdbError("vgId:%d, %s ##ZERO TS## DES ## at line %d, dirty:%" PRId8 ", value-cid:%" PRId16
+                      ", value-type:%" PRId8 ", value-val:%" PRId64,
+                      TD_VID(pTsdb->pVnode), __func__, __LINE__, pLastCol->dirty, pLastCol->colVal.cid,
+                      pLastCol->colVal.value.type, pLastCol->colVal.value.val);
+          }
+          taosMemoryFreeClear(pLastColDes);
+
           // SLastKey key = (SLastKey){.ltype = 0, .uid = uid, .cid = pColVal->cid};
           taosThreadMutexLock(&pTsdb->rCache.rMutex);
 
@@ -1163,6 +1182,15 @@ int32_t tsdbCacheUpdate(STsdb *pTsdb, tb_uid_t suid, tb_uid_t uid, TSDBROW *pRow
             char  *value = NULL;
             size_t vlen = 0;
             tsdbCacheSerialize(&(SLastCol){.rowKey = *pRowKey, .colVal = *pColVal}, &value, &vlen);
+
+            SLastCol *pLastColDes = tsdbCacheDeserialize(value);
+            if (pLastColDes->rowKey.ts == 0 && pLastColDes->rowKey.pks == 0) {
+              tsdbError("vgId:%d, %s ##ZERO TS## DES ## at line %d, dirty:%" PRId8 ", value-cid:%" PRId16
+                        ", value-type:%" PRId8 ", value-val:%" PRId64,
+                        TD_VID(pTsdb->pVnode), __func__, __LINE__, pLastCol->dirty, pLastCol->colVal.cid,
+                        pLastCol->colVal.value.type, pLastCol->colVal.value.val);
+            }
+            taosMemoryFreeClear(pLastColDes);
             // SLastKey key = (SLastKey){.ltype = 1, .uid = uid, .cid = pColVal->cid};
             taosThreadMutexLock(&pTsdb->rCache.rMutex);
 
@@ -1538,6 +1566,15 @@ static int32_t tsdbCacheLoadFromRaw(STsdb *pTsdb, tb_uid_t uid, SArray *pLastArr
     size_t vlen = 0;
     tsdbCacheSerialize(pLastCol, &value, &vlen);
 
+    SLastCol *pLastColDes = tsdbCacheDeserialize(value);
+    if (pLastColDes->rowKey.ts == 0 && pLastColDes->rowKey.pks == 0) {
+      tsdbError("vgId:%d, %s ##ZERO TS## DES ## at line %d, dirty:%" PRId8 ", value-cid:%" PRId16 ", value-type:%" PRId8
+                ", value-val:%" PRId64,
+                TD_VID(pTsdb->pVnode), __func__, __LINE__, pLastCol->dirty, pLastCol->colVal.cid,
+                pLastCol->colVal.value.type, pLastCol->colVal.value.val);
+    }
+    taosMemoryFreeClear(pLastColDes);
+
     SLastKey *key = &idxKey->key;
     size_t    klen = ROCKS_KEY_LEN;
     if (pLastCol->rowKey.ts == 0 && pLastCol->rowKey.numOfPKs == 0) {
@@ -1606,6 +1643,14 @@ static int32_t tsdbCacheLoadFromRocks(STsdb *pTsdb, tb_uid_t uid, SArray *pLastA
     SLastCol *pLastCol = tsdbCacheDeserialize(values_list[i]);
     SLastCol* PToFree = pLastCol;
     SIdxKey  *idxKey = &((SIdxKey *)TARRAY_DATA(remainCols))[j];
+
+    if (pLastCol && pLastCol->rowKey.ts == 0 && pLastCol->rowKey.numOfPKs == 0) {
+      tsdbError("vgId:%d, %s ##ZERO TS## INSERT ## at line %d, uid: %" PRId64 ", cid:%" PRId16 ", dirty:%" PRId8
+                ", index:%d, value-cid:%" PRId16 ", value-type:%" PRId8 ", value-val:%" PRId64,
+                TD_VID(pTsdb->pVnode), __func__, __LINE__, idxKey->key.uid, idxKey->key.cid, pLastCol->dirty, i,
+                pLastCol->colVal.cid, pLastCol->colVal.value.type, pLastCol->colVal.value.val);
+    }
+
     if (pLastCol) {
       SLastCol *pTmpLastCol = taosMemoryCalloc(1, sizeof(SLastCol));
       *pTmpLastCol = *pLastCol;
