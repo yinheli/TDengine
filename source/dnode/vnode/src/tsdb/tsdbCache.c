@@ -434,7 +434,6 @@ static void tsdbCacheSerialize(SLastCol *pLastCol, char **value, size_t *size) {
     length += pColVal->value.nData;
   }
 
-  // set version
   *value = taosMemoryMalloc(length);
 
   // copy last col
@@ -1592,6 +1591,8 @@ static int32_t tsdbCacheLoadFromRocks(STsdb *pTsdb, tb_uid_t uid, SArray *pLastA
                     keys_list_sizes, values_list, values_list_sizes, errs);
   for (int i = 0; i < num_keys; ++i) {
     if (errs[i]) {
+      tsdbError("vgId:%d, %s failed at line %d since %s, index:%d", TD_VID(pTsdb->pVnode), __func__, __LINE__, errs[i],
+                i);
       rocksdb_free(errs[i]);
     }
   }
@@ -1624,8 +1625,10 @@ static int32_t tsdbCacheLoadFromRocks(STsdb *pTsdb, tb_uid_t uid, SArray *pLastA
       }
 
       if (pLastCol->rowKey.ts == 0 && pLastCol->rowKey.numOfPKs == 0) {
-        tsdbError("vgId:%d, %s ##ZERO TS## INSERT ## at line %d, uid: %" PRId64 ", cid:%" PRId16 "dirty:%" PRId8,
-                  TD_VID(pTsdb->pVnode), __func__, __LINE__, idxKey->key.uid, idxKey->key.cid, pLastCol->dirty);
+        tsdbError("vgId:%d, %s ##ZERO TS## INSERT ## at line %d, uid: %" PRId64 ", cid:%" PRId16 ", dirty:%" PRId8
+                  ", index:%d, value-cid:%" PRId16 ", value-type:%" PRId8 ", value-val:%" PRId64,
+                  TD_VID(pTsdb->pVnode), __func__, __LINE__, idxKey->key.uid, idxKey->key.cid, pLastCol->dirty, i,
+                  pLastCol->colVal.cid, pLastCol->colVal.value.type, pLastCol->colVal.value.val);
       }
       LRUStatus status = taosLRUCacheInsert(pCache, &idxKey->key, ROCKS_KEY_LEN, pLastCol, charge, tsdbCacheDeleter,
                                             NULL, TAOS_LRU_PRIORITY_LOW, &pTsdb->flushState);
