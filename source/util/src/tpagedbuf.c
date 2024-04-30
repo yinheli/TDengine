@@ -278,7 +278,7 @@ static SPageInfo* registerNewPageInfo(SDiskbasedBuf* pBuf, int32_t pageId) {
   ppi->used = true;
   ppi->pn = NULL;
   ppi->dirty = false;
-
+  // comments
   return *(SPageInfo**)taosArrayPush(pBuf->pIdList, &ppi);
 }
 
