@@ -603,6 +603,10 @@ static int32_t tsdbCacheNewTableColumn(STsdb *pTsdb, int64_t uid, int16_t cid, i
   }
 
   SLastKey *pLastKey = &(SLastKey){.lflag = lflag, .uid = uid, .cid = cid};
+  if (pLastCol->rowKey.ts == 0 && pLastCol->rowKey.numOfPKs == 0) {
+    tsdbError("vgId:%d, %s ##ZERO TS## INSERT ## at line %d, uid: %" PRId64 ", cid:%" PRId16 "dirty:%" PRId8,
+              TD_VID(pTsdb->pVnode), __func__, __LINE__, uid, cid, pLastCol->dirty);
+  }
   LRUStatus status = taosLRUCacheInsert(pCache, pLastKey, ROCKS_KEY_LEN, pLastCol, charge, tsdbCacheDeleter, NULL,
                                         TAOS_LRU_PRIORITY_LOW, &pTsdb->flushState);
   if (status != TAOS_LRU_STATUS_OK) {
@@ -1038,6 +1042,10 @@ int32_t tsdbCacheUpdate(STsdb *pTsdb, tb_uid_t suid, tb_uid_t uid, TSDBROW *pRow
       SLastCol *pLastCol = (SLastCol *)taosLRUCacheValue(pCache, h);
       if (tRowKeyCompare(&pLastCol->rowKey, pRowKey) != 1) {
         tsdbCacheUpdateLastCol(pLastCol, pRowKey, pColVal);
+        if (pLastCol->rowKey.ts == 0 && pLastCol->rowKey.numOfPKs == 0) {
+          tsdbError("vgId:%d, %s ##ZERO TS## at line %d, uid:%" PRId64 "cid:%" PRId16, TD_VID(pTsdb->pVnode), __func__,
+                    __LINE__, key->uid, key->cid);
+        }
       }
       taosLRUCacheRelease(pCache, h, false);
     } else {
@@ -1054,6 +1062,10 @@ int32_t tsdbCacheUpdate(STsdb *pTsdb, tb_uid_t suid, tb_uid_t uid, TSDBROW *pRow
         SLastCol *pLastCol = (SLastCol *)taosLRUCacheValue(pCache, h);
         if (tRowKeyCompare(&pLastCol->rowKey, pRowKey) != 1) {
           tsdbCacheUpdateLastCol(pLastCol, pRowKey, pColVal);
+          if (pLastCol->rowKey.ts == 0 && pLastCol->rowKey.numOfPKs == 0) {
+            tsdbError("vgId:%d, %s ##ZERO TS## at line %d, uid:%" PRId64 "cid:%" PRId16, TD_VID(pTsdb->pVnode),
+                      __func__, __LINE__, key->uid, key->cid);
+          }
         }
         taosLRUCacheRelease(pCache, h, false);
       } else {
@@ -1134,6 +1146,10 @@ int32_t tsdbCacheUpdate(STsdb *pTsdb, tb_uid_t suid, tb_uid_t uid, TSDBROW *pRow
             charge += pLastCol->colVal.value.nData;
           }
 
+          if (pLastCol->rowKey.ts == 0 && pLastCol->rowKey.numOfPKs == 0) {
+            tsdbError("vgId:%d, %s ##ZERO TS## INSERT ## at line %d, uid: %" PRId64 ", cid:%" PRId16 "dirty:%" PRId8,
+                      TD_VID(pTsdb->pVnode), __func__, __LINE__, idxKey->key.uid, idxKey->key.cid, pLastCol->dirty);
+          }
           LRUStatus status = taosLRUCacheInsert(pTsdb->lruCache, &idxKey->key, ROCKS_KEY_LEN, pLastCol, charge,
                                                 tsdbCacheDeleter, NULL, TAOS_LRU_PRIORITY_LOW, &pTsdb->flushState);
           if (status != TAOS_LRU_STATUS_OK) {
@@ -1178,6 +1194,10 @@ int32_t tsdbCacheUpdate(STsdb *pTsdb, tb_uid_t suid, tb_uid_t uid, TSDBROW *pRow
               charge += pLastCol->colVal.value.nData;
             }
 
+            if (pLastCol->rowKey.ts == 0 && pLastCol->rowKey.numOfPKs == 0) {
+              tsdbError("vgId:%d, %s ##ZERO TS## INSERT ## at line %d, uid: %" PRId64 ", cid:%" PRId16 "dirty:%" PRId8,
+                        TD_VID(pTsdb->pVnode), __func__, __LINE__, idxKey->key.uid, idxKey->key.cid, pLastCol->dirty);
+            }
             LRUStatus status = taosLRUCacheInsert(pTsdb->lruCache, &idxKey->key, ROCKS_KEY_LEN, pLastCol, charge,
                                                   tsdbCacheDeleter, NULL, TAOS_LRU_PRIORITY_LOW, &pTsdb->flushState);
             if (status != TAOS_LRU_STATUS_OK) {
@@ -1503,6 +1523,10 @@ static int32_t tsdbCacheLoadFromRaw(STsdb *pTsdb, tb_uid_t uid, SArray *pLastArr
       charge += pLastCol->colVal.value.nData;
     }
 
+    if (pLastCol->rowKey.ts == 0 && pLastCol->rowKey.numOfPKs == 0) {
+      tsdbError("vgId:%d, %s ##ZERO TS## INSERT ## at line %d, uid: %" PRId64 ", cid:%" PRId16 "dirty:%" PRId8,
+                TD_VID(pTsdb->pVnode), __func__, __LINE__, idxKey->key.uid, idxKey->key.cid, pLastCol->dirty);
+    }
     LRUStatus status = taosLRUCacheInsert(pCache, &idxKey->key, ROCKS_KEY_LEN, pLastCol, charge, tsdbCacheDeleter, NULL,
                                           TAOS_LRU_PRIORITY_LOW, &pTsdb->flushState);
     if (status != TAOS_LRU_STATUS_OK) {
@@ -1599,6 +1623,10 @@ static int32_t tsdbCacheLoadFromRocks(STsdb *pTsdb, tb_uid_t uid, SArray *pLastA
         charge += pLastCol->colVal.value.nData;
       }
 
+      if (pLastCol->rowKey.ts == 0 && pLastCol->rowKey.numOfPKs == 0) {
+        tsdbError("vgId:%d, %s ##ZERO TS## INSERT ## at line %d, uid: %" PRId64 ", cid:%" PRId16 "dirty:%" PRId8,
+                  TD_VID(pTsdb->pVnode), __func__, __LINE__, idxKey->key.uid, idxKey->key.cid, pLastCol->dirty);
+      }
       LRUStatus status = taosLRUCacheInsert(pCache, &idxKey->key, ROCKS_KEY_LEN, pLastCol, charge, tsdbCacheDeleter,
                                             NULL, TAOS_LRU_PRIORITY_LOW, &pTsdb->flushState);
       if (status != TAOS_LRU_STATUS_OK) {
