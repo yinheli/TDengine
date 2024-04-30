@@ -1472,7 +1472,7 @@ static int32_t tsdbCacheLoadFromRaw(STsdb *pTsdb, tb_uid_t uid, SArray *pLastArr
   for (int i = 0; i < num_keys; ++i) {
     SIdxKey *idxKey = taosArrayGet(remainCols, i);
     slotIds[i] = pr->pSlotIds[idxKey->idx];
-    if (idxKey->key.lflag == CACHESCAN_RETRIEVE_LAST >> 3) {
+    if (IS_LAST_KEY(idxKey->key)) {
       if (NULL == lastTmpIndexArray) {
         lastTmpIndexArray = taosArrayInit(num_keys, sizeof(int32_t));
       }
@@ -1645,10 +1645,10 @@ static int32_t tsdbCacheLoadFromRocks(STsdb *pTsdb, tb_uid_t uid, SArray *pLastA
     SIdxKey  *idxKey = &((SIdxKey *)TARRAY_DATA(remainCols))[j];
 
     if (pLastCol && pLastCol->rowKey.ts == 0 && pLastCol->rowKey.numOfPKs == 0) {
-      tsdbError("vgId:%d, %s ##ZERO TS## INSERT ## at line %d, uid: %" PRId64 ", cid:%" PRId16 ", dirty:%" PRId8
-                ", index:%d, value-cid:%" PRId16 ", value-type:%" PRId8 ", value-val:%" PRId64,
-                TD_VID(pTsdb->pVnode), __func__, __LINE__, idxKey->key.uid, idxKey->key.cid, pLastCol->dirty, i,
-                pLastCol->colVal.cid, pLastCol->colVal.value.type, pLastCol->colVal.value.val);
+      tsdbError("vgId:%d, %s ##ZERO TS## INSERT ## at line %d, uid: %" PRId64 ", cid:%" PRId16 ", lflag:%" PRId8
+                ", dirty:%" PRId8 ", index:%d, value-cid:%" PRId16 ", value-type:%" PRId8 ", value-val:%" PRId64,
+                TD_VID(pTsdb->pVnode), __func__, __LINE__, idxKey->key.uid, idxKey->key.cid, idxKey->key.lflag,
+                pLastCol->dirty, i, pLastCol->colVal.cid, pLastCol->colVal.value.type, pLastCol->colVal.value.val);
     }
 
     if (pLastCol) {
@@ -1670,10 +1670,10 @@ static int32_t tsdbCacheLoadFromRocks(STsdb *pTsdb, tb_uid_t uid, SArray *pLastA
       }
 
       if (pLastCol->rowKey.ts == 0 && pLastCol->rowKey.numOfPKs == 0) {
-        tsdbError("vgId:%d, %s ##ZERO TS## INSERT ## at line %d, uid: %" PRId64 ", cid:%" PRId16 ", dirty:%" PRId8
-                  ", index:%d, value-cid:%" PRId16 ", value-type:%" PRId8 ", value-val:%" PRId64,
-                  TD_VID(pTsdb->pVnode), __func__, __LINE__, idxKey->key.uid, idxKey->key.cid, pLastCol->dirty, i,
-                  pLastCol->colVal.cid, pLastCol->colVal.value.type, pLastCol->colVal.value.val);
+        tsdbError("vgId:%d, %s ##ZERO TS## INSERT ## at line %d, uid: %" PRId64 ", cid:%" PRId16 ", lflag:%" PRId8
+                  ", dirty:%" PRId8 ", index:%d, value-cid:%" PRId16 ", value-type:%" PRId8 ", value-val:%" PRId64,
+                  TD_VID(pTsdb->pVnode), __func__, __LINE__, idxKey->key.uid, idxKey->key.cid, idxKey->key.lflag,
+                  pLastCol->dirty, i, pLastCol->colVal.cid, pLastCol->colVal.value.type, pLastCol->colVal.value.val);
       }
       LRUStatus status = taosLRUCacheInsert(pCache, &idxKey->key, ROCKS_KEY_LEN, pLastCol, charge, tsdbCacheDeleter,
                                             NULL, TAOS_LRU_PRIORITY_LOW, &pTsdb->flushState);
@@ -1717,7 +1717,7 @@ int32_t tsdbCacheGetBatch(STsdb *pTsdb, tb_uid_t uid, SArray *pLastArray, SCache
   for (int i = 0; i < num_keys; ++i) {
     int16_t cid = ((int16_t *)TARRAY_DATA(pCidList))[i];
 
-    SLastKey *key = &(SLastKey){.lflag = ltype, .uid = uid, .cid = cid};
+    SLastKey key = {.lflag = ltype, .uid = uid, .cid = cid};
     // for select last_row, last case
     int32_t funcType = FUNCTION_TYPE_CACHE_LAST;
     if (pr->pFuncTypeList != NULL && taosArrayGetSize(pr->pFuncTypeList) > i) {
@@ -1725,10 +1725,10 @@ int32_t tsdbCacheGetBatch(STsdb *pTsdb, tb_uid_t uid, SArray *pLastArray, SCache
     }
     if (((pr->type & CACHESCAN_RETRIEVE_LAST) == CACHESCAN_RETRIEVE_LAST) && FUNCTION_TYPE_CACHE_LAST_ROW == funcType) {
       int8_t tempType = CACHESCAN_RETRIEVE_LAST_ROW | (pr->type ^ CACHESCAN_RETRIEVE_LAST);
-      key->lflag = (tempType & CACHESCAN_RETRIEVE_LAST) >> 3;
+      key.lflag = (tempType & CACHESCAN_RETRIEVE_LAST) >> 3;
     }
 
-    LRUHandle *h = taosLRUCacheLookup(pCache, key, ROCKS_KEY_LEN);
+    LRUHandle *h = taosLRUCacheLookup(pCache, &key, ROCKS_KEY_LEN);
     if (h) {
       SLastCol *pLastCol = (SLastCol *)taosLRUCacheValue(pCache, h);
 
@@ -1750,7 +1750,7 @@ int32_t tsdbCacheGetBatch(STsdb *pTsdb, tb_uid_t uid, SArray *pLastArray, SCache
       if (!remainCols) {
         remainCols = taosArrayInit(num_keys, sizeof(SIdxKey));
       }
-      taosArrayPush(remainCols, &(SIdxKey){i, *key});
+      taosArrayPush(remainCols, &(SIdxKey){i, key});
     }
   }
 
